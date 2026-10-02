@@ -1,0 +1,7 @@
+{
+  "tasks": {
+    "relay": "deno run --env-file=.env.local --allow-env --allow-net dev-tools/interpretation-relay.ts",
+    "check": "deno check dev-tools/interpretation-relay.ts",
+    "test": "deno test dev-tools/relay_test.ts dev-tools/openrouter_test.ts dev-tools/multipage_test.ts"
+  }
+}

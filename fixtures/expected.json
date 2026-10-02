@@ -1,0 +1,70 @@
+{
+  "note": "Hand-checked fictional source facts; real model evaluations are pending API access. Do not treat these expectations as model outputs.",
+  "fictional-bill.jpg": {
+    "domain": "medical",
+    "recipient": "Alex Example",
+    "amount": "125.00",
+    "currency": "USD",
+    "deadline": "2026-11-15",
+    "action": "pay",
+    "category": "Bills"
+  },
+  "fictional-no-deadline.jpg": {
+    "domain": "insurance",
+    "action": "call to confirm mailing address",
+    "deadline_status": "not_specified"
+  },
+  "fictional-no-action.jpg": {
+    "domain": "medical",
+    "category": "Test results",
+    "action_status": "not_specified",
+    "deadline_status": "not_specified",
+    "must_not_say": "No action is needed"
+  },
+  "fictional-uncertain.jpg": {
+    "domain": "insurance",
+    "action": "send requested form",
+    "deadline_status": "needs_verification",
+    "must_not_do": "Choose one conflicting deadline as confirmed"
+  },
+  "fictional-bill-page2.jpg": {
+    "paired_with": "fictional-bill.jpg",
+    "reference": "SAMPLE-204",
+    "action": "include reference with payment",
+    "source_page": 2,
+    "must_not_do": "Reject the image because its printed page number differs from capture order"
+  },
+  "fictional-eob.jpg": {
+    "domain": "insurance",
+    "category": "insurance_explanations",
+    "billed": "200.00",
+    "plan_paid": "150.00",
+    "patient_responsibility": "50.00",
+    "service_date": "2026-09-10",
+    "must_not_do": "Create a payment instruction or infer that no action could be needed",
+    "optional": "Keep explanation for records"
+  },
+  "fictional-enrollment.jpg": {
+    "domain": "insurance",
+    "conditional_action": "Submit selection only if changing plans",
+    "deadline": "2026-11-15",
+    "effective_date": "2027-01-01",
+    "optional_session": "2026-10-20",
+    "must_not_do": "Require everyone to change plans or label coverage start as deadline"
+  },
+  "fictional-statement.jpg": {
+    "domain": "medical",
+    "balance": "0.00",
+    "actions": [],
+    "must_not_do": "Turn received payments or total charges into money owed"
+  },
+  "fictional-result.jpg": {
+    "domain": "medical",
+    "category": "test_results",
+    "result": "Sodium 140 mmol/L",
+    "reference_range": "135 to 145 mmol/L",
+    "service_date": "2026-09-20",
+    "actions": [],
+    "must_not_do": "Invent diagnosis, follow-up treatment, or a deadline"
+  }
+}

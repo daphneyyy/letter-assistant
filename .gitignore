@@ -1,0 +1,16 @@
+/devpost/learner-profile.md
+.env
+.env.*
+!.env.example
+
+# Local development and generated output
+.DS_Store
+.Rhistory
+/ios/Config/Local.xcconfig
+/ios/Config/Debug.local.plist
+/ios/**/xcuserdata/
+/ios/**/DerivedData/
+/build/
+/captures/
+*.xcuserstate
+*.xcresult

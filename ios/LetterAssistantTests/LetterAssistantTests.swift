@@ -1,0 +1,173 @@
+import XCTest
+import UIKit
+@testable import LetterAssistant
+
+final class LetterAssistantTests: XCTestCase {
+    func testOnlyAcceptedPhotoCanReachInterpretation() {
+        for phase in [CapturePhase.ready, .checking, .retake, .checkFailed, .interpreting, .complete] {
+            XCTAssertFalse(phase.canInterpret)
+        }
+        XCTAssertTrue(CapturePhase.valid.canInterpret)
+        XCTAssertTrue(CapturePhase.interpretFailed.canInterpret)
+    }
+    func testDebugTransportCannotTargetPublicHosts() {
+        XCTAssertTrue(RelayConfiguration.isLocalHost("127.0.0.1"))
+        XCTAssertTrue(RelayConfiguration.isLocalHost("192.168.1.4"))
+        XCTAssertFalse(RelayConfiguration.isLocalHost("api.openai.com"))
+        XCTAssertFalse(RelayConfiguration.isLocalHost("172.32.0.1"))
+        XCTAssertFalse(RelayConfiguration.isLocalHost("192.168.1.4.evil.com"))
+    }
+    func testValidationContractDecodesWithoutLosingGate() throws {
+        let json = #"{"verdict":"retake","reason":{"en":"Retake","zh":"请重拍"},"validation_token":null}"#
+        let decoder = JSONDecoder(); decoder.keyDecodingStrategy = .convertFromSnakeCase
+        let result = try decoder.decode(PageValidation.self, from: Data(json.utf8))
+        XCTAssertNil(result.validationToken)
+        XCTAssertEqual(result.reason.text(.zh), "请重拍")
+    }
+    func testContextualFactsAndConditionalActionsDecodeInBothLanguages() throws {
+        let decoder = JSONDecoder(); decoder.keyDecodingStrategy = .convertFromSnakeCase
+        let factJSON = #"{"id":"effective","kind":"effective_date","raw_text":"Coverage begins January 1, 2027","value":"2027-01-01","currency":null,"status":"confirmed","origin":"letter_fact","label":{"en":"Coverage begins","zh":"保障生效日期"},"explanation":{"en":"Coverage starts on this date, not an action deadline.","zh":"这是保障开始日期，不是办理截止日期。"},"source_refs":[{"page":1,"excerpt":"Coverage begins January 1, 2027"}]}"#
+        let fact = try decoder.decode(LetterFact.self, from: Data(factJSON.utf8))
+        XCTAssertEqual(fact.kind, "effective_date")
+        XCTAssertEqual(fact.label.text(.zh), "保障生效日期")
+        XCTAssertTrue(fact.explanation.text(.en).contains("not an action deadline"))
+        let actionJSON = #"{"id":"choose","description_en":"Submit a selection","description_zh":"提交选择","action_kind":"administration","status":"confirmed","requirement":"conditional","condition":{"en":"If you want to change plans","zh":"如果你想更换计划"},"source_refs":[{"page":1,"excerpt":"If you want to change plans, submit a selection"}],"amount_fact_ids":[],"deadline_fact_id":null,"appointment_fact_ids":[]}"#
+        let action = try decoder.decode(LetterAction.self, from: Data(actionJSON.utf8))
+        XCTAssertEqual(action.requirement, "conditional")
+        XCTAssertEqual(action.condition?.text(.zh), "如果你想更换计划")
+        XCTAssertNil(action.deadlineFactId)
+    }
+    @MainActor func testNewCaptureDiscardsPriorSessionAndUnblocksControls() {
+        let model = CaptureModel()
+        model.changeLanguage(.zh)
+        model.reset()
+        XCTAssertEqual(model.phase, .ready)
+        XCTAssertNil(model.image)
+        XCTAssertNil(model.result)
+        XCTAssertEqual(model.language, .zh)
+    }
+}
+
+private final class StubAPI: LetterAPIClient {
+    let isConfigured = true
+    var shouldReject = false
+    var shouldFail = false
+    var failureCode = "provider_not_configured"
+    var validationCalls = 0
+    var interpretationCalls = 0
+    var submittedPages: [LetterPageInput] = []
+    var captureIDs: [UUID] = []
+    func validate(image: Data, captureID: UUID, pageID: UUID) async throws -> PageValidation {
+        validationCalls += 1
+        captureIDs.append(captureID)
+        if shouldFail { throw RelayError(code: failureCode) }
+        return PageValidation(verdict: shouldReject ? "retake" : "valid", reason: BilingualText(en: "Photo checked", zh: "照片已检查"), validationToken: shouldReject ? nil : "test-token")
+    }
+    func interpret(pages: [LetterPageInput], captureID: UUID) async throws -> LetterInterpretation {
+        interpretationCalls += 1; submittedPages = pages
+        throw RelayError(code: "provider_unavailable")
+    }
+    func interpret(image: Data, captureID: UUID, pageID: UUID, token: String) async throws -> LetterInterpretation {
+        interpretationCalls += 1
+        throw RelayError(code: "provider_unavailable")
+    }
+}
+extension LetterAssistantTests {
+    @MainActor private func photo(color: UIColor = .white) -> UIImage {
+        UIGraphicsImageRenderer(size: CGSize(width: 900, height: 1200)).image { ctx in
+            color.setFill(); ctx.fill(CGRect(x: 0, y: 0, width: 900, height: 1200))
+        }
+    }
+    @MainActor private func waitForWork(_ model: CaptureModel) async throws {
+        for _ in 0..<100 where model.phase.busy { try await Task.sleep(nanoseconds: 10_000_000) }
+        XCTAssertFalse(model.phase.busy)
+    }
+    @MainActor func testRejectedPhotoCannotCallInterpretation() async throws {
+        let api = StubAPI(); api.shouldReject = true
+        let model = CaptureModel(api: api, inspect: { _ in })
+        model.accept(photo()); try await waitForWork(model)
+        XCTAssertEqual(model.phase, .retake)
+        model.interpret()
+        XCTAssertEqual(api.interpretationCalls, 0)
+        XCTAssertNotNil(model.image)
+    }
+    @MainActor func testMissingProviderRetainsPhotoAndRetryUsesValidationAgain() async throws {
+        let api = StubAPI(); api.shouldFail = true
+        let model = CaptureModel(api: api, inspect: { _ in })
+        model.accept(photo()); try await waitForWork(model)
+        XCTAssertEqual(model.phase, .checkFailed)
+        XCTAssertNotNil(model.image)
+        XCTAssertNil(model.result)
+        api.shouldFail = false
+        model.validate(); try await waitForWork(model)
+        XCTAssertEqual(model.phase, .valid)
+        XCTAssertEqual(api.validationCalls, 2)
+        model.interpret(); try await waitForWork(model)
+        XCTAssertEqual(model.phase, .interpretFailed)
+        model.changeLanguage(.zh)
+        XCTAssertTrue(model.message.contains("未能完成此步骤"))
+        XCTAssertNotEqual(model.message, "照片已检查")
+        XCTAssertNotNil(model.image)
+        XCTAssertNil(model.result)
+    }
+    @MainActor func testRejectedAPIKeyShowsActionableMessageAndKeepsPhoto() async throws {
+        let api = StubAPI(); api.shouldFail = true; api.failureCode = "provider_auth_failed"
+        let model = CaptureModel(api: api, inspect: { _ in })
+        model.changeLanguage(.zh)
+        model.accept(photo()); try await waitForWork(model)
+        XCTAssertEqual(model.phase, .checkFailed)
+        XCTAssertTrue(model.message.contains("密钥无效"))
+        XCTAssertNotNil(model.image)
+        XCTAssertNil(model.result)
+        model.changeLanguage(.en)
+        XCTAssertTrue(model.message.contains("key was rejected"))
+    }
+    @MainActor func testNextPageAndRetakePreserveOrderAndSubmitEveryOriginal() async throws {
+        let api = StubAPI(); let model = CaptureModel(api: api, inspect: { _ in })
+        model.accept(photo()); try await waitForWork(model)
+        let originalID = model.pages[0].id
+        let originalBytes = model.pages[0].bytes
+        model.accept(photo(), asNextPage: true); try await waitForWork(model)
+        XCTAssertEqual(model.pages.count, 2)
+        XCTAssertEqual(model.pages[0].id, originalID)
+        XCTAssertEqual(Set(api.captureIDs).count, 1)
+        let secondID = model.pages[1].id
+        model.selectPage(0)
+        model.accept(photo(color: .black)); try await waitForWork(model)
+        XCTAssertEqual(model.pages[0].id, originalID)
+        XCTAssertNotEqual(model.pages[0].bytes, originalBytes)
+        XCTAssertEqual(model.pages[1].id, secondID)
+        model.interpret(); try await waitForWork(model)
+        XCTAssertEqual(api.submittedPages.map(\.id), model.pages.map(\.id))
+        XCTAssertEqual(api.submittedPages.map(\.image), model.pages.map(\.bytes))
+        XCTAssertEqual(model.pages.count, 2)
+        XCTAssertEqual(model.phase, .interpretFailed)
+        model.interpret(); try await waitForWork(model)
+        XCTAssertEqual(api.interpretationCalls, 2)
+        model.reset(); XCTAssertTrue(model.pages.isEmpty)
+    }
+    @MainActor func testRejectedNextPageBlocksWholeLetterWithoutDiscardingEarlierPage() async throws {
+        let api = StubAPI(); let model = CaptureModel(api: api, inspect: { _ in })
+        model.accept(photo()); try await waitForWork(model)
+        let firstID = model.pages[0].id
+        api.shouldReject = true
+        model.accept(photo(), asNextPage: true); try await waitForWork(model)
+        XCTAssertEqual(model.pages.count, 2)
+        XCTAssertEqual(model.pages[0].id, firstID)
+        XCTAssertFalse(model.canFinishCapture)
+        model.selectPage(0); model.interpret()
+        XCTAssertEqual(api.interpretationCalls, 0)
+        XCTAssertFalse(model.canAddPage)
+        model.selectPage(1); api.shouldReject = false
+        model.accept(photo()); try await waitForWork(model)
+        XCTAssertTrue(model.canFinishCapture)
+    }
+    @MainActor func testFictionalImagePassesLocalReadabilityAndPreservesPixels() throws {
+        let path = try XCTUnwrap(Bundle.main.url(forResource: "fictional-bill", withExtension: "jpg"))
+        let source = try XCTUnwrap(UIImage(contentsOfFile: path.path))
+        let prepared = try PageQualityService.prepare(source)
+        XCTAssertEqual(prepared.image.size.width, 1600)
+        XCTAssertEqual(prepared.image.size.height, 2100)
+        try PageQualityService.inspect(prepared.bytes)
+    }
+}

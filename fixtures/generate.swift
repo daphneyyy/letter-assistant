@@ -1,0 +1,32 @@
+import CoreGraphics
+import CoreText
+import ImageIO
+import UniformTypeIdentifiers
+import Foundation
+
+let letters: [(String, String, [String])] = [
+    ("fictional-statement", "FICTIONAL MEDICAL ACCOUNT STATEMENT", ["Example Clinic — training only", "Recipient: Alex Example", "Statement date: October 1, 2026", "Charges: USD 80.00. Payments received: USD 80.00.", "Account balance: USD 0.00.", "This statement is for your records.", "There is no payment request or payment deadline in this statement.", "Fictional training document. No real account exists."]),
+    ("fictional-result", "FICTIONAL LABORATORY RESULT", ["Example Laboratory — training only", "Recipient: Alex Example", "Sample collected: September 20, 2026", "Result: Sodium 140 mmol/L.", "Laboratory reference range: 135 to 145 mmol/L.", "This report does not provide a diagnosis.", "No follow-up instructions are included on this report.", "Fictional training document. Not a real patient result."]),
+    ("fictional-eob", "FICTIONAL HEALTH INSURANCE EOB", ["Example Health Insurance — training only", "Recipient: Alex Example", "This is not a bill. Do not send payment for this notice.", "Service date: September 10, 2026", "Provider billed: USD 200.00. Plan paid: USD 150.00.", "Patient responsibility shown: USD 50.00.", "Your provider may send a separate bill.", "You may keep this explanation for your records.", "This notice does not state a payment due date.", "Fictional training document. No real payment is due."]),
+    ("fictional-enrollment", "FICTIONAL HEALTH PLAN ENROLLMENT", ["Example Health Plan — training only", "Recipient: Alex Example", "Your current coverage renews automatically on January 1, 2027.", "If you want to change plans, submit your selection", "by November 15, 2026. Otherwise your current plan renews.", "New coverage takes effect January 1, 2027.", "You may attend an optional information session", "on October 20, 2026.", "Fictional training document. Do not submit a real selection."]),
+    ("fictional-bill-page2", "FICTIONAL MEDICAL BILL — PAGE 2", ["Harbor Example Clinic — training document only", "Recipient: Alex Example", "", "Payment instructions continued from page 1.", "Include reference SAMPLE-204 with your payment.", "This page does not change the amount or deadline on page 1.", "", "This document is fictional. No real payment should be made."]),
+    ("fictional-bill", "FICTIONAL MEDICAL BILL", ["Harbor Example Clinic — training document only", "Recipient: Alex Example", "Letter date: October 1, 2026", "", "Your balance is USD 125.00.", "Please pay USD 125.00 by November 15, 2026.", "", "This document is fictional. No payment is due to any real organization."]),
+    ("fictional-no-deadline", "FICTIONAL INSURANCE LETTER", ["Example Insurance — training document only", "Recipient: Alex Example", "", "Please call our office to confirm your mailing address.", "This letter does not specify a deadline.", "", "This document is fictional. Do not contact any real organization."]),
+    ("fictional-no-action", "FICTIONAL TEST RESULT LETTER", ["Harbor Example Clinic — training document only", "Recipient: Alex Example", "Letter date: October 1, 2026", "", "Your sample was received on September 28, 2026.", "The laboratory report is attached to your record.", "", "This document is fictional and provides no medical advice."]),
+    ("fictional-uncertain", "FICTIONAL INSURANCE REQUEST", ["Example Insurance — training document only", "Recipient: Alex Example", "", "Please send the requested form by November 15, 2026.", "Correction: the deadline is November 18, 2026.", "The letter does not establish which deadline is current.", "", "This document is fictional. No real form should be sent."])
+]
+for (name, title, lines) in letters {
+    let context = CGContext(data: nil, width: 1600, height: 2100, bitsPerComponent: 8, bytesPerRow: 0, space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGImageAlphaInfo.noneSkipLast.rawValue)!
+    context.setFillColor(CGColor(gray: 0.86, alpha: 1)); context.fill(CGRect(x: 0, y: 0, width: 1600, height: 2100))
+    context.setFillColor(CGColor(gray: 1, alpha: 1)); context.fill(CGRect(x: 60, y: 60, width: 1480, height: 1980))
+    func draw(_ text: String, y: CGFloat, size: CGFloat) {
+        let attributes: [NSAttributedString.Key: Any] = [NSAttributedString.Key(kCTFontAttributeName as String): CTFontCreateWithName("Helvetica" as CFString, size, nil), NSAttributedString.Key(kCTForegroundColorAttributeName as String): CGColor(gray: 0, alpha: 1)]
+        let line = CTLineCreateWithAttributedString(NSAttributedString(string: text, attributes: attributes))
+        context.textPosition = CGPoint(x: 120, y: y); CTLineDraw(line, context)
+    }
+    draw(title, y: 1870, size: 44)
+    for (i,line) in lines.enumerated() { draw(line, y: CGFloat(1750 - i * 95), size: 28) }
+    let destination = CGImageDestinationCreateWithURL(URL(fileURLWithPath: "fixtures/letters/\(name).jpg") as CFURL, UTType.jpeg.identifier as CFString, 1, nil)!
+    CGImageDestinationAddImage(destination, context.makeImage()!, [kCGImageDestinationLossyCompressionQuality: 0.95] as CFDictionary)
+    guard CGImageDestinationFinalize(destination) else { fatalError("Could not write fictional fixture") }
+}
