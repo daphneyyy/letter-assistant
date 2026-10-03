@@ -139,6 +139,16 @@ struct CalendarEditorRequest: Identifiable {
     let end: Date
     let allDay: Bool
     let timeZone: TimeZone
+
+    func makeEvent(in store: EKEventStore) -> EKEvent {
+        let event = EKEvent(eventStore: store)
+        event.title = title; event.notes = notes
+        event.startDate = start; event.endDate = end
+        // Assigning a non-nil time zone turns an all-day event back into a timed event.
+        event.timeZone = allDay ? nil : timeZone
+        event.isAllDay = allDay
+        return event
+    }
 }
 
 struct CalendarSystemEditor: UIViewControllerRepresentable {
@@ -149,11 +159,7 @@ struct CalendarSystemEditor: UIViewControllerRepresentable {
         let controller = EKEventEditViewController()
         let store = context.coordinator.store
         controller.eventStore = store
-        let event = EKEvent(eventStore: store)
-        event.title = request.title; event.notes = request.notes
-        event.startDate = request.start; event.endDate = request.end
-        event.isAllDay = request.allDay; event.timeZone = request.timeZone
-        controller.event = event
+        controller.event = request.makeEvent(in: store)
         controller.editViewDelegate = context.coordinator
         return controller
     }

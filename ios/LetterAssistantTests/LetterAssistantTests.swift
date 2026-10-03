@@ -1,6 +1,7 @@
 import XCTest
 import UIKit
 import CoreImage
+import EventKit
 @testable import LetterAssistant
 
 final class LetterAssistantTests: XCTestCase {
@@ -8,6 +9,22 @@ final class LetterAssistantTests: XCTestCase {
         var result = Calendar(identifier: .gregorian)
         result.timeZone = TimeZone(identifier: "America/Los_Angeles")!
         return result
+    }
+    func testSystemCalendarEventPreservesAllDayAndTimedAppointment() {
+        let start = CalendarDatePolicy.parseDay("2026-03-08", calendar: calendar)!
+        let store = EKEventStore()
+        let allDay = CalendarEditorRequest(title: "Test deadline", notes: "Fictional", start: start,
+            end: CalendarDatePolicy.end(start: start, allDay: true, minutes: 30, calendar: calendar),
+            allDay: true, timeZone: calendar.timeZone).makeEvent(in: store)
+        XCTAssertTrue(allDay.isAllDay)
+        XCTAssertNil(allDay.timeZone)
+        XCTAssertEqual(calendar.dateComponents([.year, .month, .day], from: allDay.startDate),
+                       calendar.dateComponents([.year, .month, .day], from: start))
+        let appointment = CalendarEditorRequest(title: "Test appointment", notes: "Fictional", start: start,
+            end: start.addingTimeInterval(1800), allDay: false, timeZone: calendar.timeZone).makeEvent(in: store)
+        XCTAssertFalse(appointment.isAllDay)
+        XCTAssertEqual(appointment.timeZone, calendar.timeZone)
+        XCTAssertEqual(appointment.endDate.timeIntervalSince(appointment.startDate), 1800)
     }
     func testCalendarStrictDatesDoNotNormalizeInvalidInput() {
         XCTAssertNil(CalendarDatePolicy.parseDay("2026-02-30", calendar: calendar))
