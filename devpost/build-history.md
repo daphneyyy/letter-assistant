@@ -190,3 +190,12 @@ Verification: backend typecheck and 28 tests passed. After correcting a newly ad
 Committed the preceding scheduling/bill-context revision as `014949d` before making this requested change. Replaced the time-zone navigation picker with a menu on the review form. Every event date/time row now uses a compact picker beside its label, including reminders or appointments with no prefilled source date/time. Removed the separate Choose a date sheet and its Done/Cancel controls. Selecting a date/time in the compact control updates the selection directly. Missing dates remain ineligible until a date/time selection or a reminder shortcut. Phone-zone defaults, zone-change date/clock preservation, duration/alert controls and direct save behavior are retained.
 
 Verification: 35 unit tests passed. Seven existing UI tests passed in the initial suite; after updating two UI-test interactions for the menu/popover controls, the two affected tests passed in a targeted rerun (TEST SUCCEEDED). Coverage includes phone-zone default and changing it from the menu without navigation, the editable date popover, selecting missing appointment dates on the same review page, and continued direct-save/alert/duration/large-text behavior. Real-phone acceptance remains separate.
+
+
+### October 3 — launch welcome instead of home-screen slogan
+
+Moved “One letter. Clear next steps.” and its explanatory subtitle from the capture home screen into a brief launch welcome. The normal app root keeps capture state underneath and shows the welcome only once per launch, with a two-second automatic dismissal or an immediate Continue button. VoiceOver users dismiss manually. The welcome uses the phone's English/Chinese language, supports scrolling at large text sizes, and adds no animation or decorative logo. Returning from an unsaved letter or resuming the app does not replay the welcome. Calendar test harnesses continue to bypass it.
+
+Verification: fresh simulator build and the updated Chinese large-text capture UI test passed (TEST SUCCEEDED), including transition from launch to language selection, absence of both home-screen slogans, and a usable capture button. No backend logic changed. Physical-device and VoiceOver acceptance remain pending.
+
+The learner then requested the capture button below the numbered introduction. Reordered the home layout to language selection, steps 1–3, then capture controls. No capture behavior changed.

@@ -146,14 +146,6 @@ struct CaptureView: View {
 
     private var welcome: some View {
         VStack(alignment: .leading, spacing: 24) {
-            VStack(alignment: .leading, spacing: 12) {
-                Text(language.text("One letter. Clear next steps.", "一封信，清楚的下一步。"))
-                    .font(.largeTitle.bold()).tracking(-0.6)
-                    .accessibilityAddTraits(.isHeader)
-                Text(language.text("Understand your medical or insurance letter in plain language.", "用简单易懂的语言，读懂医疗或保险信件。"))
-                    .font(.title3).foregroundStyle(.secondary)
-            }
-            controls
             VStack(alignment: .leading, spacing: 20) {
                 welcomeStep("1", title: language.text("Photograph your letter", "拍摄信件"), detail: language.text("One page at a time, with all edges visible.", "逐页拍摄，确保页面边缘完整可见。"))
                 welcomeStep("2", title: language.text("Read a clear explanation", "阅读清晰解读"), detail: language.text("Understand the details and your next steps.", "了解重要信息和下一步事项。"))
@@ -161,6 +153,7 @@ struct CaptureView: View {
             }
             .padding(20).frame(maxWidth: .infinity, alignment: .leading)
             .background(LetterStyle.surface, in: RoundedRectangle(cornerRadius: 22))
+            controls
             Label(language.text("Demo • fictional letters only • not saved", "演示版 · 仅使用虚构信件 · 不保存"), systemImage: "info.circle")
                 .font(.footnote).foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)

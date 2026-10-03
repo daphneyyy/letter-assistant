@@ -144,8 +144,10 @@ final class LetterAssistantUITests: XCTestCase {
         let app = XCUIApplication()
         app.launchArguments += ["-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXXXL"]
         app.launch()
+        XCTAssertTrue(app.buttons["中文"].waitForExistence(timeout: 5))
         app.buttons["中文"].tap()
-        XCTAssertTrue(app.staticTexts["一封信，清楚的下一步。"].exists)
+        XCTAssertFalse(app.staticTexts["一封信，清楚的下一步。"].exists)
+        XCTAssertFalse(app.staticTexts["One letter. Clear next steps."].exists)
         let take = app.buttons["拍摄信件"]
         for _ in 0..<5 where !take.isHittable { app.swipeUp() }
         XCTAssertTrue(take.isHittable)

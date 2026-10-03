@@ -6,10 +6,54 @@ import SwiftUI
             #if DEBUG && targetEnvironment(simulator)
             if ProcessInfo.processInfo.arguments.contains("--calendar-review-test") {
                 CalendarReviewTestHarness()
-            } else { CaptureView() }
+            } else { LaunchWelcomeView() }
             #else
-            CaptureView()
+            LaunchWelcomeView()
             #endif
+        }
+    }
+}
+
+/// Appears once per app launch, never when returning from a letter or the background.
+private struct LaunchWelcomeView: View {
+    @State private var showingWelcome = true
+    private var language: AppLanguage {
+        Locale.preferredLanguages.first?.hasPrefix("zh") == true ? .zh : .en
+    }
+    var body: some View {
+        ZStack {
+            CaptureView()
+                .accessibilityHidden(showingWelcome)
+            if showingWelcome {
+                ZStack {
+                    LetterStyle.background.ignoresSafeArea()
+                    ScrollView {
+                        VStack(alignment: .leading, spacing: 24) {
+                            Text(language.text("Letter Assistant", "信件助手"))
+                                .font(.headline).foregroundStyle(LetterStyle.accent)
+                            Text(language.text("One letter. Clear next steps.", "一封信，清楚的下一步。"))
+                                .font(.largeTitle.bold()).tracking(-0.6)
+                                .accessibilityAddTraits(.isHeader)
+                            Text(language.text("Understand your medical or insurance letter in plain language.", "用简单易懂的语言，读懂医疗或保险信件。"))
+                                .font(.title3).foregroundStyle(.secondary)
+                            Button(language.text("Continue", "继续")) { showingWelcome = false }
+                                .font(.headline).frame(minHeight: 48)
+                                .tint(LetterStyle.accent)
+                        }
+                        .padding(32).frame(maxWidth: 600, alignment: .leading)
+                        .frame(maxWidth: .infinity)
+                    }
+                    .defaultScrollAnchor(.center)
+                }
+                .accessibilityIdentifier("launchWelcome")
+                .task {
+                    // VoiceOver users control when the welcome finishes.
+                    guard !UIAccessibility.isVoiceOverRunning else { return }
+                    do { try await Task.sleep(for: .seconds(2)) }
+                    catch { return }
+                    showingWelcome = false
+                }
+            }
         }
     }
 }
