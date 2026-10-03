@@ -45,18 +45,20 @@ import EventKit
     var body: some View {
         NavigationStack {
             Form {
-                Section(language.text("Review the source", "核对信件原文")) {
-                    if let condition = proposal.condition { Text(condition).font(.headline) }
-                    Text(proposal.source).textSelection(.enabled)
-                    if let sourceDate = proposal.sourceDate {
-                        Text(language.text(proposal.kind == .deadline ? "Deadline in letter: " : "Appointment in letter: ", proposal.kind == .deadline ? "信件截止日期：" : "信件预约时间：") + sourceDate)
-                    }
-                    if proposal.requiresVerification {
-                        Text(language.text("This action or date needs verification. Check the original and enter the date yourself.", "此事项或日期需要核实。请查看原图，并亲自选择日期。"))
-                    }
-                }
+                Section {
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text(language.text("Calendar event", "日历事项"))
+                            .font(.subheadline.weight(.semibold)).foregroundStyle(LetterStyle.accent)
+                        Text(language.text("Check the details", "请确认一下"))
+                            .font(.largeTitle.bold()).accessibilityAddTraits(.isHeader)
+                        Text(language.text("Check these details before adding to your calendar.", "加入日历前，请核对以下信息。"))
+                            .foregroundStyle(LetterStyle.supportingText)
+                    }.padding(.vertical, 16)
+                }.listRowBackground(Color.clear)
                 Section(language.text("Proposed calendar event", "拟添加的日历事项")) {
                     TextField(language.text("Title", "标题"), text: $title, axis: .vertical)
+                        .font(.title2.weight(.semibold))
+                    if let condition = proposal.condition { Text(condition).font(.headline) }
                     Picker(language.text("Time zone", "时区"), selection: $zoneID) {
                         ForEach(Array(Set(TimeZone.knownTimeZoneIdentifiers + [TimeZone.current.identifier])).sorted(), id: \.self) { Text($0).tag($0) }
                     }.pickerStyle(.menu).accessibilityIdentifier("eventTimeZone")
@@ -117,10 +119,10 @@ import EventKit
                     if calendar.isDateInWeekend(selectedDate), proposal.kind == .reminder {
                         Text(language.text("This date is on a weekend. If contacting an office, check its opening hours or choose another date.", "该日期为周末。如需联系机构，请确认办公时间或另选日期。"))
                     }
-                }
+                }.listRowBackground(Color.clear)
                 Section(language.text("Calendar notes", "日历备注")) {
                     Text(proposal.notes(for: selectedDate, calendar: calendar, language: language)).textSelection(.enabled)
-                }
+                }.listRowBackground(Color.clear)
                 Section(language.text("Alert", "提醒时间")) {
                     Picker(language.text("Notify me", "提醒我"), selection: $alert) {
                         ForEach(CalendarAlertChoice.options(allDay: proposal.kind != .appointment), id: \.self) { choice in
@@ -138,7 +140,16 @@ import EventKit
                     if let date = alert.fireDate(start: selectedDate, calendar: calendar, customDate: customAlertDate), date < Date() {
                         Label(language.text("This alert time has passed. Choose another option or review the event date.", "此提醒时间已过。请选择其他选项或核对事项日期。"), systemImage: "clock.badge.exclamationmark")
                     }
-                }
+                }.listRowBackground(Color.clear)
+                Section(language.text("Review the source", "核对信件原文")) {
+                    Text(proposal.source).textSelection(.enabled)
+                    if let sourceDate = proposal.sourceDate {
+                        Text(language.text(proposal.kind == .deadline ? "Deadline in letter: " : "Appointment in letter: ", proposal.kind == .deadline ? "信件截止日期：" : "信件预约时间：") + sourceDate)
+                    }
+                    if proposal.requiresVerification {
+                        Text(language.text("This action or date needs verification. Check the original and enter the date yourself.", "此事项或日期需要核实。请查看原图，并亲自选择日期。"))
+                    }
+                }.listRowBackground(Color.clear)
                 Section {
                     Text(language.text(proposal.kind == .appointment ? "Add directly to your default calendar with the date, duration and alert shown above." : "Add directly to your default calendar with the date and alert shown above.", proposal.kind == .appointment ? "按上方日期、时长和提醒设置，直接添加到默认日历。" : "按上方日期和提醒设置，直接添加到默认日历。"))
                     if let failure = saver.failure {
@@ -150,11 +161,18 @@ import EventKit
                         }
                     }
                     if midnightNotice { Text(language.text("The day changed. Check the displayed date, then tap Add again.", "日期已跨天，请查看显示的日期，然后再次点“添加”。")) }
-                    Button(language.text(saver.isSaving ? "Adding…" : "Add to calendar", saver.isSaving ? "正在添加…" : "添加到日历")) { addToCalendar() }
-                        .frame(minHeight: 48).disabled(!canContinue || saver.isSaving || saver.didSave)
+                    Button { addToCalendar() } label: {
+                        Label(language.text(saver.isSaving ? "Adding…" : "Add to calendar", saver.isSaving ? "正在添加…" : "添加到日历"), systemImage: "calendar.badge.plus")
+                            .font(.headline).frame(maxWidth: .infinity, minHeight: 52)
+                    }
+                    .buttonStyle(.borderedProminent).buttonBorderShape(.roundedRectangle(radius: 8))
+                    .disabled(!canContinue || saver.isSaving || saver.didSave)
                     Button(language.text("Not now", "暂不添加"), role: .cancel) { dismiss() }.frame(minHeight: 44)
-                }
+                }.listRowBackground(Color.clear)
             }
+            .scrollContentBackground(.hidden)
+            .background(LetterStyle.background)
+            .listSectionSpacing(28)
             .disabled(saver.isSaving || saver.didSave)
             .interactiveDismissDisabled(saver.isSaving)
             .font(.body)

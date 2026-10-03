@@ -14,7 +14,7 @@ A no-login iPhone demo: photograph a medical or health-insurance letter, check p
 ## The Core Journey
 
 1. Open the app and select English or Chinese.
-2. Use the native iPhone camera, accept or retake a page, and repeat for additional pages.
+2. Photograph a page with the native camera or choose one photo from the system photo picker; repeat for additional pages.
 3. Local checks classify the page as readable, uncertain, or unreadable.
 4. Finish capture to request AI interpretation of all accepted pages together.
 5. Read the four sections and, when needed, expand facts and source excerpts.
@@ -24,7 +24,7 @@ A no-login iPhone demo: photograph a medical or health-insurance letter, check p
 
 ## Screens and Layout
 
-One capture/interpretation flow, a calendar review sheet with direct saving; no Apple creation editor. No account screen or Chat/Archive/Calendar tabs. An expandable Debug home-screen Demo tools / 演示工具 entry offers fictional deadline, reminder and appointment examples without AI. A short welcome screen shows “One letter. Clear next steps.” and its explanatory subtitle once per app launch, using the phone language (English or Chinese). It automatically continues after about two seconds, with a Continue button for immediate entry; with VoiceOver active, Continue controls dismissal. Returning from a letter or resuming from the background does not show it again. The home screen has a globe language menu at the top right for English/Chinese selection and a prominent capture button, followed by a default-collapsed How to use / 如何使用 section containing the three steps, without the decorative envelope logo or the launch slogan/subtitle. Selected captured pages are visibly distinguished; original photos on the result screen are expandable.
+One capture/interpretation flow, a calendar review sheet with direct saving; no Apple creation editor. No account screen or Chat/Archive/Calendar tabs. An expandable Debug home-screen Demo tools / 演示工具 entry offers fictional deadline, reminder and appointment examples without AI. A short welcome screen shows “One letter. Clear next steps.” and its explanatory subtitle once per app launch, using the phone language (English or Chinese). It automatically continues after about two seconds, with a Continue button for immediate entry; with VoiceOver active, Continue controls dismissal. Returning from a letter or resuming from the background does not show it again. The home screen has a globe language menu at the top right for English/Chinese selection and two large stacked entry buttons: Photograph a letter / 拍摄信件 (deep teal, camera icon and trailing arrow) and Choose a photo / 选择照片 (outlined, photo icon). These are followed by a default-collapsed How to use / 如何使用 section containing the three steps, without the decorative envelope logo or the launch slogan/subtitle. Use a pale cool background, strong page headings, generous spacing and thin dividers, with flat deep-teal primary actions and mint highlights for actionable information. At accessibility text sizes, hide extra introductory copy and stack button icons above their labels to leave room for readable content. Calendar review uses this same visual style while retaining the existing in-place time-zone menu, compact appointment date/time picker, and duration preset/custom selection. Selected captured pages are visibly distinguished; original photos on the result screen are expandable.
 
 ## Look and Feel
 
@@ -32,7 +32,7 @@ Keep the accepted simple layout: large Dynamic Type text, wrapping Chinese copy,
 
 ## Page Capture and Validation
 
-Use the native camera with its retake/use-photo controls. Preserve accepted pages and capture order when retaking another page. Check readability on-device, without AI/network calls. Almost no recognized text requires retake; uncertain blur/confidence offers Retake or Use anyway. Retaking clears prior acceptance. Do not check cropping, page edges or printed page numbering. Capture guidance should ask for readable text rather than requiring every page edge to be visible; the current home-screen edge wording remains a tracked correction. Finish capture is the user's declaration of completeness. Preserve the current 10-page and per-image size limits, reporting them explicitly.
+Use the native camera with its retake/use-photo controls, or select one image at a time with PhotosPicker. Imported photos use the same local readability checks and page limits. Selecting a next photo appends a page; replacing an unreadable page preserves the other pages. Canceling selection leaves the current letter intact; loading failure offers a retry without discarding accepted pages. The picker grants access only to selected items. Preserve accepted pages and capture order when retaking another page. Check readability on-device, without AI/network calls. Almost no recognized text requires retake; uncertain blur/confidence offers Retake or Use anyway. Retaking clears prior acceptance. Do not check cropping, page edges or printed page numbering. Capture guidance should ask for readable text rather than requiring every page edge to be visible; the current home-screen edge wording remains a tracked correction. Finish capture is the user's declaration of completeness. Preserve the current 10-page and per-image size limits, reporting them explicitly.
 
 ## Actionable Explanation
 

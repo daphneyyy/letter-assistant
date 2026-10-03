@@ -144,6 +144,8 @@ final class LetterAssistantUITests: XCTestCase {
         let app = XCUIApplication()
         app.launchArguments += ["-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXXXL"]
         app.launch()
+        let welcomeContinue = app.buttons["Continue"]
+        if welcomeContinue.exists && welcomeContinue.isHittable { welcomeContinue.tap() }
         let languageMenu = app.buttons["languageMenu"]
         XCTAssertTrue(languageMenu.waitForExistence(timeout: 5))
         languageMenu.tap()
@@ -152,6 +154,9 @@ final class LetterAssistantUITests: XCTestCase {
         XCTAssertFalse(app.staticTexts["一封信，清楚的下一步。"].exists)
         XCTAssertFalse(app.staticTexts["One letter. Clear next steps."].exists)
         XCTAssertTrue(app.buttons["使用测试照片"].exists)
+        let choosePhoto = app.buttons["choosePhoto"]
+        XCTAssertTrue(choosePhoto.exists)
+        XCTAssertTrue(choosePhoto.label.contains("选择照片"))
         let take = app.buttons["拍摄信件"]
         for _ in 0..<5 where !take.isHittable { app.swipeUp() }
         XCTAssertTrue(take.isHittable)
@@ -160,5 +165,12 @@ final class LetterAssistantUITests: XCTestCase {
         XCTAssertGreaterThan(languageMenu.frame.midX, app.frame.midX)
         XCTAssertLessThan(languageMenu.frame.maxY, take.frame.minY)
         let attachment = XCTAttachment(screenshot: app.screenshot()); attachment.name = "Chinese-large-text-capture"; attachment.lifetime = .keepAlways; add(attachment)
+        for _ in 0..<5 where !choosePhoto.isHittable { app.swipeUp() }
+        choosePhoto.tap()
+        let cancel = app.buttons["Cancel"]
+        XCTAssertTrue(cancel.waitForExistence(timeout: 5))
+        cancel.tap()
+        XCTAssertTrue(choosePhoto.waitForExistence(timeout: 3))
+        XCTAssertFalse(app.buttons["结束拍摄"].exists)
     }
 }

@@ -24,6 +24,7 @@ private struct LaunchWelcomeView: View {
         ZStack {
             CaptureView()
                 .accessibilityHidden(showingWelcome)
+                .allowsHitTesting(!showingWelcome)
             if showingWelcome {
                 ZStack {
                     LetterStyle.background.ignoresSafeArea()

@@ -71,7 +71,7 @@ For a physical phone, set `RELAY_HOST` to your Mac's private IPv4 address and `R
 5. Choose English or Chinese, photograph a fictional letter, handle its photo check, and finish capture for analysis. The Mac relay must remain running.
 6. Under an action, tap **Review calendar event / 查看并添加到日历**, review the proposal, then tap **Add to calendar / 添加到日历**. Allow calendar adding permission on first use; no second editor opens.
 
-Restart the relay after changing API settings. Rebuild/reinstall the app after changing the local plist. Release builds deliberately exclude the local relay settings, so a successful Release build does not provide this AI connection.
+Restart the relay after changing API settings. Rebuild/reinstall the app after changing the local plist. Test builds package Debug.local.plist; Prod builds package Prod.local.plist. Both are ignored local files and must be configured before rebuilding; a successful build alone does not configure the AI connection.
 
 This local HTTP phone-to-Mac path is for trusted-network demos with fictional letters. Interpretation sends the photos to the provider you configure over HTTPS. There is no shared project API key or central photo archive.
 
