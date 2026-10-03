@@ -12,7 +12,7 @@ final class LetterAssistantUITests: XCTestCase {
         XCTAssertFalse(open.isEnabled)
         app.swipeDown(); app.swipeDown()
         app.buttons["明天"].tap()
-        let confirm = app.switches["我确认事项、适用条件、日期和时区"]
+        let confirm = app.switches["我确认事项、适用条件、日期、时区和提醒"]
         app.swipeUp(); app.swipeUp()
         XCTAssertFalse(open.isEnabled)
         confirm.coordinate(withNormalizedOffset: CGVector(dx: 0.93, dy: 0.5)).tap()
@@ -36,10 +36,27 @@ final class LetterAssistantUITests: XCTestCase {
         let open = app.buttons["确认并打开日历"]
         for _ in 0..<15 where !open.isHittable { app.swipeUp() }
         XCTAssertFalse(open.isEnabled)
-        XCTAssertTrue(app.buttons["暂不添加"].exists)
+        let cancel = app.buttons["暂不添加"]
+        for _ in 0..<5 where !cancel.isHittable { app.swipeUp() }
+        XCTAssertTrue(cancel.isHittable)
         let attachment = XCTAttachment(screenshot: app.screenshot())
         attachment.name = "Calendar-large-text"; attachment.lifetime = .keepAlways; add(attachment)
     }
+    func testCustomAlertShowsDateAndTimePicker() {
+        let app = XCUIApplication()
+        app.launchArguments += ["--calendar-review-test"]
+        app.launch()
+        app.buttons["Open test review"].tap()
+        let notify = app.buttons.containing(NSPredicate(format: "label CONTAINS %@", "提醒我")).firstMatch
+        for _ in 0..<8 where !notify.isHittable { app.swipeUp() }
+        XCTAssertTrue(notify.isHittable)
+        notify.tap()
+        app.buttons["自定义日期和时间"].tap()
+        let picker = app.datePickers["customAlertDate"]
+        for _ in 0..<5 where !picker.exists { app.swipeUp() }
+        XCTAssertTrue(picker.exists)
+    }
+
     func testChineseCaptureScreenAtLargeText() {
         let app = XCUIApplication()
         app.launchArguments += ["-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXXXL"]

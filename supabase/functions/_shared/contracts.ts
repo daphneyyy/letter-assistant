@@ -21,6 +21,8 @@ export interface Fact {
     | "document_date"
     | "deadline"
     | "appointment_date"
+    | "appointment_time"
+    | "appointment_timezone"
     | "effective_date"
     | "service_date"
     | "period"
@@ -128,6 +130,8 @@ export function interpretationSchemaFor(pageCount = 1) {
           "document_date",
           "deadline",
           "appointment_date",
+          "appointment_time",
+          "appointment_timezone",
           "effective_date",
           "service_date",
           "period",

@@ -76,9 +76,9 @@ This local HTTP phone-to-Mac path is for trusted-network demos with fictional le
 
 ## Test the calendar without AI
 
-On the Debug home screen tap **Test calendar without AI / 日历测试（无需 AI）**. Choose a deadline, a reminder without a deadline, or an appointment. No photo, key or running relay is needed. Titles are marked `[TEST]` / `【测试】`; saving in the system editor creates a real event.
+On the Debug home screen expand **Demo tools / 演示工具**, then tap **Test calendar without AI / 日历测试（无需 AI）**. Choose a deadline, a reminder without a deadline, or an appointment. No photo, key or running relay is needed. Titles are marked `[TEST]` / `【测试】`; saving in the system editor creates a real event.
 
-Deadlines/reminders are all-day events. Appointment time and time zone must be checked/entered; 30 minutes is an editable suggested duration. Set alerts in the system editor—an all-day event alone does not guarantee an alert. Cancel may ask you to **Discard Changes**. Unknown/interrupted outcomes ask you to check Calendar before retrying to avoid duplicates. Later changes are made in Calendar.
+Deadlines/reminders are all-day events. Explicitly extracted appointment times and stated time zones now prefill the review; missing or ambiguous times still need entry, and the phone time zone is disclosed when none is stated. Appointment time and time zone must still be checked; 30 minutes is an editable suggested duration. Choose an alert during review: all-day events default to 9 AM on the event date, and appointments default to 15 minutes before. Options include additional advance reminders, None, and a custom date/time. Custom alerts keep their exact date/time when the event date changes. You can adjust alerts in the system editor before saving. Cancel may ask you to **Discard Changes**. Unknown/interrupted outcomes ask you to check Calendar before retrying to avoid duplicates. Later changes are made in Calendar.
 
 ## Verification and known limits
 

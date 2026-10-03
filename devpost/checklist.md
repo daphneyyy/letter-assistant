@@ -11,7 +11,9 @@ Build mode: Fast (retained). Scope revised directly by the learner on October 2,
 
 The core implementation and no-AI calendar test entry exist, with signed builds installed on the learner's iPhone. Early hands-on review is complete. Remaining boxes describe acceptance and release readiness, not permission to build the removed features.
 
-Recorded evidence: 20 unit cases passed in the calendar checkpoint (that runner later hung and was stopped), three UI tests passed in a completed separate run, then the focused EventKit all-day regression test passed. Signed Debug and unsigned Release builds have passed. Backend checks previously passed 24 tests. No new code/test pass is claimed from this requirements-only revision. Actual phone confirmation of the all-day fix and broader final acceptance remain pending. Conditional enrollment extraction has improved in individual runs but is not broadly accepted.
+Historical evidence: 20 unit cases passed in the calendar checkpoint (that runner later hung and was stopped), three UI tests passed in a completed separate run, then the focused EventKit all-day regression test passed. Signed Debug and unsigned Release builds have passed. Backend checks previously passed 24 tests. Those results predate the latest UI/alert refinements. Actual phone confirmation of the all-day fix and broader final acceptance remain pending. Conditional enrollment extraction has improved in individual runs but is not broadly accepted.
+
+Latest October 2 follow-up: the UI refinements, logo removal and expanded preset/custom alerts are implemented. The expanded-alert run reported 24 passing unit tests. A subsequent UI run passed the existing three UI cases; the new custom-picker test initially failed to locate its unlabeled date control. After adding a stable accessibility identifier, a focused custom-picker run completed with TEST SUCCEEDED. The four UI cases therefore have passing evidence across separate runs, not one final all-green combined run. Large-text cancel-button scrolling was also corrected in the test. No latest-refinement physical-device installation, notification delivery, target-user study or live AI accuracy pass is established by these simulator results. This documentation update runs no new app tests.
 
 ## Slices
 
@@ -30,8 +32,8 @@ Recorded evidence: 20 unit cases passed in the calendar checkpoint (that runner 
   Why now: Handoff and the all-day fix exist; verify the actual saved event and recovery outcomes.
   PRD ref: `prd.md > External Calendar Handoff`.
   Spec ref: `spec.md > Calendar Handoff and Reminder Suggestions`.
-  Build: Preserve manual reminder-date selection, verified appointment time/zone, conditions, source notes, explicit confirmation, editor callbacks and interrupted-result handling. Automatic urgency-based recommendations are not required. No calendar-reading, in-app calendar or sync work.
-  Verify (mechanical): Use existing date-policy/EventKit tests and UI evidence; run targeted tests for subsequent fixes. On the iPhone check newly saved all-day events, appointment date/time/duration/zone, notes, alerts, cancel/Discard Changes, unavailable calendar and interrupted result. Do not silently alter previously saved events.
+  Build: Preserve the requested alert presets, None and custom date/time, alongside manual reminder-date selection, verified appointment time/zone, conditions, source notes, explicit confirmation, editor callbacks and interrupted-result handling. Automatic urgency-based recommendations are not required. No calendar-reading, in-app calendar or sync work.
+  Verify (mechanical): Use existing date-policy/EventKit tests and UI evidence; run targeted tests for subsequent fixes. On the iPhone check newly saved all-day events, appointment date/time/duration/zone, notes, preset/custom/None alerts and notification delivery, cancel/Discard Changes, unavailable calendar and interrupted result. Do not silently alter previously saved events.
   Learner check: Use the no-AI test entry for all three cases, then create an event from a real fictional-letter interpretation. Inspect it in Calendar and cancel another creation.
   Commit: `Complete hackathon phone calendar acceptance`
 
@@ -51,6 +53,23 @@ Recorded evidence: 20 unit cases passed in the calendar checkpoint (that runner 
 - [ ] Final four-step journey and calendar results reviewed on one iPhone.
 
 No second phone, account isolation, email delivery or saved-conversation review is required.
+
+## Appointment Extraction Follow-up
+
+- [x] Carry linked appointment date/time/time-zone facts through validation and calendar proposal construction, with manual fallback for ambiguity.
+- [ ] Re-run fresh fictional appointment letters through the configured live provider after restarting the relay. Check explicit AM/PM, multiple appointments, missing time/zone and source-grounded linkage in both languages.
+- [ ] Verify extracted time and alert in a newly saved physical-phone event. Existing displayed analyses do not gain new time facts automatically.
+
+## UI and Older-Adult Usability Follow-up
+
+- [x] Implement the requested home/result styling, remove the decorative envelope logo and group calendar examples under Demo tools.
+- [x] Add in-app notification presets, None and custom date/time; pass alarms into Apple's editor and clear confirmation on alert changes.
+- [ ] Replace the home-screen “all edges visible” instruction with readable-text guidance consistent with the no-cropping requirement.
+- [ ] Evaluate a concise action/event-date/notification-time summary and common-options-first alert selection; these are proposed refinements, not completed UI.
+- [ ] Verify contrast, actual touch targets, Chinese wrapping and VoiceOver across the current screens.
+- [ ] Check the Chinese-app/system-editor language transition and whether users understand where to save.
+- [ ] On a phone, save new all-day and appointment events with presets, custom alerts and None; verify alarm times, notification delivery, date changes and time-zone behavior. Preserve previously saved events.
+- [ ] Before making an independent-use suitability claim, observe target older adults completing the fictional-letter flow without step-by-step coaching; record assistance and confusion about conditions, event dates, notification times and unsaved letters. This evidence is separate from learner demo approval.
 
 ## Final Review
 
@@ -76,3 +95,5 @@ No completed learning wrap-up is inferred from the scope change. Keep it proport
 - October 2 follow-up: learner added letter classification to the future commercial roadmap. A user-facing classification/organization feature is not part of hackathon acceptance; existing analysis classification metadata does not count as that future feature being implemented.
 
 - October 2 follow-up: learner added multilingual support to the future commercial roadmap. Additional languages and source-letter/UI/explanation/speech coverage remain to be defined. Hackathon language scope stays English-letter input with English/Chinese interface and explanations.
+
+- October 2 UI/alert follow-up: synchronized current UI and notification options with PRD/spec, retained open real-phone and AI accuracy checks, and added explicit older-adult usability review items. This documentation revision does not implement the proposed form simplification or mark target-user acceptance complete.

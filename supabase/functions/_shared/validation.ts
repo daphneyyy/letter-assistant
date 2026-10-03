@@ -82,6 +82,14 @@ export function validateInterpretation(
       fact.status === "confirmed" &&
       (!fact.value?.trim() || !fact.raw_text.trim())
     ) fail();
+    if (fact.kind === "appointment_time" && fact.value !== null &&
+        !/^([01]\d|2[0-3]):[0-5]\d$/.test(fact.value)) fail();
+    if (fact.kind === "appointment_timezone" && fact.value !== null) {
+      // Require a region identifier (or UTC), not ambiguous abbreviations.
+      if (fact.value !== "UTC" && !fact.value.includes("/")) fail();
+      try { new Intl.DateTimeFormat("en", { timeZone: fact.value }).format(); }
+      catch { fail(); }
+    }
     if (
       fact.kind === "amount" && fact.value !== null &&
       !/^-?\d+(\.\d+)?$/.test(fact.value)
@@ -116,7 +124,9 @@ export function validateInterpretation(
     } else if (action.condition !== null) fail();
     if (
       action.amount_fact_ids.some((id) => !hasFact(id, "amount")) ||
-      action.appointment_fact_ids.some((id) => !hasFact(id, "appointment_date"))
+      action.appointment_fact_ids.some((id) =>
+        !result.facts.some((f) => f.id === id &&
+          ["appointment_date", "appointment_time", "appointment_timezone"].includes(f.kind)))
     ) fail();
     if (
       action.deadline_fact_id !== null &&

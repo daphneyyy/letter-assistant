@@ -597,3 +597,28 @@ Deno.test("empty in-scope action extraction cannot produce blanket no-action cla
       "Unsupported document",
   );
 });
+
+Deno.test("appointment clock and zone facts survive validation and link to their action", () => {
+  const value = enrollmentContract();
+  value.facts = [
+    { ...structuredClone(coverageFact), id: "day", kind: "appointment_date", value: "2026-10-05" },
+    { ...structuredClone(coverageFact), id: "time", kind: "appointment_time", value: "10:00", raw_text: "10:00 AM", source_refs: [{ page: 1, excerpt: "October 5, 2026 at 10:00 AM America/New_York" }] },
+    { ...structuredClone(coverageFact), id: "zone", kind: "appointment_timezone", value: "America/New_York", raw_text: "America/New_York" },
+  ];
+  value.actions[0].appointment_fact_ids = ["day", "time", "zone"];
+  for (const summary of Object.values(value.summaries)) summary.fact_ids = ["day", "time", "zone"];
+  assert(validateInterpretation(value).facts[1].value === "10:00");
+  for (const time of ["00:00", "12:00", "23:59"]) {
+    const copy = structuredClone(value); copy.facts[1].value = time;
+    assert(validateInterpretation(copy).facts[1].value === time);
+  }
+  for (const [index, invalid] of [[1, "24:00"], [1, "10:60"], [1, "10 AM"], [2, "CST"], [2, "Mars/Base"]] as const) {
+    const copy = structuredClone(value); copy.facts[index].value = invalid;
+    let rejected = false;
+    try { validateInterpretation(copy); } catch { rejected = true; }
+    assert(rejected);
+  }
+  const uncertain = structuredClone(value);
+  uncertain.facts[1].value = null; uncertain.facts[1].status = "needs_verification";
+  assert(validateInterpretation(uncertain).facts[1].value === null);
+});

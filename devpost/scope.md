@@ -13,7 +13,7 @@ Help middle-aged and older immigrants with limited English understand a medical 
 
 ## Who It's For
 
-People who struggle to read English medical and health-insurance letters. The interface and explanations support English and Simplified Chinese, with large readable text and spoken capture guidance.
+People who struggle to read English medical and health-insurance letters. The interface and explanations support English and Simplified Chinese, with large readable text and spoken capture guidance. Older-adult usability is a design goal, not a validated outcome: current automated checks do not establish independent use by the target audience. Technical clone/setup is performed by an operator; the current demo is not a self-installable consumer product.
 
 ## The Core Loop
 
@@ -28,7 +28,7 @@ People who struggle to read English medical and health-insurance letters. The in
 
 - Native iPhone app, local photo checks, temporary ordered multi-page capture and per-page retakes.
 - AI interpretation of medical/health-insurance letters, bilingual output and visible uncertainty.
-- Creation-only iPhone calendar handoff: deadlines, user-selected reminder dates, and user-verified appointments.
+- Creation-only iPhone calendar handoff: deadlines, user-selected reminder dates, and user-verified appointments. The review includes user-controlled notification alerts with presets, None, and a custom date/time, passed to the system editor for final saving. These settings do not infer urgency from the letter.
 - No-AI fictional calendar examples for testing, clearly labeled as tests.
 - Open-source, clone-and-run distribution on GitHub; each operator supplies their own compatible API key and model configuration.
 - Current run mode: Mac-hosted local relay plus an iPhone Debug build installed with Xcode. No hosted shared service is promised.
@@ -57,3 +57,7 @@ These are product expansion opportunities, not claims of validated demand, reven
 ## Approval & Handoff
 
 The learner's October 2 instruction directly approves this scope revision. Retain existing SwiftUI/camera/analysis/calendar implementation and earlier accepted UI refinements. Update PRD, spec and checklist to this boundary. GitHub publication and license readiness are separate shipping work; no push or release is implied by this planning change.
+
+## October 2 — UI and Alert Follow-up
+
+The learner requested a clearer UI, removal of the decorative envelope logo, explicit alerts and more notification options. These refinements remain within the core loop. The later usability review identified calendar-review complexity, event-date versus notification-time confusion, and app/system language transitions as open concerns. Record proposed improvements and target-user validation separately from implemented behavior; do not expand this revision into accounts, archives, chat or synchronization.

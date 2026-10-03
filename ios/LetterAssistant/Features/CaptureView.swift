@@ -15,34 +15,16 @@ struct CaptureView: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 24) {
-                    HStack {
-                        Label(language.text("One letter. Clear next steps.", "一封信，清楚的下一步。"), systemImage: "envelope.open")
-                            .font(.title2.weight(.semibold))
-                        Spacer(minLength: 0)
-                    }
-                    HStack(spacing: 12) {
-                        languageButton("English", choice: .en)
-                        languageButton("中文", choice: .zh)
-                    }.disabled(model.phase.busy)
-                    Text(language.text("First build • fictional letters only • not saved", "首次构建 · 仅使用虚构信件 · 不保存"))
-                        .font(.callout).foregroundStyle(.secondary)
-                    #if DEBUG
-                    Button { calendarTestMenu = true } label: {
-                        Label(language.text("Test calendar without AI", "日历测试（无需 AI）"), systemImage: "calendar.badge.plus")
-                            .font(.headline).frame(maxWidth: .infinity, minHeight: 48)
-                    }.buttonStyle(.bordered).disabled(model.phase.busy)
-                    Text(language.text("Fictional examples. Saving in the next screen creates a real calendar event.", "使用虚构样例。在系统编辑器中保存，会创建真实日历事项。"))
-                        .font(.callout).foregroundStyle(.secondary)
-                    #endif
-                    if !model.configured {
-                        Label(language.text("AI connection setup is still needed for this test build.", "此测试版本仍需设置 AI 连接。"), systemImage: "info.circle")
-                            .font(.callout).padding().frame(maxWidth: .infinity, alignment: .leading)
-                            .background(Color(uiColor: .secondarySystemBackground), in: RoundedRectangle(cornerRadius: 16))
-                    }
-                    if let result = model.result { explanation(result) }
-                    else {
-                        Text(language.text("Photograph each page of one medical or insurance letter. After every page passes its check, finish taking photos to read the complete letter.", "逐页拍摄同一封医疗或保险信件。每页检查通过后，点击“结束拍摄”解读整封信。"))
-                            .font(.system(.title3, design: .default)).fixedSize(horizontal: false, vertical: true)
+                    header
+                    if let result = model.result {
+                        explanation(result)
+                    } else if model.pages.isEmpty {
+                        welcome
+                    } else {
+                        Text(language.text("Capture every page", "拍摄每一页"))
+                            .font(.title2.bold()).accessibilityAddTraits(.isHeader)
+                        Text(language.text("Check each photo, then finish to read your letter.", "检查每张照片，完成拍摄后即可解读信件。"))
+                            .font(.body).foregroundStyle(.secondary)
                     }
                     if !model.pages.isEmpty && model.result == nil {
                         Text(language.text("Page \(model.currentPageIndex + 1) of \(model.pages.count)", "第 \(model.currentPageIndex + 1) 页，共 \(model.pages.count) 页"))
@@ -52,8 +34,11 @@ struct CaptureView: View {
                                 ForEach(Array(model.pages.enumerated()), id: \.element.id) { index, page in
                                     Button { model.selectPage(index) } label: {
                                         Label(language.text("Page \(index + 1)", "第 \(index + 1) 页"), systemImage: page.isValid ? "checkmark.circle" : "circle")
-                                            .padding(8).frame(minHeight: 44)
-                                    }.buttonStyle(.bordered)
+                                            .font(.subheadline.weight(.semibold))
+                                            .padding(.horizontal, 14).frame(minHeight: 48)
+                                            .foregroundStyle(index == model.currentPageIndex ? Color(uiColor: .systemBackground) : LetterStyle.accent)
+                                            .background(index == model.currentPageIndex ? LetterStyle.accent : LetterStyle.surface, in: Capsule())
+                                    }.buttonStyle(.plain)
                                         .accessibilityAddTraits(index == model.currentPageIndex ? .isSelected : [])
                                         .disabled(model.phase.busy)
                                 }
@@ -61,11 +46,17 @@ struct CaptureView: View {
                         }
                     }
                     if model.result != nil {
-                        ForEach(Array(model.pages.enumerated()), id: \.element.id) { index, page in
-                            Text(language.text("Original page \(index + 1)", "第 \(index + 1) 页原图")).font(.headline)
-                            Image(uiImage: page.image).resizable().scaledToFit().frame(maxHeight: 340)
-                                .accessibilityLabel(language.text("Original photo, page \(index + 1)", "第 \(index + 1) 页原始照片"))
-                        }
+                        DisclosureGroup {
+                            ForEach(Array(model.pages.enumerated()), id: \.element.id) { index, page in
+                                Text(language.text("Original page \(index + 1)", "第 \(index + 1) 页原图")).font(.headline)
+                                Image(uiImage: page.image).resizable().scaledToFit().frame(maxHeight: 340)
+                                    .clipShape(RoundedRectangle(cornerRadius: 16))
+                                    .accessibilityLabel(language.text("Original photo, page \(index + 1)", "第 \(index + 1) 页原始照片"))
+                            }
+                        } label: {
+                            Label(language.text("Original photos", "信件原图"), systemImage: "photo.on.rectangle")
+                                .font(.headline).frame(minHeight: 48)
+                        }.padding(20).background(LetterStyle.surface, in: RoundedRectangle(cornerRadius: 22))
                     } else if let image = model.image {
                         Image(uiImage: image).resizable().scaledToFit().frame(maxHeight: 340)
                             .clipShape(RoundedRectangle(cornerRadius: 12))
@@ -73,15 +64,22 @@ struct CaptureView: View {
                     }
                     if model.phase.busy {
                         ProgressView(language.text(model.phase == .checking ? "Checking the photo…" : "Reading the letter…", model.phase == .checking ? "正在检查照片…" : "正在解读信件…"))
-                            .font(.title3).frame(maxWidth: .infinity, alignment: .leading)
+                            .font(.body).frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(20).background(LetterStyle.surface, in: RoundedRectangle(cornerRadius: 18))
                     }
                     if model.result == nil && !model.message.isEmpty {
                         Label(model.message, systemImage: model.phase == .valid ? "checkmark.circle" : "exclamationmark.circle")
-                            .font(.title3).fixedSize(horizontal: false, vertical: true)
+                            .font(.body).fixedSize(horizontal: false, vertical: true)
+                            .foregroundStyle(model.phase == .valid ? LetterStyle.accent : .primary)
+                            .padding(20).frame(maxWidth: .infinity, alignment: .leading)
+                            .background(LetterStyle.surface, in: RoundedRectangle(cornerRadius: 18))
                     }
-                    controls
-                }.padding(24)
+                    if !model.pages.isEmpty { controls }
+                    if model.pages.isEmpty { developmentTools }
+                }.padding(24).frame(maxWidth: 680).frame(maxWidth: .infinity)
             }
+            .background(LetterStyle.background)
+            .tint(LetterStyle.accent)
             .safeAreaInset(edge: .bottom) {
                 if model.phase == .complete {
                     primary(language.text("Finish reading", "结束本次阅读"), icon: "checkmark") { finishPrompt = true }
@@ -135,6 +133,70 @@ struct CaptureView: View {
             .fullScreenCover(isPresented: $cameraOpen) { CameraSheet(language: language, pageNumber: appendPage ? model.pages.count + 1 : max(1, model.currentPageIndex + 1), receive: { model.accept($0, asNextPage: appendPage) }) }
         }
     }
+    private var header: some View {
+        HStack(spacing: 8) {
+            languageButton("English", choice: .en)
+            languageButton("中文", choice: .zh)
+        }
+        .padding(4)
+        .background(LetterStyle.surface, in: RoundedRectangle(cornerRadius: 16))
+        .disabled(model.phase.busy)
+    }
+
+    private var welcome: some View {
+        VStack(alignment: .leading, spacing: 24) {
+            VStack(alignment: .leading, spacing: 12) {
+                Text(language.text("One letter. Clear next steps.", "一封信，清楚的下一步。"))
+                    .font(.largeTitle.bold()).tracking(-0.6)
+                    .accessibilityAddTraits(.isHeader)
+                Text(language.text("Understand your medical or insurance letter in plain language.", "用简单易懂的语言，读懂医疗或保险信件。"))
+                    .font(.title3).foregroundStyle(.secondary)
+            }
+            controls
+            VStack(alignment: .leading, spacing: 20) {
+                welcomeStep("1", title: language.text("Photograph your letter", "拍摄信件"), detail: language.text("One page at a time, with all edges visible.", "逐页拍摄，确保页面边缘完整可见。"))
+                welcomeStep("2", title: language.text("Read a clear explanation", "阅读清晰解读"), detail: language.text("Understand the details and your next steps.", "了解重要信息和下一步事项。"))
+                welcomeStep("3", title: language.text("Review dates together", "核对相关日期"), detail: language.text("Choose whether to add an event to Calendar.", "自行决定是否添加到日历。"))
+            }
+            .padding(20).frame(maxWidth: .infinity, alignment: .leading)
+            .background(LetterStyle.surface, in: RoundedRectangle(cornerRadius: 22))
+            Label(language.text("Demo • fictional letters only • not saved", "演示版 · 仅使用虚构信件 · 不保存"), systemImage: "info.circle")
+                .font(.footnote).foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
+    private func welcomeStep(_ number: String, title: String, detail: String) -> some View {
+        HStack(alignment: .top, spacing: 14) {
+            Text(number).font(.subheadline.bold()).foregroundStyle(LetterStyle.accent)
+                .frame(width: 30, height: 30)
+                .background(LetterStyle.accent.opacity(0.10), in: Circle())
+            VStack(alignment: .leading, spacing: 4) {
+                Text(title).font(.headline)
+                Text(detail).font(.subheadline).foregroundStyle(.secondary)
+            }
+        }.accessibilityElement(children: .combine)
+    }
+
+    @ViewBuilder private var developmentTools: some View {
+        if !model.configured {
+            Label(language.text("AI connection setup is still needed for this test build.", "此测试版本仍需设置 AI 连接。"), systemImage: "info.circle")
+                .font(.callout).foregroundStyle(.secondary)
+        }
+        #if DEBUG
+        DisclosureGroup(language.text("Demo tools", "演示工具")) {
+            VStack(alignment: .leading, spacing: 12) {
+                Button { calendarTestMenu = true } label: {
+                    Label(language.text("Test calendar without AI", "日历测试（无需 AI）"), systemImage: "calendar.badge.plus")
+                        .frame(minHeight: 48)
+                }.buttonStyle(.bordered).disabled(model.phase.busy)
+                Text(language.text("Fictional examples. Saving in the next screen creates a real calendar event.", "使用虚构样例。在系统编辑器中保存，会创建真实日历事项。"))
+                    .font(.footnote).foregroundStyle(.secondary)
+            }.padding(.top, 12)
+        }.font(.subheadline).padding(.vertical, 8)
+        #endif
+    }
+
     @ViewBuilder var controls: some View {
         switch model.phase {
         case .ready, .retake:
@@ -152,9 +214,12 @@ struct CaptureView: View {
             }.buttonStyle(.bordered).frame(minHeight: 44)
             #endif
         case .valid:
-            primary(language.text("Photograph next page", "拍下一页"), icon: "doc.badge.plus") {
+            Button {
                 appendPage = true; model.capturePrompt(); cameraOpen = true
-            }.disabled(!model.canAddPage)
+            } label: {
+                Label(language.text("Photograph next page", "拍下一页"), systemImage: "doc.badge.plus")
+                    .font(.headline).frame(maxWidth: .infinity, minHeight: 52)
+            }.buttonStyle(.bordered).disabled(!model.canAddPage)
             primary(language.text("Finish taking photos", "结束拍摄"), icon: "checkmark") { model.interpret() }
                 .disabled(!model.canFinishCapture)
             Text(language.text("Finish when every page of this letter has been photographed. We’ll interpret all pages together.", "确认这封信的所有页面都已拍摄后，结束拍摄。我们会一起解读所有页面。"))
@@ -184,14 +249,16 @@ struct CaptureView: View {
     func languageButton(_ title: String, choice: AppLanguage) -> some View {
         Button { model.changeLanguage(choice) } label: {
             Text(title).font(.headline).frame(maxWidth: .infinity, minHeight: 48)
-                .background(language == choice ? Color.accentColor.opacity(0.15) : Color(uiColor: .secondarySystemBackground), in: RoundedRectangle(cornerRadius: 12))
+                .foregroundStyle(language == choice ? Color(uiColor: .systemBackground) : .primary)
+                .background(language == choice ? LetterStyle.accent : Color.clear, in: RoundedRectangle(cornerRadius: 12))
         }.buttonStyle(.plain)
             .accessibilityLabel(choice == .en ? "English" : "中文")
             .accessibilityAddTraits(language == choice ? .isSelected : [])
     }
     func primary(_ title: String, icon: String, action: @escaping () -> Void) -> some View {
         Button(action: action) { Label(title, systemImage: icon).font(.title3.weight(.semibold)).frame(maxWidth: .infinity, minHeight: 56).padding(.vertical, 4) }
-            .buttonStyle(.borderedProminent)
+            .buttonStyle(.borderedProminent).tint(LetterStyle.button).controlSize(.large)
+            .clipShape(RoundedRectangle(cornerRadius: 18))
     }
     @ViewBuilder func explanation(_ result: LetterInterpretation) -> some View {
         if result.domain == "unsupported" {
@@ -218,7 +285,7 @@ struct CaptureView: View {
                         Text(language.text("Needs verification", "需要核实")).font(.callout)
                     }
                 }.padding(20).frame(maxWidth: .infinity, alignment: .leading)
-                    .background(Color(uiColor: .secondarySystemBackground), in: RoundedRectangle(cornerRadius: 18))
+                    .background(LetterStyle.surface, in: RoundedRectangle(cornerRadius: 22))
             }
             section(language.text("Relevant timing", "相关时间"), text: summary.when, icon: "clock")
             if !result.facts.isEmpty {
@@ -256,9 +323,21 @@ struct CaptureView: View {
     }
     func section(_ title: String, text: String, icon: String) -> some View {
         VStack(alignment: .leading, spacing: 12) {
-            Label(title, systemImage: icon).font(.headline).accessibilityAddTraits(.isHeader)
+            Label(title, systemImage: icon).font(.headline).foregroundStyle(LetterStyle.accent).accessibilityAddTraits(.isHeader)
             Text(text).font(.title3).fixedSize(horizontal: false, vertical: true)
         }.padding(20).frame(maxWidth: .infinity, alignment: .leading)
-            .background(Color(uiColor: .secondarySystemBackground), in: RoundedRectangle(cornerRadius: 18))
+            .background(LetterStyle.surface, in: RoundedRectangle(cornerRadius: 22))
     }
+}
+
+// Adaptive colors keep the same hierarchy in light and dark appearances.
+enum LetterStyle {
+    static let button = Color(red: 0.08, green: 0.37, blue: 0.33)
+    static let accent = Color(uiColor: UIColor { traits in
+        traits.userInterfaceStyle == .dark
+            ? UIColor(red: 0.30, green: 0.76, blue: 0.68, alpha: 1)
+            : UIColor(red: 0.08, green: 0.37, blue: 0.33, alpha: 1)
+    })
+    static let background = Color(uiColor: .systemGroupedBackground)
+    static let surface = Color(uiColor: .secondarySystemGroupedBackground)
 }

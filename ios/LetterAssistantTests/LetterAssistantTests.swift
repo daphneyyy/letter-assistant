@@ -26,6 +26,140 @@ final class LetterAssistantTests: XCTestCase {
         XCTAssertEqual(appointment.timeZone, calendar.timeZone)
         XCTAssertEqual(appointment.endDate.timeIntervalSince(appointment.startDate), 1800)
     }
+    func testCalendarAlertsAreAttachedAndCanBeDisabled() {
+        let start = CalendarDatePolicy.parseDay("2026-10-05", calendar: calendar)!
+        let store = EKEventStore()
+        for choice in [CalendarAlertChoice.none, .sameDayMorning, .previousDayMorning] {
+            let event = CalendarEditorRequest(title: "Test", notes: "", start: start,
+                end: CalendarDatePolicy.end(start: start, allDay: true, minutes: 30, calendar: calendar),
+                allDay: true, timeZone: calendar.timeZone, alert: choice).makeEvent(in: store)
+            XCTAssertTrue(event.isAllDay)
+            XCTAssertNil(event.timeZone)
+            if choice == .none {
+                XCTAssertTrue(event.alarms?.isEmpty ?? true)
+            } else {
+                XCTAssertEqual(event.alarms?.count, 1)
+                let fire = start.addingTimeInterval(event.alarms!.first!.relativeOffset)
+                XCTAssertEqual(calendar.component(.hour, from: fire), 9)
+                XCTAssertEqual(calendar.component(.day, from: fire), choice == .sameDayMorning ? 5 : 4)
+            }
+        }
+        for (choice, offset) in [(CalendarAlertChoice.atStart, 0.0), (.fifteenMinutes, -900.0), (.oneHour, -3600.0)] {
+            let event = CalendarEditorRequest(title: "Test", notes: "", start: start,
+                end: start.addingTimeInterval(1800), allDay: false, timeZone: calendar.timeZone,
+                alert: choice).makeEvent(in: store)
+            XCTAssertEqual(event.alarms?.first?.relativeOffset, offset)
+            XCTAssertFalse(event.isAllDay)
+        }
+    }
+
+    func testMorningAlertsUseLocalClockAcrossDaylightSaving() {
+        for day in ["2026-03-08", "2026-03-09", "2026-11-01", "2026-11-02"] {
+            let start = CalendarDatePolicy.parseDay(day, calendar: calendar)!
+            for choice in [CalendarAlertChoice.sameDayMorning, .previousDayMorning] {
+                let fire = choice.fireDate(start: start, calendar: calendar)!
+                XCTAssertEqual(calendar.component(.hour, from: fire), 9)
+                XCTAssertEqual(calendar.component(.minute, from: fire), 0)
+                let expectedDay = CalendarDatePolicy.addingDays(choice == .sameDayMorning ? 0 : -1, to: start, calendar: calendar)
+                XCTAssertTrue(calendar.isDate(fire, inSameDayAs: expectedDay))
+            }
+        }
+    }
+
+    func testExpandedAlertsAndCustomAbsoluteTime() {
+        let start = CalendarDatePolicy.parseDay("2026-03-09", calendar: calendar)!.addingTimeInterval(10 * 3600)
+        for (choice, seconds) in [(CalendarAlertChoice.fiveMinutes, 300.0), (.tenMinutes, 600.0), (.thirtyMinutes, 1800.0), (.twoHours, 7200.0)] {
+            XCTAssertEqual(choice.fireDate(start: start, calendar: calendar), start.addingTimeInterval(-seconds))
+        }
+        for (choice, days) in [(CalendarAlertChoice.oneDay, -1), (.twoDays, -2), (.oneWeek, -7)] {
+            let fire = choice.fireDate(start: start, calendar: calendar)!
+            XCTAssertEqual(calendar.component(.hour, from: fire), 10)
+            XCTAssertEqual(calendar.dateComponents([.day], from: calendar.startOfDay(for: start), to: calendar.startOfDay(for: fire)).day, days)
+        }
+        for (choice, days) in [(CalendarAlertChoice.twoDaysMorning, -2), (.weekMorning, -7)] {
+            let fire = choice.fireDate(start: start, calendar: calendar)!
+            XCTAssertEqual(calendar.component(.hour, from: fire), 9)
+            XCTAssertEqual(calendar.dateComponents([.day], from: calendar.startOfDay(for: start), to: calendar.startOfDay(for: fire)).day, days)
+        }
+        let custom = start.addingTimeInterval(-12345)
+        for allDay in [true, false] {
+            let event = CalendarEditorRequest(title: "Test", notes: "", start: start,
+                end: start.addingTimeInterval(86400), allDay: allDay, timeZone: calendar.timeZone,
+                alert: .custom, customAlertDate: custom).makeEvent(in: EKEventStore())
+            XCTAssertEqual(event.alarms?.first?.absoluteDate, custom)
+            XCTAssertEqual(event.isAllDay, allDay)
+        }
+    }
+
+    func testKnownAppointmentExamplePrefillsSourceTimeAndAlert() {
+        for day in ["2026-03-05", "2026-10-29", "2026-10-02"] {
+            let now = CalendarDatePolicy.parseDay(day, calendar: calendar)!
+            for language in [AppLanguage.en, .zh] {
+                let proposal = CalendarProposal.testExample(.appointment, language: language, now: now, calendar: calendar)
+                let date = proposal.date!
+                XCTAssertTrue(proposal.hasAppointmentTime)
+                XCTAssertEqual(calendar.component(.hour, from: date), 10)
+                XCTAssertEqual(calendar.component(.minute, from: date), 0)
+                XCTAssertTrue(calendar.isDate(date, inSameDayAs: CalendarDatePolicy.addingDays(3, to: now, calendar: calendar)))
+                let alarm = CalendarAlertChoice.fifteenMinutes.fireDate(start: date, calendar: calendar)!
+                XCTAssertEqual(calendar.component(.hour, from: alarm), 9)
+                XCTAssertEqual(calendar.component(.minute, from: alarm), 45)
+                let deadline = CalendarProposal.testExample(.deadline, language: language, now: now, calendar: calendar)
+                XCTAssertFalse(deadline.hasAppointmentTime)
+                XCTAssertEqual(calendar.component(.hour, from: deadline.date!), 0)
+                XCTAssertNil(CalendarProposal.testExample(.reminder, language: language, now: now, calendar: calendar).date)
+            }
+        }
+    }
+
+    func testExtractedAppointmentTimeFlowsIntoEventAndAlert() throws {
+        // Decode the same snake_case fact contract returned by the relay.
+        let json = #"[{"id":"day","kind":"appointment_date","raw_text":"October 5, 2026","value":"2026-10-05","currency":null,"status":"confirmed","origin":"letter_fact","label":{"en":"Date","zh":"日期"},"explanation":{"en":"Appointment date","zh":"预约日期"},"source_refs":[{"page":1,"excerpt":"October 5, 2026 at 10 AM America/New_York"}]},{"id":"time","kind":"appointment_time","raw_text":"10 AM","value":"10:00","currency":null,"status":"confirmed","origin":"letter_fact","label":{"en":"Time","zh":"时间"},"explanation":{"en":"Appointment time","zh":"预约时间"},"source_refs":[{"page":1,"excerpt":"10 AM"}]},{"id":"zone","kind":"appointment_timezone","raw_text":"America/New_York","value":"America/New_York","currency":null,"status":"confirmed","origin":"letter_fact","label":{"en":"Zone","zh":"时区"},"explanation":{"en":"Appointment zone","zh":"预约时区"},"source_refs":[{"page":1,"excerpt":"America/New_York"}]}]"#
+        let decoder = JSONDecoder(); decoder.keyDecodingStrategy = .convertFromSnakeCase
+        let facts = try decoder.decode([LetterFact].self, from: Data(json.utf8))
+        let action = LetterAction(id: "visit", descriptionEn: "Attend visit", descriptionZh: "参加预约", actionKind: "schedule_appointment", status: "confirmed", sourceRefs: [], requirement: "required", condition: nil, amountFactIds: [], deadlineFactId: nil, appointmentFactIds: ["day", "time", "zone"])
+        for language in [AppLanguage.en, .zh] {
+            let proposal = CalendarProposal.make(action: action, facts: facts, language: language, calendar: calendar)
+            XCTAssertTrue(proposal.hasAppointmentTime)
+            XCTAssertTrue(proposal.hasSourceTimeZone)
+            XCTAssertEqual(proposal.timeZone.identifier, "America/New_York")
+            var zone = calendar; zone.timeZone = proposal.timeZone
+            let start = try XCTUnwrap(proposal.date)
+            XCTAssertEqual(zone.component(.hour, from: start), 10)
+            let event = CalendarEditorRequest(title: proposal.title, notes: proposal.source, start: start,
+                end: start.addingTimeInterval(1800), allDay: false, timeZone: proposal.timeZone, alert: .fifteenMinutes).makeEvent(in: EKEventStore())
+            let fire = start.addingTimeInterval(try XCTUnwrap(event.alarms?.first?.relativeOffset))
+            XCTAssertEqual(zone.component(.hour, from: fire), 9)
+            XCTAssertEqual(zone.component(.minute, from: fire), 45)
+            XCTAssertTrue(event.notes?.contains("10 AM") == true)
+        }
+        let missing = CalendarProposal.make(action: action, facts: [facts[0]], language: .en, calendar: calendar)
+        XCTAssertFalse(missing.hasAppointmentTime)
+        XCTAssertTrue(missing.requiresVerification)
+        let noZone = CalendarProposal.make(action: action, facts: Array(facts.prefix(2)), language: .en, calendar: calendar)
+        XCTAssertTrue(noZone.hasAppointmentTime)
+        XCTAssertFalse(noZone.hasSourceTimeZone)
+        XCTAssertEqual(noZone.timeZone, calendar.timeZone)
+        let extra = LetterFact(id: "otherTime", kind: "appointment_time", rawText: "2 PM", value: "14:00", currency: nil, status: "confirmed", origin: "letter_fact", label: facts[1].label, explanation: facts[1].explanation, sourceRefs: facts[1].sourceRefs)
+        // An unlinked time cannot overwrite this action's appointment.
+        XCTAssertEqual(CalendarProposal.make(action: action, facts: facts + [extra], language: .en, calendar: calendar).date,
+                       CalendarProposal.make(action: action, facts: facts, language: .en, calendar: calendar).date)
+        let conflicting = LetterAction(id: "visit", descriptionEn: "Visit", descriptionZh: "预约", actionKind: "schedule_appointment", status: "confirmed", sourceRefs: [], requirement: "required", condition: nil, amountFactIds: [], deadlineFactId: nil, appointmentFactIds: ["day", "time", "otherTime"])
+        XCTAssertFalse(CalendarProposal.make(action: conflicting, facts: facts + [extra], language: .en, calendar: calendar).hasAppointmentTime)
+    }
+
+    func testAppointmentClockRejectsInvalidAndAmbiguousLocalTimes() {
+        let normal = CalendarDatePolicy.parseDay("2026-10-05", calendar: calendar)!
+        for (text, hour) in [("00:00", 0), ("12:00", 12), ("14:30", 14)] {
+            XCTAssertEqual(CalendarDatePolicy.appointmentDate(day: normal, time: text, calendar: calendar).map { calendar.component(.hour, from: $0) }, hour)
+        }
+        for invalid in ["24:00", "10:60", "10 AM", ""] {
+            XCTAssertNil(CalendarDatePolicy.appointmentDate(day: normal, time: invalid, calendar: calendar))
+        }
+        XCTAssertNil(CalendarDatePolicy.appointmentDate(day: CalendarDatePolicy.parseDay("2026-03-08", calendar: calendar)!, time: "02:30", calendar: calendar))
+        XCTAssertNil(CalendarDatePolicy.appointmentDate(day: CalendarDatePolicy.parseDay("2026-11-01", calendar: calendar)!, time: "01:30", calendar: calendar))
+    }
+
     func testCalendarStrictDatesDoNotNormalizeInvalidInput() {
         XCTAssertNil(CalendarDatePolicy.parseDay("2026-02-30", calendar: calendar))
         XCTAssertNil(CalendarDatePolicy.parseDay("11/12", calendar: calendar))

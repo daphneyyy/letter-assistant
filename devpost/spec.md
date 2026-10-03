@@ -41,9 +41,13 @@ The strict structured response contains bilingual summaries, contextual facts wi
 
 `CalendarProposal.swift` builds source-derived proposal roles and parses calendar dates strictly. `CalendarReviewView.swift` verifies user input and creates an EventKit event only for the system editor after confirmation. All-day date arithmetic uses calendar days across DST, with next-day exclusive end. Do not bind all-day events to a time zone; set `isAllDay` last because a non-nil time-zone assignment clears the flag. Timed appointments retain the selected zone.
 
-The current AI contract has date-only values; appointment time is user-entered/verified. Reminder dates are user-selected; automatic urgency/risk/preparation recommendations are outside this hackathon. Source cutoffs and conditions go into notes. Mark past dates and reconfirm after midnight. Saved/canceled/unknown results follow PRD. A content-free pending flag supports interrupted-editor recovery; store no event IDs and perform no calendar synchronization.
+The AI fact-kind enum now includes appointment_time (HH:mm) and appointment_timezone (IANA region identifier or UTC), alongside appointment_date (YYYY-MM-DD). The action’s appointment_fact_ids links these facts for the same appointment; prompts prohibit linking arrival times, office hours or another appointment’s time. Backend validation checks time/zone syntax and references; it does not establish extraction accuracy. `CalendarProposal.hasAppointmentTime` distinguishes an explicitly supplied time from a date-only placeholder. The no-AI appointment example constructs 10:00 AM with calendar arithmetic in the proposal time zone and marks the time as supplied; real AI proposals combine a single confirmed linked date/time using the stated zone, or the phone zone with a visible notice when no zone is stated. Multiple dates/times, uncertain zones, invalid clock values and repeated/nonexistent DST times cannot produce a prefilled appointment time. Evidence for all linked appointment facts is retained in source notes. Date-only responses remain readable but require manual time entry. All appointment paths still require explicit verification. Reminder dates are user-selected; automatic urgency/risk/preparation recommendations are outside this hackathon. Source cutoffs and conditions go into notes. Mark past dates and reconfirm after midnight. Saved/canceled/unknown results follow PRD. A content-free pending flag supports interrupted-editor recovery; store no event IDs and perform no calendar synchronization.
 
-Debug builds expose no-AI fictional calendar examples on the home screen. Titles are marked TEST. They use the real review/editor path, so saving creates a real calendar event. Release excludes this test entry.
+`CalendarAlertChoice` in `CalendarReviewView.swift` defines the preset choices listed in PRD. The review defaults to same-day 9 AM for all-day items and 15 minutes before for appointments. Its navigation-link picker also offers None and a custom date/time picker. Choice/date changes clear confirmation. Past alert times are warned about, not rejected.
+
+`CalendarEditorRequest` carries the chosen alert and optional custom date. Presets are converted to fire dates using the review calendar/time zone, then attached with `EKAlarm(relativeOffset:)`. Minute/hour choices use elapsed offsets; day/week and morning choices use calendar arithmetic across DST. Custom alerts use `EKAlarm(absoluteDate:)` and remain fixed if the event date changes. None attaches no alarm. The system editor can still change the alert before saving. This adds no calendar reading, background notification service, or updates to previously saved events. Verify actual system-editor behavior and notification delivery on a phone separately from event-construction tests.
+
+Debug builds expose no-AI fictional calendar examples under the expandable Demo tools section on the home screen. Titles are marked TEST. They use the real review/editor path, so saving creates a real calendar event. Release excludes this test entry.
 
 ### App Shell and Language
 
@@ -51,7 +55,7 @@ Debug builds expose no-AI fictional calendar examples on the home screen. Titles
 
 ## Data Model and Contracts
 
-The current Swift models in `Models/Letter.swift` and validated schema in `_shared/contracts.ts` are authoritative for wire fields. Facts distinguish amount/document date/deadline/appointment/effective/service date/period/other. Only linked deadline facts populate deadline proposals. Existing classification metadata remains an analysis detail, not a saved filing system.
+The current Swift models in `Models/Letter.swift` and validated schema in `_shared/contracts.ts` are authoritative for wire fields. Facts distinguish amount/document date/deadline/appointment date/time/time zone/effective/service date/period/other. Only linked deadline facts populate deadline proposals. Existing classification metadata remains an analysis detail, not a saved filing system.
 
 `POST /interpret` uses a local bearer token and `{capture_id, pages:[{page_id, image_base64, local_readability:true}]}`. This flag describes a client-side check, not server attestation. The relay retains authentication, image/page/body limits and result validation. Its legacy `/validate-page` path may remain for old clients/tests; the current iPhone does not call it. No user access token or email verification is involved.
 
@@ -73,7 +77,9 @@ The current Swift models in `Models/Letter.swift` and validated schema in `_shar
 
 ## Look and Feel
 
-Retain accepted four-section explanations, concise contextual wording, expanded source detail on demand, large Dynamic Type, Chinese wrapping, 44-point controls, basic VoiceOver and quiet successful photo checks. No UI redesign accompanies this scope change.
+Retain accepted four-section explanations, concise contextual wording, expanded source detail on demand, large Dynamic Type, Chinese wrapping, 44-point controls, basic VoiceOver and quiet successful photo checks. The subsequent user-requested UI pass adds adaptive grouped backgrounds with teal accents, a prominent capture action, a three-step introduction, selected-page styling and expandable original photos. The decorative envelope logo has been removed. This supersedes the earlier statement that the scope revision itself included no redesign.
+
+Older-adult usability remains unverified. The current calendar form still exposes the complete preset list and detailed review fields; a concise action/date/notification summary and common-options-first design are proposed follow-ups, not existing components. The home-screen instruction to show all page edges is a known copy mismatch with the no-cropping requirement. Track it in the checklist. Test VoiceOver, contrast, long Chinese labels and the system-editor language transition on actual devices.
 
 ## Important Failure Modes
 
