@@ -26,6 +26,7 @@ struct LetterAction: Codable, Identifiable {
     let actionKind: String; let status: String; let sourceRefs: [SourceReference]
     let requirement: String; let condition: BilingualText?
     let amountFactIds: [String]; let deadlineFactId: String?; let appointmentFactIds: [String]
+    var suggestedDurationMinutes: Int? = nil
 }
 struct LetterSummary: Codable {
     let whatThisIs: String; let whatToNote: String; let whatToDo: String; let when: String

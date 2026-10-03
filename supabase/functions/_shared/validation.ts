@@ -34,7 +34,9 @@ export function matchesSchema(value: unknown, schema: any): boolean {
   if (types.includes("string") && typeof value === "string") {
     return value.length <= 8000;
   }
-  if (types.includes("integer")) return Number.isInteger(value);
+  if (types.includes("integer")) return Number.isInteger(value) &&
+    (schema.minimum === undefined || (value as number) >= schema.minimum) &&
+    (schema.maximum === undefined || (value as number) <= schema.maximum);
   return typeof value === "boolean" && types.includes("boolean");
 }
 export function validateVerdict(value: unknown): Verdict {
@@ -116,6 +118,10 @@ export function validateInterpretation(
     result.facts.some((f) => f.id === id && (!kind || f.kind === kind));
   for (const action of result.actions) {
     if (!action.description_en.trim() || !action.description_zh.trim()) fail();
+    if (action.suggested_duration_minutes !== null &&
+        (action.deadline_fact_id !== null ||
+         !action.appointment_fact_ids.some((id) =>
+           result.facts.some((f) => f.id === id && ["appointment_date", "appointment_time"].includes(f.kind))))) fail();
     if (action.requirement === "conditional") {
       if (
         !action.condition?.en.trim() || !action.condition?.zh.trim() ||

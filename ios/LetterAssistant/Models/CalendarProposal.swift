@@ -15,6 +15,8 @@ struct CalendarProposal: Identifiable {
     let timeZone: TimeZone
     var hasAppointmentTime = false
     var hasSourceTimeZone = false
+    var suggestedDurationMinutes: Int? = nil
+    var initialDurationMinutes: Int { CalendarDurationPolicy.valid(suggestedDurationMinutes) ?? 30 }
 
     static func make(action: LetterAction, facts: [LetterFact], language: AppLanguage,
                      now: Date = Date(), calendar: Calendar = .current) -> CalendarProposal {
@@ -48,7 +50,8 @@ struct CalendarProposal: Identifiable {
             sourceDate: kind == .appointment ? linked.map(\.rawText).joined(separator: " · ") : fact?.rawText, condition: action.condition?.text(language),
             requiresVerification: action.status != "confirmed" || (fact != nil && parsed == nil) || appointments.count > 1 || (kind == .appointment && !hasTime),
             date: parsed, reviewedDay: eventCalendar.startOfDay(for: now), timeZone: eventCalendar.timeZone,
-            hasAppointmentTime: hasTime, hasSourceTimeZone: kind == .appointment && sourceZone != nil)
+            hasAppointmentTime: hasTime, hasSourceTimeZone: kind == .appointment && sourceZone != nil,
+            suggestedDurationMinutes: kind == .appointment ? CalendarDurationPolicy.valid(action.suggestedDurationMinutes) : nil)
     }
 }
 
@@ -131,3 +134,17 @@ extension CalendarProposal {
     }
 }
 #endif
+
+
+enum CalendarDurationPolicy {
+    static let presets = [15, 30, 45, 60, 90, 120, 180, 240]
+    static func valid(_ minutes: Int?) -> Int? {
+        guard let minutes, (1...1440).contains(minutes) else { return nil }
+        return minutes
+    }
+    static func custom(_ text: String) -> Int? {
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty, trimmed.allSatisfy({ $0.isASCII && $0.isNumber }) else { return nil }
+        return valid(Int(trimmed))
+    }
+}

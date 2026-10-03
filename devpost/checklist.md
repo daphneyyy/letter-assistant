@@ -60,6 +60,14 @@ No second phone, account isolation, email delivery or saved-conversation review 
 - [ ] Re-run fresh fictional appointment letters through the configured live provider after restarting the relay. Check explicit AM/PM, multiple appointments, missing time/zone and source-grounded linkage in both languages.
 - [ ] Verify extracted time and alert in a newly saved physical-phone event. Existing displayed analyses do not gain new time facts automatically.
 
+## Duration Follow-up
+
+- [x] Remove duplicate appointment time-zone display while retaining the editable picker.
+- [x] Add a separate AI-suggested duration setting for timed events, bounded to 1–1,440 minutes, with a 30-minute fallback.
+- [x] Replace +/− with presets/custom minutes and a visible end time; invalidate confirmation after changes and block invalid input.
+- [ ] Re-analyze fictional appointment letters with the restarted relay and verify duration suggestions are reasonable, clearly labeled, and absent from all-day actions.
+- [ ] Verify preset/custom duration and end time on a newly saved physical-phone event, including a duration crossing midnight.
+
 ## UI and Older-Adult Usability Follow-up
 
 - [x] Implement the requested home/result styling, remove the decorative envelope logo and group calendar examples under Demo tools.

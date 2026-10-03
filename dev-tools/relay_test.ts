@@ -419,6 +419,7 @@ const conditionalAction: Action = {
   amount_fact_ids: [],
   deadline_fact_id: null,
   appointment_fact_ids: [],
+  suggested_duration_minutes: null,
 };
 function enrollmentContract(): Interpretation {
   const value = structuredClone(result);
@@ -621,4 +622,33 @@ Deno.test("appointment clock and zone facts survive validation and link to their
   const uncertain = structuredClone(value);
   uncertain.facts[1].value = null; uncertain.facts[1].status = "needs_verification";
   assert(validateInterpretation(uncertain).facts[1].value === null);
+});
+
+
+Deno.test("duration estimates are bounded and only allowed for timed appointment actions", () => {
+  const value = enrollmentContract();
+  value.facts[0].kind = "appointment_date";
+  value.actions[0].appointment_fact_ids = [value.facts[0].id];
+  value.actions[0].suggested_duration_minutes = 50;
+  assert(validateInterpretation(value).actions[0].suggested_duration_minutes === 50);
+  for (const duration of [1, 1440, null]) {
+    const copy = structuredClone(value); copy.actions[0].suggested_duration_minutes = duration;
+    assert(validateInterpretation(copy).actions[0].suggested_duration_minutes === duration);
+  }
+  for (const duration of [0, -30, 1.5, 1441]) {
+    const copy = structuredClone(value); copy.actions[0].suggested_duration_minutes = duration;
+    let rejected = false;
+    try { validateInterpretation(copy); } catch { rejected = true; }
+    assert(rejected);
+  }
+  for (const deadline of [false, true]) {
+    const copy = structuredClone(value);
+    if (deadline) {
+      copy.facts.push({ ...structuredClone(coverageFact), id: "deadline", kind: "deadline" });
+      copy.actions[0].deadline_fact_id = "deadline";
+    } else { copy.actions[0].appointment_fact_ids = []; }
+    let rejected = false;
+    try { validateInterpretation(copy); } catch { rejected = true; }
+    assert(rejected);
+  }
 });

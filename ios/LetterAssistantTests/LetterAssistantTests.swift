@@ -160,6 +160,40 @@ final class LetterAssistantTests: XCTestCase {
         XCTAssertNil(CalendarDatePolicy.appointmentDate(day: CalendarDatePolicy.parseDay("2026-11-01", calendar: calendar)!, time: "01:30", calendar: calendar))
     }
 
+    func testSuggestedDurationDecodesAndSetsTimedEventEnd() throws {
+        let json = #"{"id":"visit","description_en":"Attend appointment","description_zh":"参加预约","action_kind":"schedule_appointment","status":"confirmed","source_refs":[],"requirement":"required","condition":null,"amount_fact_ids":[],"deadline_fact_id":null,"appointment_fact_ids":["date"],"suggested_duration_minutes":50}"#
+        let decoder = JSONDecoder(); decoder.keyDecodingStrategy = .convertFromSnakeCase
+        let action = try decoder.decode(LetterAction.self, from: Data(json.utf8))
+        let text = BilingualText(en: "Appointment", zh: "预约")
+        let fact = LetterFact(id: "date", kind: "appointment_date", rawText: "October 5, 2026", value: "2026-10-05", currency: nil, status: "confirmed", origin: "letter_fact", label: text, explanation: text, sourceRefs: [.init(page: 1, excerpt: "October 5, 2026")])
+        let proposal = CalendarProposal.make(action: action, facts: [fact], language: .en, calendar: calendar)
+        XCTAssertEqual(proposal.suggestedDurationMinutes, 50)
+        XCTAssertEqual(proposal.initialDurationMinutes, 50)
+        let start = try XCTUnwrap(proposal.date)
+        let event = CalendarEditorRequest(title: "Test", notes: "", start: start,
+            end: CalendarDatePolicy.end(start: start, allDay: false, minutes: proposal.initialDurationMinutes, calendar: calendar), allDay: false, timeZone: calendar.timeZone).makeEvent(in: EKEventStore())
+        XCTAssertEqual(event.endDate.timeIntervalSince(start), 3000)
+        let legacy = json.replacingOccurrences(of: ",\"suggested_duration_minutes\":50", with: "")
+        let old = try decoder.decode(LetterAction.self, from: Data(legacy.utf8))
+        XCTAssertEqual(CalendarProposal.make(action: old, facts: [fact], language: .en, calendar: calendar).initialDurationMinutes, 30)
+        var invalid = action; invalid.suggestedDurationMinutes = 99999
+        XCTAssertEqual(CalendarProposal.make(action: invalid, facts: [fact], language: .en, calendar: calendar).initialDurationMinutes, 30)
+        let reminder = CalendarProposal.make(action: action, facts: [], language: .en, calendar: calendar)
+        XCTAssertNil(reminder.suggestedDurationMinutes)
+    }
+
+    func testCustomDurationValidationAndEndAcrossMidnight() {
+        for text in ["", "0", "-1", "1.5", "1441", "abc"] { XCTAssertNil(CalendarDurationPolicy.custom(text)) }
+        XCTAssertEqual(CalendarDurationPolicy.custom(" 75 "), 75)
+        XCTAssertEqual(CalendarDurationPolicy.custom("1440"), 1440)
+        let day = CalendarDatePolicy.parseDay("2026-10-05", calendar: calendar)!
+        let start = day.addingTimeInterval(23 * 3600)
+        let end = CalendarDatePolicy.end(start: start, allDay: false, minutes: 125, calendar: calendar)
+        XCTAssertEqual(calendar.component(.day, from: end), 6)
+        XCTAssertEqual(calendar.component(.hour, from: end), 1)
+        XCTAssertEqual(calendar.component(.minute, from: end), 5)
+    }
+
     func testCalendarStrictDatesDoNotNormalizeInvalidInput() {
         XCTAssertNil(CalendarDatePolicy.parseDay("2026-02-30", calendar: calendar))
         XCTAssertNil(CalendarDatePolicy.parseDay("11/12", calendar: calendar))

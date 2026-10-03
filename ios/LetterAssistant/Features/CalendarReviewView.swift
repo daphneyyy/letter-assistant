@@ -11,7 +11,9 @@ struct CalendarReviewView: View {
     @State private var selectedDate: Date
     @State private var dateEntered = false
     @State private var confirmed = false
-    @State private var minutes = 30
+    @State private var durationChoice: Int
+    @State private var customDuration: String
+    @FocusState private var durationFocused: Bool
     @State private var alert: CalendarAlertChoice
     @State private var customAlertDate: Date
     @State private var zoneID: String
@@ -22,6 +24,8 @@ struct CalendarReviewView: View {
 
     init(proposal: CalendarProposal, language: AppLanguage, report: @escaping (CalendarEditorOutcome) -> Void) {
         self.proposal = proposal; self.language = language; self.report = report
+        _durationChoice = State(initialValue: proposal.initialDurationMinutes)
+        _customDuration = State(initialValue: String(proposal.initialDurationMinutes))
         _alert = State(initialValue: proposal.kind == .appointment ? .fifteenMinutes : .sameDayMorning)
         _customAlertDate = State(initialValue: proposal.date ?? Date())
         _title = State(initialValue: proposal.title)
@@ -34,8 +38,12 @@ struct CalendarReviewView: View {
         result.timeZone = TimeZone(identifier: zoneID) ?? proposal.timeZone
         return result
     }
+    var durationMinutes: Int? {
+        durationChoice == 0 ? CalendarDurationPolicy.custom(customDuration) : CalendarDurationPolicy.valid(durationChoice)
+    }
+    var durationOptions: [Int] { Array(Set(CalendarDurationPolicy.presets + [proposal.initialDurationMinutes])).sorted() }
     var needsEntry: Bool { proposal.kind == .appointment || proposal.date == nil || proposal.requiresVerification }
-    var canContinue: Bool { confirmed && (!needsEntry || dateEntered) && !title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+    var canContinue: Bool { (proposal.kind != .appointment || durationMinutes != nil) && confirmed && (!needsEntry || dateEntered) && !title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
     var body: some View {
         NavigationStack {
             Form {
@@ -72,8 +80,35 @@ struct CalendarReviewView: View {
                             ForEach(TimeZone.knownTimeZoneIdentifiers, id: \.self) { Text($0).tag($0) }
                         }
                         DatePicker(language.text("Appointment", "预约时间"), selection: $selectedDate, displayedComponents: [.date, .hourAndMinute])
-                        Stepper(language.text("Duration: \(minutes) minutes", "时长：\(minutes) 分钟"), value: $minutes, in: 5...480, step: 5)
-                        Text(language.text("30 minutes is a suggested calendar duration, not a duration stated by the letter. Adjust it if needed.", "默认 30 分钟仅为日历建议时长，并非信件所述时长。可按需调整。"))
+                        Picker(language.text("Duration", "时长"), selection: $durationChoice) {
+                            ForEach(durationOptions, id: \.self) { value in
+                                Text(language.text("\(value) minutes", "\(value) 分钟")).tag(value)
+                            }
+                            Text(language.text("Custom duration", "自定义时长")).tag(0)
+                        }.pickerStyle(.navigationLink).accessibilityIdentifier("durationPicker")
+                        if durationChoice == 0 {
+                            TextField(language.text("Duration in minutes", "时长（分钟）"), text: $customDuration)
+                                .keyboardType(.numberPad).focused($durationFocused)
+                                .accessibilityIdentifier("customDuration")
+                            Text(language.text("Enter 1–1,440 minutes (up to 24 hours).", "请输入 1–1,440 分钟（最多 24 小时）。"))
+                                .font(.footnote).foregroundStyle(.secondary)
+                            if durationMinutes == nil {
+                                Text(language.text("Enter a whole number from 1 to 1,440.", "请输入 1 至 1,440 的整数。"))
+                                    .foregroundStyle(.red).accessibilityIdentifier("invalidDuration")
+                            }
+                        }
+                        if let suggested = proposal.suggestedDurationMinutes {
+                            Text(language.text("AI estimate: \(suggested) minutes. This is a suggested calendar block; check and adjust it.", "AI 估计：\(suggested) 分钟。这是建议的日历时长，请核对并按需调整。"))
+                                .font(.callout).foregroundStyle(.secondary)
+                        } else {
+                            Text(language.text("No AI duration estimate is available. The default is 30 minutes; choose the time you need.", "暂无 AI 时长估计。默认 30 分钟，请按需要调整。"))
+                                .font(.callout).foregroundStyle(.secondary)
+                        }
+                        if let durationMinutes {
+                            LabeledContent(language.text("Ends", "结束时间")) {
+                                Text(selectedDate.addingTimeInterval(Double(durationMinutes) * 60), format: Date.FormatStyle(date: .abbreviated, time: .shortened, timeZone: calendar.timeZone))
+                            }.accessibilityIdentifier("durationEnd")
+                        }
                     } else {
                         DatePicker(language.text("Calendar date", "日历日期"), selection: $selectedDate, displayedComponents: .date)
                             .disabled(proposal.kind == .deadline && !proposal.requiresVerification && proposal.date != nil)
@@ -111,7 +146,7 @@ struct CalendarReviewView: View {
                     }
                 }
                 Section {
-                    Toggle(language.text("I confirm the action, conditions, date, time zone and alert", "我确认事项、适用条件、日期、时区和提醒"), isOn: $confirmed)
+                    Toggle(language.text("I confirm the action, conditions, date, duration, time zone and alert", "我确认事项、适用条件、日期、时长、时区和提醒"), isOn: $confirmed)
                     Text(language.text("If no calendar is available, cancel and set up a calendar account in iPhone Settings before trying again.", "如果系统没有可用日历，请取消，并先在 iPhone 设置中配置日历账户。"))
                     Text(language.text("The next screen is Apple's editor. Save there to create the event; you can also cancel. Adding again may create a duplicate.", "下一步打开苹果日历编辑器，在那里保存才会创建事项，也可以取消。再次添加可能产生重复事项。"))
                     if midnightNotice { Text(language.text("The day changed. Review the displayed date and confirm again.", "日期已跨天，请重新核对显示的日期并确认。")) }
@@ -137,7 +172,17 @@ struct CalendarReviewView: View {
                 }
             }
             .onChange(of: customAlertDate) { _, _ in confirmed = false }
-            .onChange(of: minutes) { _, _ in confirmed = false }
+            .onChange(of: durationChoice) { oldValue, newValue in
+                confirmed = false
+                if newValue == 0 && oldValue > 0 { customDuration = String(oldValue) }
+            }
+            .onChange(of: customDuration) { _, _ in confirmed = false }
+            .toolbar {
+                ToolbarItemGroup(placement: .keyboard) {
+                    Spacer()
+                    Button(language.text("Done", "完成")) { durationFocused = false }
+                }
+            }
             .fullScreenCover(item: $editor, onDismiss: {
                 UserDefaults.standard.removeObject(forKey: "calendarEditorPending")
                 report(outcome ?? .unknown); dismiss()
@@ -149,6 +194,8 @@ struct CalendarReviewView: View {
         }
     }
     private func openEditor() {
+        guard canContinue else { return }
+        let minutes = durationMinutes ?? 30
         let now = Date()
         if CalendarDatePolicy.reviewExpired(reviewedDay: reviewedDay, now: now, calendar: calendar) {
             reviewedDay = calendar.startOfDay(for: now); confirmed = false; midnightNotice = true
@@ -161,7 +208,7 @@ struct CalendarReviewView: View {
         if let condition = proposal.condition { notes.append(condition) }
         if proposal.kind == .reminder { notes.append(language.text("User-selected reminder; not a deadline stated by the letter.", "用户选择的提醒日期，并非信中截止日期。")) }
         if needsEntry { notes.append(language.text("Date/time entered and verified by the user.", "日期／时间由用户填写并核对。")) }
-        if proposal.kind == .appointment { notes.append(language.text("Calendar duration selected by user; verify against the original letter.", "日历时长由用户选择，请对照原信核实。")) }
+        if proposal.kind == .appointment { notes.append(language.text("Calendar duration selected by user: \(minutes) minutes. Any AI duration is an estimate, not a confirmed letter fact.", "用户选择的日历时长：\(minutes) 分钟。AI 时长为估计值，并非已确认的信件事实。")) }
         outcome = nil
         UserDefaults.standard.set(true, forKey: "calendarEditorPending")
         editor = CalendarEditorRequest(title: title, notes: notes.joined(separator: "\n\n"), start: start,

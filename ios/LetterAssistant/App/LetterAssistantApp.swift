@@ -27,7 +27,8 @@ private struct CalendarReviewTestHarness: View {
             CalendarReviewView(proposal: CalendarProposal(kind: appointment ? .appointment : .reminder,
                 title: "虚构测试：联系保险公司", source: "Photo 1: If you want to change plans, contact the office.",
                 sourceDate: nil, condition: "如果你希望更换计划", requiresVerification: false,
-                date: nil, reviewedDay: Calendar.current.startOfDay(for: Date()), timeZone: .current),
+                date: nil, reviewedDay: Calendar.current.startOfDay(for: Date()), timeZone: .current,
+                suggestedDurationMinutes: ProcessInfo.processInfo.arguments.contains("--duration-estimate") ? 50 : nil),
                 language: .zh) { outcome = $0 }
         }
     }

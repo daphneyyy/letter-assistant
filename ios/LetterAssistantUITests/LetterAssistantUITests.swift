@@ -12,7 +12,7 @@ final class LetterAssistantUITests: XCTestCase {
         XCTAssertFalse(open.isEnabled)
         app.swipeDown(); app.swipeDown()
         app.buttons["明天"].tap()
-        let confirm = app.switches["我确认事项、适用条件、日期、时区和提醒"]
+        let confirm = app.switches["我确认事项、适用条件、日期、时长、时区和提醒"]
         app.swipeUp(); app.swipeUp()
         XCTAssertFalse(open.isEnabled)
         confirm.coordinate(withNormalizedOffset: CGVector(dx: 0.93, dy: 0.5)).tap()
@@ -55,6 +55,31 @@ final class LetterAssistantUITests: XCTestCase {
         let picker = app.datePickers["customAlertDate"]
         for _ in 0..<5 where !picker.exists { app.swipeUp() }
         XCTAssertTrue(picker.exists)
+    }
+
+    func testDurationEstimateAndCustomEntry() {
+        let app = XCUIApplication()
+        app.launchArguments += ["--calendar-review-test", "--appointment", "--duration-estimate"]
+        app.launch()
+        app.buttons["Open test review"].tap()
+        let duration = app.buttons["durationPicker"]
+        for _ in 0..<10 where !duration.isHittable { app.swipeUp() }
+        XCTAssertTrue(duration.isHittable)
+        XCTAssertTrue((duration.value as? String)?.contains("50") == true)
+        duration.tap()
+        app.buttons["自定义时长"].tap()
+        let field = app.textFields["customDuration"]
+        XCTAssertTrue(field.waitForExistence(timeout: 3))
+        field.tap()
+        field.typeText(XCUIKeyboardKey.delete.rawValue + XCUIKeyboardKey.delete.rawValue + "0")
+        XCTAssertTrue(app.staticTexts["invalidDuration"].exists)
+        field.typeText(XCUIKeyboardKey.delete.rawValue + "75")
+        app.buttons["完成"].tap()
+        XCTAssertFalse(app.staticTexts["invalidDuration"].exists)
+        XCTAssertTrue(app.otherElements["durationEnd"].exists || app.staticTexts["结束时间"].exists)
+        let open = app.buttons["确认并打开日历"]
+        for _ in 0..<10 where !open.isHittable { app.swipeUp() }
+        XCTAssertFalse(open.isEnabled)
     }
 
     func testChineseCaptureScreenAtLargeText() {

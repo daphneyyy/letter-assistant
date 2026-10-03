@@ -49,6 +49,12 @@ The AI fact-kind enum now includes appointment_time (HH:mm) and appointment_time
 
 Debug builds expose no-AI fictional calendar examples under the expandable Demo tools section on the home screen. Titles are marked TEST. They use the real review/editor path, so saving creates a real calendar event. Release excludes this test entry.
 
+### Timed-Event Duration
+
+Each AI action includes nullable `suggested_duration_minutes`. The schema and backend enforce an integer from 1 to 1,440, allowed only for an action linked to an appointment date/time without a deadline. The prompt distinguishes this scheduling estimate from source facts, preferring stated durations/intervals and otherwise estimating from event type with 30 minutes as the generic fallback. All-day actions use null; estimates must not be inserted into grounded facts or quoted source text.
+
+Swift decodes the new field optionally for older responses. `CalendarProposal` passes a bounded estimate only to timed appointments; `CalendarDurationPolicy` validates estimates and custom input and supplies preset values. The review uses the estimate or 30-minute fallback, replacing the stepper with a navigation picker and optional numeric custom entry. The end preview uses the selected time zone. Changes clear confirmation; invalid custom input blocks handoff. EventKit end is start plus the selected number of elapsed minutes; all-day end-date arithmetic is unchanged. AI estimation quality and physical-device acceptance remain separate from deterministic contract/UI tests.
+
 ### App Shell and Language
 
 `CaptureView.swift` provides capture, interpretation, source details, language selection and calendar entry points. No authentication state, tabs, archive, chatbox, user profile, account cache or login gate.

@@ -135,3 +135,14 @@ The full iOS run subsequently completed with TEST SUCCEEDED: 27 unit tests and f
 ### October 2 — duplicate time-zone row
 
 Removed the repeated read-only time-zone row for appointments; the editable time-zone picker remains. All-day items retain their single time-zone display for alert review. Verified the conditional layout in source and whitespace checks; no new behavior test was needed for this display-only change.
+
+
+### October 2 — AI duration estimates and flexible duration entry
+
+After the requested baseline checkpoint and separate duplicate-time-zone commit, the learner requested AI-suggested duration for timed events and a flexible replacement for the +/− control. Actions now carry nullable suggested_duration_minutes, constrained to 1–1,440 minutes for linked appointments without a deadline. The prompt prefers explicit source durations/intervals, otherwise estimates by event type, and keeps estimates separate from grounded facts and summaries. All-day actions require null.
+
+The app uses the bounded estimate as its initial duration, labels it as an AI estimate, and retains a clearly labeled 30-minute fallback for missing/older values. Duration selection offers presets, the suggested value when different, and arbitrary whole custom minutes (1–1,440), plus an end-date/time preview in the chosen zone. Invalid entry blocks Calendar handoff; duration edits clear confirmation. EventKit end uses the selected elapsed minutes, with unchanged all-day date behavior. The simulator-only harness has an explicit 50-minute estimate case.
+
+Backend typecheck and 26 tests passed. The initial iOS run completed with 29 unit tests and the four existing UI tests passing. New live AI outputs and physical-phone notification/duration behavior remain unverified; restart the relay, rebuild and analyze a fresh fictional letter for that acceptance.
+
+Final UI verification: all five UI tests passed, including the 50-minute estimated default, switching to custom entry, rejection of zero, valid 75-minute entry/end preview, and retained confirmation gating.
