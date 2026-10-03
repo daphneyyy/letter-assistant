@@ -2,6 +2,9 @@ import SwiftUI
 
 struct CaptureView: View {
     @StateObject private var model = CaptureModel()
+    @State private var calendarProposal: CalendarProposal?
+    @State private var pendingCalendarOutcome: CalendarEditorOutcome?
+    @State private var calendarOutcome: CalendarEditorOutcome?
     @State private var cameraOpen = false
     @State private var appendPage = false
     @State private var discardPrompt = false
@@ -97,6 +100,21 @@ struct CaptureView: View {
             } message: {
                 Text(language.text("This explanation has not been saved. Finishing clears this letter and returns to the start screen.", "本次解读尚未保存。结束后将清除当前信件，并返回开始页。"))
             }
+            .onAppear {
+                if calendarProposal == nil && UserDefaults.standard.bool(forKey: "calendarEditorPending") {
+                    calendarOutcome = .unknown
+                    UserDefaults.standard.removeObject(forKey: "calendarEditorPending")
+                }
+            }
+            .sheet(item: $calendarProposal, onDismiss: {
+                calendarOutcome = pendingCalendarOutcome
+                pendingCalendarOutcome = nil
+            }) { proposal in
+                CalendarReviewView(proposal: proposal, language: language) { pendingCalendarOutcome = $0 }
+            }
+            .alert(language.text("Calendar", "日历"), isPresented: Binding(get: { calendarOutcome != nil }, set: { if !$0 { calendarOutcome = nil } })) {
+                Button(language.text("OK", "好")) { calendarOutcome = nil }
+            } message: { Text(calendarOutcome?.message(language) ?? "") }
             .fullScreenCover(isPresented: $cameraOpen) { CameraSheet(language: language, pageNumber: appendPage ? model.pages.count + 1 : max(1, model.currentPageIndex + 1), receive: { model.accept($0, asNextPage: appendPage) }) }
         }
     }
@@ -173,6 +191,12 @@ struct CaptureView: View {
                         Text(condition.text(language)).font(.body)
                     }
                     Text(language == .en ? action.descriptionEn : action.descriptionZh).font(.title3)
+                    Button {
+                        calendarProposal = CalendarProposal.make(action: action, facts: result.facts, language: language)
+                    } label: {
+                        Label(language.text("Review calendar event", "查看并添加到日历"), systemImage: "calendar.badge.plus")
+                            .frame(minHeight: 48)
+                    }.buttonStyle(.bordered)
                     if action.status == "needs_verification" {
                         Text(language.text("Needs verification", "需要核实")).font(.callout)
                     }

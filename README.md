@@ -4,7 +4,7 @@ An iPhone proof of concept that explains fictional medical and insurance letters
 
 ## Current milestone
 
-Slice 1 is in progress: temporary multi-page capture, local readability checks, spoken capture guidance, an OpenRouter integration using a free vision model, and an accessible explanation screen. Photos and results stay in memory for this slice. Accounts, archive, voice questions, and calendar creation belong to later slices. Debug and Release simulator builds, eleven unit tests, one Chinese large-text UI test, and twenty-one relay tests pass. The OpenRouter key is verified. The fictional bill now passes real photo validation and interpretation through the local relay (both HTTP 200), with the expected USD 125.00 payment and 2026-11-15 deadline in both languages. A direct successful interpretation reported cost 0. Remaining fixture cases and physical-device acceptance are pending. The earlier 401 came from sending an OpenRouter key to the wrong provider.
+Slice 1 is in progress: temporary multi-page capture, local readability checks, spoken capture guidance, an OpenRouter integration using a free vision model, and an accessible explanation screen. Photos and results stay in memory for this slice. Accounts, archive, and voice questions belong to later slices. Calendar creation review is now available from extracted actions as an early implementation checkpoint; physical calendar acceptance and evidence-driven reminder suggestions remain pending. Debug and Release simulator builds, eleven unit tests, one Chinese large-text UI test, and twenty-one relay tests pass. The OpenRouter key is verified. The fictional bill now passes real photo validation and interpretation through the local relay (both HTTP 200), with the expected USD 125.00 payment and 2026-11-15 deadline in both languages. A direct successful interpretation reported cost 0. Remaining fixture cases and physical-device acceptance are pending. The earlier 401 came from sending an OpenRouter key to the wrong provider.
 
 ## Run the first slice
 
@@ -76,3 +76,14 @@ AI_FREE_ONLY=true
 ```
 
 Use the service's OpenAI-compatible Chat Completions base URL, without `/chat/completions`. The selected model must accept image inputs and strict JSON-schema output. Other API formats are not supported by this adapter. Set `AI_FREE_ONLY=false` to use a non-free model or another compatible provider; charges then follow that provider. No automatic model/provider fallback is used. Restart the relay after edits (`deno task relay`); phone reinstall is unnecessary. If launching Deno with a restricted `--allow-net` list, include the new API host. Keys remain on the Mac, never in the phone app. Unified `AI_*` settings take precedence over legacy `OPENROUTER_*` / `OPENAI_*` settings; an empty unified key does not fall back to a legacy key.
+
+
+## Try calendar creation
+
+After interpreting a fictional letter, select **Review calendar event / 查看并添加到日历** under an action. Check the source and any condition. Confirmed deadlines retain their original date; a no-deadline action asks you to choose a reminder date. Appointment times must be entered and checked against the letter, including time zone. The proposed duration is editable. Confirm the review to open Apple's editor, then save or cancel there. Set alerts in that editor and verify them in Calendar; an all-day event does not guarantee an alert. Later changes belong in Calendar. Repeated explicit creation may produce duplicates.
+
+Only Apple's saved callback displays success. Cancel leaves the letter unchanged. After an interrupted editor, check Calendar before retrying. If there is no usable calendar account, cancel and configure one in iPhone Settings. This follows [Apple's editor-only creation guidance](https://developer.apple.com/documentation/eventkit/accessing-the-event-store) and requests no broad calendar access.
+
+The current AI contract provides date-only facts and no structured urgency/risk/preparation evidence. No time or urgency is inferred from prose. User reminder choices are available; automatic evidence-based reminder recommendations remain unimplemented. Calendar events are separate from the temporary letter explanation and are not deleted when finishing a reading.
+
+Calendar checkpoint verification: 20 unit cases passed (six calendar-specific); the separate final UI run passed all three tests, including opening and canceling the real system editor. Signed Debug and unsigned Release compilation passed and Debug was installed on the connected iPhone. Actual saved-event dates, notes, alerts, unavailable-calendar and interruption scenarios on the phone remain to be checked.

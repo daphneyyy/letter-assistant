@@ -4,6 +4,56 @@ import CoreImage
 @testable import LetterAssistant
 
 final class LetterAssistantTests: XCTestCase {
+    private var calendar: Calendar {
+        var result = Calendar(identifier: .gregorian)
+        result.timeZone = TimeZone(identifier: "America/Los_Angeles")!
+        return result
+    }
+    func testCalendarStrictDatesDoNotNormalizeInvalidInput() {
+        XCTAssertNil(CalendarDatePolicy.parseDay("2026-02-30", calendar: calendar))
+        XCTAssertNil(CalendarDatePolicy.parseDay("11/12", calendar: calendar))
+        XCTAssertNil(CalendarDatePolicy.parseDay("2026-11-15T12:00:00Z", calendar: calendar))
+        XCTAssertNotNil(CalendarDatePolicy.parseDay("2028-02-29", calendar: calendar))
+    }
+    func testCalendarAllDayEndUsesLocalDayAcrossDST() {
+        let spring = CalendarDatePolicy.parseDay("2026-03-08", calendar: calendar)!
+        let fall = CalendarDatePolicy.parseDay("2026-11-01", calendar: calendar)!
+        XCTAssertEqual(CalendarDatePolicy.end(start: spring, allDay: true, minutes: 30, calendar: calendar).timeIntervalSince(spring), 23 * 3600)
+        XCTAssertEqual(CalendarDatePolicy.end(start: fall, allDay: true, minutes: 30, calendar: calendar).timeIntervalSince(fall), 25 * 3600)
+        XCTAssertEqual(CalendarDatePolicy.end(start: spring, allDay: false, minutes: 45, calendar: calendar).timeIntervalSince(spring), 45 * 60)
+    }
+    func testCalendarMidnightRequiresReviewAgain() {
+        let start = CalendarDatePolicy.parseDay("2026-10-02", calendar: calendar)!
+        XCTAssertFalse(CalendarDatePolicy.reviewExpired(reviewedDay: start, now: start.addingTimeInterval(23 * 3600), calendar: calendar))
+        XCTAssertTrue(CalendarDatePolicy.reviewExpired(reviewedDay: start, now: CalendarDatePolicy.addingDays(1, to: start, calendar: calendar), calendar: calendar))
+    }
+    func testCalendarPreservesPastWeekendDeadlineAndConditions() {
+        let text = BilingualText(en: "If changing plans", zh: "如果更换计划")
+        let fact = LetterFact(id: "due", kind: "deadline", rawText: "By September 27, 2026 at 5pm", value: "2026-09-27", currency: nil, status: "confirmed", origin: "letter_fact", label: text, explanation: text, sourceRefs: [.init(page: 1, excerpt: "By September 27, 2026 at 5pm")])
+        let action = LetterAction(id: "act", descriptionEn: "Submit", descriptionZh: "提交", actionKind: "submit", status: "confirmed", sourceRefs: [], requirement: "conditional", condition: text, amountFactIds: [], deadlineFactId: "due", appointmentFactIds: [])
+        let proposal = CalendarProposal.make(action: action, facts: [fact], language: .zh, now: CalendarDatePolicy.parseDay("2026-10-02", calendar: calendar)!, calendar: calendar)
+        XCTAssertEqual(proposal.kind, .deadline)
+        XCTAssertEqual(proposal.date, CalendarDatePolicy.parseDay("2026-09-27", calendar: calendar))
+        XCTAssertEqual(proposal.condition, "如果更换计划")
+        XCTAssertTrue(proposal.source.contains("5pm"))
+    }
+    func testCalendarUncertainDeadlineIsNotPrefilled() {
+        let text = BilingualText(en: "Date", zh: "日期")
+        let fact = LetterFact(id: "due", kind: "deadline", rawText: "November ?", value: "2026-11-15", currency: nil, status: "needs_verification", origin: "letter_fact", label: text, explanation: text, sourceRefs: [])
+        let action = LetterAction(id: "act", descriptionEn: "Pay", descriptionZh: "支付", actionKind: "payment", status: "confirmed", sourceRefs: [], requirement: "required", condition: nil, amountFactIds: [], deadlineFactId: "due", appointmentFactIds: [])
+        let proposal = CalendarProposal.make(action: action, facts: [fact], language: .en, calendar: calendar)
+        XCTAssertNil(proposal.date)
+        XCTAssertTrue(proposal.requiresVerification)
+        XCTAssertEqual(proposal.kind, .deadline)
+    }
+    func testCalendarEffectiveDateCannotBecomeDeadline() {
+        let text = BilingualText(en: "Date", zh: "日期")
+        let fact = LetterFact(id: "effective", kind: "effective_date", rawText: "Coverage begins", value: "2026-11-15", currency: nil, status: "confirmed", origin: "letter_fact", label: text, explanation: text, sourceRefs: [])
+        let action = LetterAction(id: "act", descriptionEn: "Call", descriptionZh: "致电", actionKind: "call", status: "confirmed", sourceRefs: [], requirement: "optional", condition: nil, amountFactIds: [], deadlineFactId: nil, appointmentFactIds: [])
+        let proposal = CalendarProposal.make(action: action, facts: [fact], language: .en, calendar: calendar)
+        XCTAssertEqual(proposal.kind, .reminder)
+        XCTAssertNil(proposal.date)
+    }
     func testOnlyAcceptedPhotoCanReachInterpretation() {
         for phase in [CapturePhase.ready, .checking, .retake, .checkFailed, .interpreting, .complete] {
             XCTAssertFalse(phase.canInterpret)

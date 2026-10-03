@@ -502,3 +502,10 @@ October 2 approved reading layout: show four sections in order: What this letter
 Photo readability is checked on the iPhone with Vision OCR, with no online AI or relay call before Finish capture. Cropping and printed page numbers are not checked. Locally accepted photos are submitted together for a single AI interpretation. The relay accepts explicit client-local validation without treating it as a server-issued attestation, while retaining authentication, payload limits and result grounding checks. This supersedes the online validation-token requirement for current iPhone captures.
 
 Photo quality uncertainty is advisory: if text is detected but confidence/sharpness is uncertain, offer Retake or Use anyway. User confirmation accepts only that captured image; retaking requires a fresh check. Almost no detected text remains a blocking retake. Keep this decision local with no provider request.
+
+
+### Calendar implementation checkpoint (October 2)
+
+At the learner's request, calendar creation is being built against the current temporary letter result before account/archive slices. The current validated AI contract has date-only values, not normalized appointment times or structured urgency/risk/preparation fields. Calendar review therefore requires user-entered appointment time and time-zone confirmation, rather than parsing a time from prose; unknown urgency has no automatic reminder suggestion. User-selected relative/custom reminder dates remain available. Evidence-driven reminder recommendations remain outstanding and the slice is not marked complete. This preserves the creation-only scope and source facts.
+
+Implementation: `Models/CalendarProposal.swift` provides deterministic date parsing/arithmetic and source-derived proposal roles; `Features/CalendarReviewView.swift` reviews user input and bridges the system editor; `CaptureView.swift` presents it per extracted action. Only simulator Debug builds include an explicit launch-argument UI test harness. The device app never displays canned interpretations.

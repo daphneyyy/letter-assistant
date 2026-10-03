@@ -19,6 +19,8 @@
 		B854D727BD49A228455E9AEF /* LetterAssistantUITests/LetterAssistantUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81D96E0982EE9958C78D912D /* LetterAssistantUITests/LetterAssistantUITests.swift */; };
 		C9AEBE79829C197FE68B2ED7 /* LetterAssistant/Models/Letter.swift in Sources */ = {isa = PBXBuildFile; fileRef = FB12378388BAF0813764979E /* LetterAssistant/Models/Letter.swift */; };
 		D86161911FED97D3B85C1E95 /* LetterAssistant/App/LetterAssistantApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 566C973E40289CE54E314538 /* LetterAssistant/App/LetterAssistantApp.swift */; };
+		CA1E10000000000000000000 /* LetterAssistant/Models/CalendarProposal.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA1E00000000000000000000; };
+		CA1E10000000000000000001 /* LetterAssistant/Features/CalendarReviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA1E00000000000000000001; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -47,6 +49,8 @@
 		A5AB358850F8A8E667F42228 /* LetterAssistant/Services/CaptureGuidance.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LetterAssistant/Services/CaptureGuidance.swift; sourceTree = "<group>"; };
 		F739566ED5280322FF98A798 /* LetterAssistantTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; path = LetterAssistantTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		FB12378388BAF0813764979E /* LetterAssistant/Models/Letter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LetterAssistant/Models/Letter.swift; sourceTree = "<group>"; };
+		CA1E00000000000000000000 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LetterAssistant/Models/CalendarProposal.swift; sourceTree = "<group>"; };
+		CA1E00000000000000000001 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LetterAssistant/Features/CalendarReviewView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -90,6 +94,8 @@
 				566C973E40289CE54E314538 /* LetterAssistant/App/LetterAssistantApp.swift */,
 				2FA53DCFE58EC0C36F5EF01E /* LetterAssistant/Features/CaptureModel.swift */,
 				3894E6D9C80FD3EAFFDF4F3D /* LetterAssistant/Features/CaptureView.swift */,
+				CA1E00000000000000000001,
+				CA1E00000000000000000000,
 				FB12378388BAF0813764979E /* LetterAssistant/Models/Letter.swift */,
 				8EC7A69BE3A7D801277C6871 /* LetterAssistant/Services/CameraService.swift */,
 				A5AB358850F8A8E667F42228 /* LetterAssistant/Services/CaptureGuidance.swift */,
@@ -234,6 +240,8 @@
 				D86161911FED97D3B85C1E95 /* LetterAssistant/App/LetterAssistantApp.swift in Sources */,
 				A4608D77BB2C94860F7C4F82 /* LetterAssistant/Features/CaptureModel.swift in Sources */,
 				19629026DAB84F8F91A4BBB1 /* LetterAssistant/Features/CaptureView.swift in Sources */,
+				CA1E10000000000000000001,
+				CA1E10000000000000000000,
 				C9AEBE79829C197FE68B2ED7 /* LetterAssistant/Models/Letter.swift in Sources */,
 				41904A07F222FBA07B07A980 /* LetterAssistant/Services/CameraService.swift in Sources */,
 				05FB1991E302BEACB4C6EE6A /* LetterAssistant/Services/CaptureGuidance.swift in Sources */,
