@@ -88,7 +88,9 @@ struct CalendarReviewView: View {
                     if calendar.isDateInWeekend(selectedDate), proposal.kind == .reminder {
                         Text(language.text("This date is on a weekend. If contacting an office, check its opening hours or choose another date.", "该日期为周末。如需联系机构，请确认办公时间或另选日期。"))
                     }
-                    Text(language.text("Time zone: ", "时区：") + zoneID)
+                    if proposal.kind != .appointment {
+                        Text(language.text("Time zone: ", "时区：") + zoneID)
+                    }
                 }
                 Section(language.text("Alert", "提醒时间")) {
                     Picker(language.text("Notify me", "提醒我"), selection: $alert) {

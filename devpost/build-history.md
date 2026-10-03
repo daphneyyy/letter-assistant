@@ -130,3 +130,8 @@ User rejected the date-only limitation for analyzed letters. Extended the fact c
 Backend typecheck and 25 tests passed using a temporary npm-cached Deno runtime; 27 iOS unit tests passed, including decoded source facts → proposal → EventKit alarm, other-appointment isolation, absent/conflicting times, midnight/noon, and DST boundaries. Live-provider extraction accuracy and physical notification delivery are not established by these deterministic tests. Rebuild the app, restart the relay and analyze a fresh letter to exercise the new contract.
 
 The full iOS run subsequently completed with TEST SUCCEEDED: 27 unit tests and four UI tests passed. The final missing/ambiguous-time explanation was then clarified; no live AI or phone acceptance is inferred.
+
+
+### October 2 — duplicate time-zone row
+
+Removed the repeated read-only time-zone row for appointments; the editable time-zone picker remains. All-day items retain their single time-zone display for alert review. Verified the conditional layout in source and whitespace checks; no new behavior test was needed for this display-only change.
