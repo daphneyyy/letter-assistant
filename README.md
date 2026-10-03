@@ -101,6 +101,7 @@ See `devpost/checklist.md` for current acceptance work and `devpost/build-histor
 - An account/login system.
 - A chatbox for letter-related questions.
 - Letter classification for organizing and browsing letters by type.
+- Multilingual support beyond the hackathon’s English and Chinese; supported languages and coverage to be defined.
 - Saved letter summaries, extracted information, summaries of the user's questions, and summaries of calendar items added.
 
 These features are outside the hackathon. Their storage, authentication and synchronization design is future work, not a requirement for running this demo.

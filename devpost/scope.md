@@ -50,6 +50,7 @@ An operator clones the repository, supplies their own API settings, runs the loc
 4. Save conversation-related records: the letter summary, extracted information, a summary of the user's questions, and a summary of the calendar items added. Full verbatim transcript storage, original-photo retention and cross-device behavior require future decisions; they are not assumed from this request.
 
 5. Add letter classification to help users organize and browse letters by type. Categories and correction behavior need a future design.
+6. Expand multilingual support beyond English and Chinese. Target languages and coverage across source letters, interface, explanations and speech will be defined in future planning; the hackathon retains its existing English-letter input and English/Chinese output.
 
 These are product expansion opportunities, not claims of validated demand, revenue or completed functionality.
 

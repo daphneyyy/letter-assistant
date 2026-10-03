@@ -74,3 +74,5 @@ No completed learning wrap-up is inferred from the scope change. Keep it proport
 - Prior detailed evidence and superseded requirements are retained in `build-history.md` and Git history. Unchecked removed features are deferred, not falsely marked completed.
 
 - October 2 follow-up: learner added letter classification to the future commercial roadmap. A user-facing classification/organization feature is not part of hackathon acceptance; existing analysis classification metadata does not count as that future feature being implemented.
+
+- October 2 follow-up: learner added multilingual support to the future commercial roadmap. Additional languages and source-letter/UI/explanation/speech coverage remain to be defined. Hackathon language scope stays English-letter input with English/Chinese interface and explanations.
