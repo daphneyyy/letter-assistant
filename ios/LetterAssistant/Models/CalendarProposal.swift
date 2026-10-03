@@ -64,3 +64,36 @@ enum CalendarEditorOutcome: String {
         }
     }
 }
+
+#if DEBUG
+extension CalendarProposal {
+    static func testExample(_ kind: Kind, language: AppLanguage) -> CalendarProposal {
+        let calendar = Calendar.current
+        let now = Date()
+        let day = CalendarDatePolicy.addingDays(3, to: now, calendar: calendar)
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: language == .zh ? "zh_CN" : "en_US")
+        formatter.timeZone = calendar.timeZone
+        formatter.dateStyle = .long
+        let dateText = formatter.string(from: day)
+        let title: String
+        let source: String
+        switch kind {
+        case .deadline:
+            title = language.text("[TEST] Deadline: submit insurance form", "【测试】截止：提交保险表格")
+            source = language.text("Fictional letter: Please submit the insurance form by \(dateText).", "虚构信件：请在 \(dateText) 前提交保险表格。")
+        case .reminder:
+            title = language.text("[TEST] Reminder: contact insurance office", "【测试】提醒：联系保险公司")
+            source = language.text("Fictional letter: If you want to change plans, contact the office. No deadline is stated.", "虚构信件：如希望更换计划，请联系保险公司。未说明截止日期。")
+        case .appointment:
+            title = language.text("[TEST] Clinic appointment", "【测试】诊所预约")
+            source = language.text("Fictional letter: Your appointment is on \(dateText) at 10:00 AM in your phone's current time zone. Enter and verify this time below.", "虚构信件：预约在 \(dateText) 上午 10:00，使用手机当前时区。请在下方填写并核对时间。")
+        }
+        return CalendarProposal(kind: kind, title: title, source: source,
+            sourceDate: kind == .reminder ? nil : dateText,
+            condition: kind == .reminder ? language.text("If you want to change plans", "如果你希望更换计划") : nil,
+            requiresVerification: false, date: kind == .reminder ? nil : day,
+            reviewedDay: calendar.startOfDay(for: now), timeZone: calendar.timeZone)
+    }
+}
+#endif

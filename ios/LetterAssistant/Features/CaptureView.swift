@@ -5,6 +5,7 @@ struct CaptureView: View {
     @State private var calendarProposal: CalendarProposal?
     @State private var pendingCalendarOutcome: CalendarEditorOutcome?
     @State private var calendarOutcome: CalendarEditorOutcome?
+    @State private var calendarTestMenu = false
     @State private var cameraOpen = false
     @State private var appendPage = false
     @State private var discardPrompt = false
@@ -25,6 +26,14 @@ struct CaptureView: View {
                     }.disabled(model.phase.busy)
                     Text(language.text("First build • fictional letters only • not saved", "首次构建 · 仅使用虚构信件 · 不保存"))
                         .font(.callout).foregroundStyle(.secondary)
+                    #if DEBUG
+                    Button { calendarTestMenu = true } label: {
+                        Label(language.text("Test calendar without AI", "日历测试（无需 AI）"), systemImage: "calendar.badge.plus")
+                            .font(.headline).frame(maxWidth: .infinity, minHeight: 48)
+                    }.buttonStyle(.bordered).disabled(model.phase.busy)
+                    Text(language.text("Fictional examples. Saving in the next screen creates a real calendar event.", "使用虚构样例。在系统编辑器中保存，会创建真实日历事项。"))
+                        .font(.callout).foregroundStyle(.secondary)
+                    #endif
                     if !model.configured {
                         Label(language.text("AI connection setup is still needed for this test build.", "此测试版本仍需设置 AI 连接。"), systemImage: "info.circle")
                             .font(.callout).padding().frame(maxWidth: .infinity, alignment: .leading)
@@ -99,6 +108,14 @@ struct CaptureView: View {
                 Button(language.text("Keep reading", "继续阅读"), role: .cancel) {}
             } message: {
                 Text(language.text("This explanation has not been saved. Finishing clears this letter and returns to the start screen.", "本次解读尚未保存。结束后将清除当前信件，并返回开始页。"))
+            }
+            .confirmationDialog(language.text("Choose a calendar test", "选择日历测试场景"), isPresented: $calendarTestMenu, titleVisibility: .visible) {
+                #if DEBUG
+                Button(language.text("Deadline", "截止日期")) { calendarProposal = .testExample(.deadline, language: language) }
+                Button(language.text("Reminder without a deadline", "无截止日期的提醒")) { calendarProposal = .testExample(.reminder, language: language) }
+                Button(language.text("Appointment", "预约")) { calendarProposal = .testExample(.appointment, language: language) }
+                #endif
+                Button(language.text("Cancel", "取消"), role: .cancel) {}
             }
             .onAppear {
                 if calendarProposal == nil && UserDefaults.standard.bool(forKey: "calendarEditorPending") {
