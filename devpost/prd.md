@@ -87,4 +87,4 @@ No user account, email, cloud archive or app-owned conversation history. Photos/
 
 ## Future Commercial Features
 
-See `scope.md > Future Commercial Roadmap`: in-app calendar with phone synchronization, account/login, chatbox, and saved letter summaries/extracted information/question summaries/added-item summaries. Future storage and synchronization choices require their own product and technical design.
+See `scope.md > Future Commercial Roadmap`: in-app calendar with phone synchronization, account/login, chatbox, user-facing letter classification, and saved letter summaries/extracted information/question summaries/added-item summaries. Future storage and synchronization choices require their own product and technical design.

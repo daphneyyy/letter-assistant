@@ -36,7 +36,7 @@ People who struggle to read English medical and health-insurance letters. The in
 
 ## Explicitly Cut from the Hackathon
 
-Email and all other account registration/login/recovery; cloud databases/storage; archived letters; chatbox and voice questions; saved chats or summaries; in-app calendar; calendar synchronization; cross-device account/history acceptance; automatic urgency-based reminder recommendations. A manually selected reminder date is sufficient for this demo.
+Email and all other account registration/login/recovery; cloud databases/storage; archived letters; user-facing letter classification/organization; chatbox and voice questions; saved chats or summaries; in-app calendar; calendar synchronization; cross-device account/history acceptance; automatic urgency-based reminder recommendations. A manually selected reminder date is sufficient for this demo.
 
 ## What "Working" Looks Like
 
@@ -48,6 +48,8 @@ An operator clones the repository, supplies their own API settings, runs the loc
 2. Add an account/login system. Authentication method is not fixed; email is a possible later implementation, not a current dependency.
 3. Add a chatbox for questions and follow-up discussion about letters.
 4. Save conversation-related records: the letter summary, extracted information, a summary of the user's questions, and a summary of the calendar items added. Full verbatim transcript storage, original-photo retention and cross-device behavior require future decisions; they are not assumed from this request.
+
+5. Add letter classification to help users organize and browse letters by type. Categories and correction behavior need a future design.
 
 These are product expansion opportunities, not claims of validated demand, revenue or completed functionality.
 

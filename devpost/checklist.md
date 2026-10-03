@@ -72,3 +72,5 @@ No completed learning wrap-up is inferred from the scope change. Keep it proport
 - Clone-and-run with each operator's own API key is the distribution target. Preserve the current local relay; no in-app key entry or hosted service was requested.
 - Automatic urgency-based reminder suggestions and physical cross-device acceptance are not required by the four-step demo. User-selected dates remain available.
 - Prior detailed evidence and superseded requirements are retained in `build-history.md` and Git history. Unchecked removed features are deferred, not falsely marked completed.
+
+- October 2 follow-up: learner added letter classification to the future commercial roadmap. A user-facing classification/organization feature is not part of hackathon acceptance; existing analysis classification metadata does not count as that future feature being implemented.
