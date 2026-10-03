@@ -1,16 +1,15 @@
 import SwiftUI
 import EventKit
-import EventKitUI
 
-struct CalendarReviewView: View {
+@MainActor struct CalendarReviewView: View {
     let proposal: CalendarProposal
     let language: AppLanguage
-    let report: (CalendarEditorOutcome) -> Void
+    let report: (CalendarSaveOutcome) -> Void
     @Environment(\.dismiss) private var dismiss
     @State private var title: String
     @State private var selectedDate: Date
     @State private var dateEntered = false
-    @State private var confirmed = false
+    @State private var datePickerOpen = false
     @State private var durationChoice: Int
     @State private var customDuration: String
     @FocusState private var durationFocused: Bool
@@ -19,10 +18,10 @@ struct CalendarReviewView: View {
     @State private var zoneID: String
     @State private var reviewedDay: Date
     @State private var midnightNotice = false
-    @State private var editor: CalendarEditorRequest?
-    @State private var outcome: CalendarEditorOutcome?
+    @StateObject private var saver: CalendarSaveModel
 
-    init(proposal: CalendarProposal, language: AppLanguage, report: @escaping (CalendarEditorOutcome) -> Void) {
+    init(proposal: CalendarProposal, language: AppLanguage, saver: CalendarSaveModel? = nil, report: @escaping (CalendarSaveOutcome) -> Void) {
+        _saver = StateObject(wrappedValue: saver ?? CalendarSaveModel())
         self.proposal = proposal; self.language = language; self.report = report
         _durationChoice = State(initialValue: proposal.initialDurationMinutes)
         _customDuration = State(initialValue: String(proposal.initialDurationMinutes))
@@ -30,6 +29,7 @@ struct CalendarReviewView: View {
         _customAlertDate = State(initialValue: proposal.date ?? Date())
         _title = State(initialValue: proposal.title)
         _selectedDate = State(initialValue: proposal.date ?? Date())
+        _dateEntered = State(initialValue: proposal.date != nil && (proposal.kind != .appointment || proposal.hasAppointmentTime))
         _zoneID = State(initialValue: proposal.timeZone.identifier)
         _reviewedDay = State(initialValue: proposal.reviewedDay)
     }
@@ -42,8 +42,7 @@ struct CalendarReviewView: View {
         durationChoice == 0 ? CalendarDurationPolicy.custom(customDuration) : CalendarDurationPolicy.valid(durationChoice)
     }
     var durationOptions: [Int] { Array(Set(CalendarDurationPolicy.presets + [proposal.initialDurationMinutes])).sorted() }
-    var needsEntry: Bool { proposal.kind == .appointment || proposal.date == nil || proposal.requiresVerification }
-    var canContinue: Bool { (proposal.kind != .appointment || durationMinutes != nil) && confirmed && (!needsEntry || dateEntered) && !title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+    var canContinue: Bool { (proposal.kind != .appointment || durationMinutes != nil) && dateEntered && !title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
     var body: some View {
         NavigationStack {
             Form {
@@ -51,7 +50,7 @@ struct CalendarReviewView: View {
                     if let condition = proposal.condition { Text(condition).font(.headline) }
                     Text(proposal.source).textSelection(.enabled)
                     if let sourceDate = proposal.sourceDate {
-                        Text(language.text("Letter date: ", "信件所述日期：") + sourceDate)
+                        Text(language.text(proposal.kind == .deadline ? "Deadline in letter: " : "Appointment in letter: ", proposal.kind == .deadline ? "信件截止日期：" : "信件预约时间：") + sourceDate)
                     }
                     if proposal.requiresVerification {
                         Text(language.text("This action or date needs verification. Check the original and enter the date yourself.", "此事项或日期需要核实。请查看原图，并亲自选择日期。"))
@@ -64,7 +63,7 @@ struct CalendarReviewView: View {
                         ForEach([1, 3, 7], id: \.self) { days in
                             Button(language.text(days == 1 ? "Tomorrow" : "In \(days) days", days == 1 ? "明天" : "\(days) 天后")) {
                                 selectedDate = CalendarDatePolicy.addingDays(days, to: Date(), calendar: calendar)
-                                dateEntered = true; confirmed = false
+                                dateEntered = true
                             }.frame(minHeight: 44)
                         }
                     }
@@ -79,7 +78,7 @@ struct CalendarReviewView: View {
                         Picker(language.text("Time zone", "时区"), selection: $zoneID) {
                             ForEach(TimeZone.knownTimeZoneIdentifiers, id: \.self) { Text($0).tag($0) }
                         }
-                        DatePicker(language.text("Appointment", "预约时间"), selection: $selectedDate, displayedComponents: [.date, .hourAndMinute])
+                        dateSelection
                         Picker(language.text("Duration", "时长"), selection: $durationChoice) {
                             ForEach(durationOptions, id: \.self) { value in
                                 Text(language.text("\(value) minutes", "\(value) 分钟")).tag(value)
@@ -110,12 +109,9 @@ struct CalendarReviewView: View {
                             }.accessibilityIdentifier("durationEnd")
                         }
                     } else {
-                        DatePicker(language.text("Calendar date", "日历日期"), selection: $selectedDate, displayedComponents: .date)
+                        dateSelection
                             .disabled(proposal.kind == .deadline && !proposal.requiresVerification && proposal.date != nil)
                         Text(language.text("All-day event. Choose an alert below.", "全天事项。请在下方选择提醒时间。"))
-                    }
-                    if needsEntry {
-                        Toggle(language.text("I have entered and checked this date/time", "我已填写并核对这个日期／时间"), isOn: $dateEntered)
                     }
                     if (proposal.kind == .appointment ? selectedDate < Date() : calendar.startOfDay(for: selectedDate) < calendar.startOfDay(for: Date())) {
                         Label(language.text("Passed — this date will not be moved automatically.", "日期已过，不会自动顺延。"), systemImage: "clock.badge.exclamationmark")
@@ -126,6 +122,9 @@ struct CalendarReviewView: View {
                     if proposal.kind != .appointment {
                         Text(language.text("Time zone: ", "时区：") + zoneID)
                     }
+                }
+                Section(language.text("Calendar notes", "日历备注")) {
+                    Text(proposal.eventNotes.isEmpty ? title : proposal.eventNotes).textSelection(.enabled)
                 }
                 Section(language.text("Alert", "提醒时间")) {
                     Picker(language.text("Notify me", "提醒我"), selection: $alert) {
@@ -139,85 +138,104 @@ struct CalendarReviewView: View {
                         Text(language.text("This exact time stays fixed if you change the event date.", "修改事项日期时，此自定义提醒时间保持不变。"))
                             .font(.footnote).foregroundStyle(.secondary)
                     }
-                    Text(language.text("This is your notification setting, not a time stated in the letter. You can change it in Calendar before saving.", "这是你选择的通知时间，并非信件所述时间。保存前仍可在日历中修改。"))
+                    Text(language.text("This is your notification setting, not a time stated in the letter. You can change it here before adding.", "这是你选择的通知时间，并非信件所述时间。添加前可在这里修改。"))
                         .font(.footnote).foregroundStyle(.secondary)
                     if let date = alert.fireDate(start: selectedDate, calendar: calendar, customDate: customAlertDate), date < Date() {
                         Label(language.text("This alert time has passed. Choose another option or review the event date.", "此提醒时间已过。请选择其他选项或核对事项日期。"), systemImage: "clock.badge.exclamationmark")
                     }
                 }
                 Section {
-                    Toggle(language.text("I confirm the action, conditions, date, duration, time zone and alert", "我确认事项、适用条件、日期、时长、时区和提醒"), isOn: $confirmed)
-                    Text(language.text("If no calendar is available, cancel and set up a calendar account in iPhone Settings before trying again.", "如果系统没有可用日历，请取消，并先在 iPhone 设置中配置日历账户。"))
-                    Text(language.text("The next screen is Apple's editor. Save there to create the event; you can also cancel. Adding again may create a duplicate.", "下一步打开苹果日历编辑器，在那里保存才会创建事项，也可以取消。再次添加可能产生重复事项。"))
-                    if midnightNotice { Text(language.text("The day changed. Review the displayed date and confirm again.", "日期已跨天，请重新核对显示的日期并确认。")) }
-                    Button(language.text("Confirm and open Calendar", "确认并打开日历")) { openEditor() }
-                        .frame(minHeight: 48).disabled(!canContinue || editor != nil)
+                    Text(language.text(proposal.kind == .appointment ? "Add directly to your default calendar with the date, duration and alert shown above." : "Add directly to your default calendar with the date and alert shown above.", proposal.kind == .appointment ? "按上方日期、时长和提醒设置，直接添加到默认日历。" : "按上方日期和提醒设置，直接添加到默认日历。"))
+                    if let failure = saver.failure {
+                        Text(failure.message(language)).foregroundStyle(.red).accessibilityIdentifier("calendarSaveError")
+                        if failure == .permissionDenied {
+                            Button(language.text("Open Settings", "打开设置")) {
+                                if let url = URL(string: UIApplication.openSettingsURLString) { UIApplication.shared.open(url) }
+                            }
+                        }
+                    }
+                    if midnightNotice { Text(language.text("The day changed. Check the displayed date, then tap Add again.", "日期已跨天，请查看显示的日期，然后再次点“添加”。")) }
+                    Button(language.text(saver.isSaving ? "Adding…" : "Add to calendar", saver.isSaving ? "正在添加…" : "添加到日历")) { addToCalendar() }
+                        .frame(minHeight: 48).disabled(!canContinue || saver.isSaving || saver.didSave)
                     Button(language.text("Not now", "暂不添加"), role: .cancel) { dismiss() }.frame(minHeight: 44)
                 }
             }
+            .disabled(saver.isSaving || saver.didSave)
+            .interactiveDismissDisabled(saver.isSaving)
             .font(.body)
             .tint(LetterStyle.accent)
             .environment(\.timeZone, calendar.timeZone)
             .environment(\.locale, Locale(identifier: language == .zh ? "zh_CN" : "en_US"))
             .navigationTitle(language.text("Review calendar event", "核对日历事项"))
             .navigationBarTitleDisplayMode(.inline)
-            .onChange(of: selectedDate) { _, _ in confirmed = false }
-            .onChange(of: zoneID) { _, _ in confirmed = false; dateEntered = false }
-            .onChange(of: title) { _, _ in confirmed = false }
             .onChange(of: alert) { _, newValue in
-                confirmed = false
                 if newValue == .custom {
                     let defaultChoice: CalendarAlertChoice = proposal.kind == .appointment ? .fifteenMinutes : .sameDayMorning
                     customAlertDate = defaultChoice.fireDate(start: selectedDate, calendar: calendar) ?? selectedDate
                 }
             }
-            .onChange(of: customAlertDate) { _, _ in confirmed = false }
             .onChange(of: durationChoice) { oldValue, newValue in
-                confirmed = false
                 if newValue == 0 && oldValue > 0 { customDuration = String(oldValue) }
             }
-            .onChange(of: customDuration) { _, _ in confirmed = false }
             .toolbar {
                 ToolbarItemGroup(placement: .keyboard) {
                     Spacer()
                     Button(language.text("Done", "完成")) { durationFocused = false }
                 }
             }
-            .fullScreenCover(item: $editor, onDismiss: {
-                UserDefaults.standard.removeObject(forKey: "calendarEditorPending")
-                report(outcome ?? .unknown); dismiss()
-            }) { request in
-                CalendarSystemEditor(request: request) { result in
-                    outcome = result; editor = nil
-                }.ignoresSafeArea().interactiveDismissDisabled()
+            .sheet(isPresented: $datePickerOpen) {
+                NavigationStack {
+                    Form {
+                        DatePicker(language.text("Date and time", "日期和时间"), selection: $selectedDate,
+                            displayedComponents: proposal.kind == .appointment ? [.date, .hourAndMinute] : [.date])
+                    }
+                    .environment(\.timeZone, calendar.timeZone)
+                    .environment(\.locale, Locale(identifier: language == .zh ? "zh_CN" : "en_US"))
+                    .navigationTitle(language.text("Choose a date", "选择日期"))
+                    .toolbar {
+                        ToolbarItem(placement: .cancellationAction) {
+                            Button(language.text("Cancel", "取消")) { datePickerOpen = false }
+                        }
+                        ToolbarItem(placement: .confirmationAction) {
+                            Button(language.text("Done", "完成")) { dateEntered = true; datePickerOpen = false }
+                        }
+                    }
+                }
             }
+
         }
     }
-    private func openEditor() {
-        guard canContinue else { return }
+    @ViewBuilder private var dateSelection: some View {
+        if dateEntered {
+            DatePicker(language.text(proposal.kind == .appointment ? "Appointment" : "Calendar date", proposal.kind == .appointment ? "预约时间" : "日历日期"), selection: $selectedDate,
+                displayedComponents: proposal.kind == .appointment ? [.date, .hourAndMinute] : [.date])
+        } else {
+            Button(language.text(proposal.kind == .appointment ? "Choose appointment date and time" : "Choose a calendar date", proposal.kind == .appointment ? "选择预约日期和时间" : "选择日历日期")) {
+                datePickerOpen = true
+            }.frame(minHeight: 44).accessibilityIdentifier("chooseMissingDate")
+        }
+    }
+
+    private func addToCalendar() {
+        guard canContinue, !saver.isSaving, !saver.didSave else { return }
         let minutes = durationMinutes ?? 30
         let now = Date()
         if CalendarDatePolicy.reviewExpired(reviewedDay: reviewedDay, now: now, calendar: calendar) {
-            reviewedDay = calendar.startOfDay(for: now); confirmed = false; midnightNotice = true
+            reviewedDay = calendar.startOfDay(for: now); midnightNotice = true
             return
         }
         let allDay = proposal.kind != .appointment
         let start = allDay ? calendar.startOfDay(for: selectedDate) : selectedDate
-        var notes = [proposal.source]
-        if let sourceDate = proposal.sourceDate { notes.append(language.text("Date as stated in the letter: ", "信件所述日期：") + sourceDate) }
-        if let condition = proposal.condition { notes.append(condition) }
-        if proposal.kind == .reminder { notes.append(language.text("User-selected reminder; not a deadline stated by the letter.", "用户选择的提醒日期，并非信中截止日期。")) }
-        if needsEntry { notes.append(language.text("Date/time entered and verified by the user.", "日期／时间由用户填写并核对。")) }
-        if proposal.kind == .appointment { notes.append(language.text("Calendar duration selected by user: \(minutes) minutes. Any AI duration is an estimate, not a confirmed letter fact.", "用户选择的日历时长：\(minutes) 分钟。AI 时长为估计值，并非已确认的信件事实。")) }
-        outcome = nil
-        UserDefaults.standard.set(true, forKey: "calendarEditorPending")
-        editor = CalendarEditorRequest(title: title, notes: notes.joined(separator: "\n\n"), start: start,
+        let request = CalendarEventRequest(title: title, notes: proposal.eventNotes.isEmpty ? title : proposal.eventNotes, start: start,
             end: CalendarDatePolicy.end(start: start, allDay: allDay, minutes: minutes, calendar: calendar),
             allDay: allDay, timeZone: calendar.timeZone, alert: alert, customAlertDate: customAlertDate)
+        Task { @MainActor in
+            if await saver.save(request) { report(.saved); dismiss() }
+        }
     }
 }
 
-struct CalendarEditorRequest: Identifiable {
+struct CalendarEventRequest: Identifiable {
     let id = UUID()
     let title: String
     let notes: String
@@ -244,35 +262,67 @@ struct CalendarEditorRequest: Identifiable {
     }
 }
 
-struct CalendarSystemEditor: UIViewControllerRepresentable {
-    let request: CalendarEditorRequest
-    let complete: (CalendarEditorOutcome) -> Void
-    func makeCoordinator() -> Coordinator { Coordinator(complete: complete) }
-    func makeUIViewController(context: Context) -> EKEventEditViewController {
-        let controller = EKEventEditViewController()
-        let store = context.coordinator.store
-        controller.eventStore = store
-        controller.event = request.makeEvent(in: store)
-        controller.editViewDelegate = context.coordinator
-        return controller
-    }
-    func updateUIViewController(_ uiViewController: EKEventEditViewController, context: Context) {}
-    final class Coordinator: NSObject, EKEventEditViewDelegate {
-        let store = EKEventStore()
-        let complete: (CalendarEditorOutcome) -> Void
-        private var completed = false
-        init(complete: @escaping (CalendarEditorOutcome) -> Void) { self.complete = complete }
-        func eventEditViewController(_ controller: EKEventEditViewController, didCompleteWith action: EKEventEditViewAction) {
-            guard !completed else { return }; completed = true
-            switch action {
-            case .saved: complete(.saved)
-            case .canceled: complete(.canceled)
-            default: complete(.unknown)
-            }
+enum CalendarSaveFailure: Error, Equatable {
+    case permissionDenied, unavailable, failed
+    func message(_ language: AppLanguage) -> String {
+        switch self {
+        case .permissionDenied: return language.text("Calendar access was not granted. Allow adding events in Settings, then try again.", "未获得日历添加权限。请在设置中允许添加日历事项后重试。")
+        case .unavailable: return language.text("No writable default calendar is available. Set up a calendar account and default calendar in Settings.", "没有可写入的默认日历。请在设置中配置日历账户和默认日历。")
+        case .failed: return language.text("Could not confirm the save. Check Calendar before trying again to avoid a duplicate.", "无法确认保存成功。请先查看日历，再重试，以免重复添加。")
         }
     }
 }
 
+@MainActor protocol CalendarWriting {
+    func authorize() async throws -> Bool
+    func save(_ request: CalendarEventRequest) throws
+}
+
+@MainActor final class SystemCalendarWriter: CalendarWriting {
+    private let store = EKEventStore()
+    func authorize() async throws -> Bool {
+        switch EKEventStore.authorizationStatus(for: .event) {
+        case .writeOnly, .fullAccess: return true
+        case .notDetermined: return try await store.requestWriteOnlyAccessToEvents()
+        default: return false
+        }
+    }
+    func save(_ request: CalendarEventRequest) throws {
+        guard let calendar = store.defaultCalendarForNewEvents, calendar.allowsContentModifications else {
+            throw CalendarSaveFailure.unavailable
+        }
+        let event = request.makeEvent(in: store)
+        event.calendar = calendar
+        try store.save(event, span: .thisEvent, commit: true)
+    }
+}
+
+@MainActor final class CalendarSaveModel: ObservableObject {
+    @Published private(set) var isSaving = false
+    @Published private(set) var didSave = false
+    @Published private(set) var failure: CalendarSaveFailure?
+    private let writer: any CalendarWriting
+    private let defaults: UserDefaults
+    init(writer: (any CalendarWriting)? = nil, defaults: UserDefaults = .standard) {
+        self.writer = writer ?? SystemCalendarWriter(); self.defaults = defaults
+    }
+    func save(_ request: CalendarEventRequest) async -> Bool {
+        guard !isSaving, !didSave else { return false }
+        isSaving = true; failure = nil
+        defer { isSaving = false }
+        do {
+            guard try await writer.authorize() else { failure = .permissionDenied; return false }
+            defaults.set(true, forKey: "calendarSavePending")
+            defer { defaults.removeObject(forKey: "calendarSavePending") }
+            try writer.save(request)
+            didSave = true
+            return true
+        } catch {
+            failure = (error as? CalendarSaveFailure) ?? .failed
+            return false
+        }
+    }
+}
 
 enum CalendarAlertChoice: Hashable {
     case none, sameDayMorning, previousDayMorning, twoDaysMorning, weekMorning

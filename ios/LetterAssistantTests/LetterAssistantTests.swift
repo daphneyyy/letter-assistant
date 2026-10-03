@@ -13,14 +13,14 @@ final class LetterAssistantTests: XCTestCase {
     func testSystemCalendarEventPreservesAllDayAndTimedAppointment() {
         let start = CalendarDatePolicy.parseDay("2026-03-08", calendar: calendar)!
         let store = EKEventStore()
-        let allDay = CalendarEditorRequest(title: "Test deadline", notes: "Fictional", start: start,
+        let allDay = CalendarEventRequest(title: "Test deadline", notes: "Fictional", start: start,
             end: CalendarDatePolicy.end(start: start, allDay: true, minutes: 30, calendar: calendar),
             allDay: true, timeZone: calendar.timeZone).makeEvent(in: store)
         XCTAssertTrue(allDay.isAllDay)
         XCTAssertNil(allDay.timeZone)
         XCTAssertEqual(calendar.dateComponents([.year, .month, .day], from: allDay.startDate),
                        calendar.dateComponents([.year, .month, .day], from: start))
-        let appointment = CalendarEditorRequest(title: "Test appointment", notes: "Fictional", start: start,
+        let appointment = CalendarEventRequest(title: "Test appointment", notes: "Fictional", start: start,
             end: start.addingTimeInterval(1800), allDay: false, timeZone: calendar.timeZone).makeEvent(in: store)
         XCTAssertFalse(appointment.isAllDay)
         XCTAssertEqual(appointment.timeZone, calendar.timeZone)
@@ -30,7 +30,7 @@ final class LetterAssistantTests: XCTestCase {
         let start = CalendarDatePolicy.parseDay("2026-10-05", calendar: calendar)!
         let store = EKEventStore()
         for choice in [CalendarAlertChoice.none, .sameDayMorning, .previousDayMorning] {
-            let event = CalendarEditorRequest(title: "Test", notes: "", start: start,
+            let event = CalendarEventRequest(title: "Test", notes: "", start: start,
                 end: CalendarDatePolicy.end(start: start, allDay: true, minutes: 30, calendar: calendar),
                 allDay: true, timeZone: calendar.timeZone, alert: choice).makeEvent(in: store)
             XCTAssertTrue(event.isAllDay)
@@ -45,7 +45,7 @@ final class LetterAssistantTests: XCTestCase {
             }
         }
         for (choice, offset) in [(CalendarAlertChoice.atStart, 0.0), (.fifteenMinutes, -900.0), (.oneHour, -3600.0)] {
-            let event = CalendarEditorRequest(title: "Test", notes: "", start: start,
+            let event = CalendarEventRequest(title: "Test", notes: "", start: start,
                 end: start.addingTimeInterval(1800), allDay: false, timeZone: calendar.timeZone,
                 alert: choice).makeEvent(in: store)
             XCTAssertEqual(event.alarms?.first?.relativeOffset, offset)
@@ -83,7 +83,7 @@ final class LetterAssistantTests: XCTestCase {
         }
         let custom = start.addingTimeInterval(-12345)
         for allDay in [true, false] {
-            let event = CalendarEditorRequest(title: "Test", notes: "", start: start,
+            let event = CalendarEventRequest(title: "Test", notes: "", start: start,
                 end: start.addingTimeInterval(86400), allDay: allDay, timeZone: calendar.timeZone,
                 alert: .custom, customAlertDate: custom).makeEvent(in: EKEventStore())
             XCTAssertEqual(event.alarms?.first?.absoluteDate, custom)
@@ -126,7 +126,7 @@ final class LetterAssistantTests: XCTestCase {
             var zone = calendar; zone.timeZone = proposal.timeZone
             let start = try XCTUnwrap(proposal.date)
             XCTAssertEqual(zone.component(.hour, from: start), 10)
-            let event = CalendarEditorRequest(title: proposal.title, notes: proposal.source, start: start,
+            let event = CalendarEventRequest(title: proposal.title, notes: proposal.source, start: start,
                 end: start.addingTimeInterval(1800), allDay: false, timeZone: proposal.timeZone, alert: .fifteenMinutes).makeEvent(in: EKEventStore())
             let fire = start.addingTimeInterval(try XCTUnwrap(event.alarms?.first?.relativeOffset))
             XCTAssertEqual(zone.component(.hour, from: fire), 9)
@@ -170,7 +170,7 @@ final class LetterAssistantTests: XCTestCase {
         XCTAssertEqual(proposal.suggestedDurationMinutes, 50)
         XCTAssertEqual(proposal.initialDurationMinutes, 50)
         let start = try XCTUnwrap(proposal.date)
-        let event = CalendarEditorRequest(title: "Test", notes: "", start: start,
+        let event = CalendarEventRequest(title: "Test", notes: "", start: start,
             end: CalendarDatePolicy.end(start: start, allDay: false, minutes: proposal.initialDurationMinutes, calendar: calendar), allDay: false, timeZone: calendar.timeZone).makeEvent(in: EKEventStore())
         XCTAssertEqual(event.endDate.timeIntervalSince(start), 3000)
         let legacy = json.replacingOccurrences(of: ",\"suggested_duration_minutes\":50", with: "")
@@ -192,6 +192,94 @@ final class LetterAssistantTests: XCTestCase {
         XCTAssertEqual(calendar.component(.day, from: end), 6)
         XCTAssertEqual(calendar.component(.hour, from: end), 1)
         XCTAssertEqual(calendar.component(.minute, from: end), 5)
+    }
+
+    @MainActor func testDirectSavePermissionFailuresSuccessAndDuplicateGuard() async {
+        let writer = FakeCalendarWriter()
+        let suite = "calendar-save-test-" + UUID().uuidString
+        let defaults = UserDefaults(suiteName: suite)!
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let model = CalendarSaveModel(writer: writer, defaults: defaults)
+        let start = Date()
+        let request = CalendarEventRequest(title: "Fictional", notes: "", start: start, end: start.addingTimeInterval(1800), allDay: false, timeZone: .current)
+        writer.allowed = false
+        let denied = await model.save(request)
+        XCTAssertFalse(denied); XCTAssertEqual(model.failure, .permissionDenied); XCTAssertEqual(writer.saves, 0)
+        writer.allowed = true; writer.failure = .unavailable
+        let unavailable = await model.save(request)
+        XCTAssertFalse(unavailable); XCTAssertEqual(model.failure, .unavailable)
+        writer.failure = .failed
+        let failed = await model.save(request)
+        XCTAssertFalse(failed); XCTAssertEqual(model.failure, .failed); XCTAssertFalse(model.didSave)
+        XCTAssertFalse(defaults.bool(forKey: "calendarSavePending"))
+        writer.failure = nil
+        let saved = await model.save(request)
+        XCTAssertTrue(saved); XCTAssertTrue(model.didSave); XCTAssertNil(model.failure)
+        let attempts = writer.saves
+        let duplicate = await model.save(request)
+        XCTAssertFalse(duplicate); XCTAssertEqual(writer.saves, attempts)
+        XCTAssertFalse(model.isSaving)
+    }
+
+    @MainActor func testConcurrentAddDoesNotSaveTwice() async {
+        let writer = FakeCalendarWriter(); writer.pause = true
+        let model = CalendarSaveModel(writer: writer)
+        let request = CalendarEventRequest(title: "Fictional", notes: "", start: Date(), end: Date().addingTimeInterval(1800), allDay: false, timeZone: .current)
+        let first = Task { await model.save(request) }
+        while writer.continuation == nil { await Task.yield() }
+        let second = await model.save(request)
+        XCTAssertFalse(second); XCTAssertTrue(model.isSaving)
+        writer.continuation?.resume(returning: true)
+        let saved = await first.value
+        XCTAssertTrue(saved); XCTAssertEqual(writer.saves, 1)
+    }
+
+    func testCalendarNotesAreEventBriefsAndPreserveConditions() throws {
+        let decoder = JSONDecoder(); decoder.keyDecodingStrategy = .convertFromSnakeCase
+        let json = #"{"id":"visit","description_en":"Attend appointment","description_zh":"参加预约","action_kind":"schedule_appointment","status":"confirmed","source_refs":[],"requirement":"conditional","condition":{"en":"If changing plans","zh":"如需更换计划"},"amount_fact_ids":[],"deadline_fact_id":"due","appointment_fact_ids":[],"calendar_notes":{"en":"Submit the insurance form to the office.","zh":"向办公室提交保险表格。"}}"#
+        let action = try decoder.decode(LetterAction.self, from: Data(json.utf8))
+        let label = BilingualText(en: "Deadline", zh: "截止时间")
+        let deadline = LetterFact(id: "due", kind: "deadline", rawText: "October 5 by 5 PM", value: "2026-10-05", currency: nil, status: "confirmed", origin: "letter_fact", label: label, explanation: label, sourceRefs: [])
+        let en = CalendarNoteBuilder.make(action: action, deadline: deadline, language: .en)
+        XCTAssertTrue(en.hasPrefix("Submit the insurance form to the office."))
+        XCTAssertTrue(en.contains("If changing plans")); XCTAssertTrue(en.contains("October 5 by 5 PM"))
+        let zh = CalendarNoteBuilder.make(action: action, deadline: deadline, language: .zh)
+        XCTAssertTrue(zh.hasPrefix("向办公室提交保险表格。")); XCTAssertTrue(zh.contains("如需更换计划"))
+        var legacy = action; legacy.calendarNotes = nil
+        XCTAssertTrue(CalendarNoteBuilder.make(action: legacy, deadline: deadline, language: .en).hasPrefix("Attend appointment"))
+        for language in [AppLanguage.en, .zh] {
+            let example = CalendarProposal.testExample(.appointment, language: language)
+            XCTAssertFalse(example.eventNotes.isEmpty)
+            XCTAssertFalse(example.eventNotes.contains("Verify"))
+            XCTAssertFalse(example.eventNotes.contains("AI"))
+            XCTAssertFalse(example.eventNotes.contains("核对"))
+            XCTAssertFalse(example.eventNotes.contains("Date as stated"))
+            let start = example.date!
+            let event = CalendarEventRequest(title: example.title, notes: example.eventNotes, start: start, end: start.addingTimeInterval(3600), allDay: false, timeZone: example.timeZone).makeEvent(in: EKEventStore())
+            XCTAssertEqual(event.notes, example.eventNotes)
+        }
+    }
+
+    func testBillCalendarDeduplicatesSourceAndDateOnlyNotes() {
+        let excerpt = "Please pay USD 125.00 by November 15, 2026."
+        let text = BilingualText(en: "Payment due", zh: "付款截止")
+        let due = LetterFact(id: "due", kind: "deadline", rawText: excerpt, value: "2026-11-15", currency: nil, status: "confirmed", origin: "letter_fact", label: text, explanation: text, sourceRefs: [.init(page: 1, excerpt: excerpt)])
+        let amount = LetterFact(id: "amount", kind: "amount", rawText: "USD 125.00", value: "125.00", currency: "USD", status: "confirmed", origin: "letter_fact", label: text, explanation: text, sourceRefs: [.init(page: 1, excerpt: excerpt)])
+        var action = LetterAction(id: "pay", descriptionEn: "Pay the 125.00 USD balance by November 15, 2026.", descriptionZh: "在 2026 年 11 月 15 日前支付 125 美元。", actionKind: "payment", status: "confirmed", sourceRefs: [.init(page: 1, excerpt: excerpt), .init(page: 1, excerpt: "  Please pay USD 125.00 by November 15, 2026.  ")], requirement: "required", condition: nil, amountFactIds: ["amount"], deadlineFactId: "due", appointmentFactIds: [])
+        action.calendarNotes = BilingualText(en: "Pay USD 125.00 to Harbor Example Clinic.", zh: "向 Harbor Example Clinic 支付 125 美元。")
+        let fallback = CalendarProposal.make(action: action, facts: [due, amount], language: .en, calendar: calendar)
+        XCTAssertEqual(fallback.title, "Pay bill · USD 125.00")
+        XCTAssertEqual(fallback.source.components(separatedBy: "Photo 1:").count - 1, 1)
+        XCTAssertNil(fallback.sourceDate)
+        XCTAssertEqual(fallback.eventNotes, "Pay USD 125.00 to Harbor Example Clinic.")
+        XCTAssertEqual(fallback.date, CalendarDatePolicy.parseDay("2026-11-15", calendar: calendar))
+        action.calendarTitle = BilingualText(en: "Pay Harbor Example Clinic", zh: "支付诊所账单")
+        XCTAssertEqual(CalendarProposal.make(action: action, facts: [due, amount], language: .zh, calendar: calendar).title, "支付诊所账单")
+        // Repeated evidence on different pages retains both page references.
+        let secondPage = LetterFact(id: "due", kind: "deadline", rawText: excerpt, value: "2026-11-15", currency: nil, status: "confirmed", origin: "letter_fact", label: text, explanation: text, sourceRefs: [.init(page: 2, excerpt: excerpt)])
+        XCTAssertTrue(CalendarProposal.make(action: action, facts: [secondPage], language: .en, calendar: calendar).source.contains("Photo 2:"))
+        let cutoff = LetterFact(id: "due", kind: "deadline", rawText: "Received by November 15 at 5 PM", value: "2026-11-15", currency: nil, status: "confirmed", origin: "letter_fact", label: text, explanation: text, sourceRefs: [])
+        XCTAssertTrue(CalendarNoteBuilder.make(action: action, deadline: cutoff, language: .en).contains("5 PM"))
     }
 
     func testCalendarStrictDatesDoNotNormalizeInvalidInput() {
@@ -444,5 +532,22 @@ extension LetterAssistantTests {
         XCTAssertEqual(prepared.image.size.width, 1600)
         XCTAssertEqual(prepared.image.size.height, 2100)
         try PageQualityService.inspect(prepared.bytes)
+    }
+}
+
+
+@MainActor private final class FakeCalendarWriter: CalendarWriting {
+    var allowed = true
+    var failure: CalendarSaveFailure?
+    var saves = 0
+    var pause = false
+    var continuation: CheckedContinuation<Bool, Never>?
+    func authorize() async throws -> Bool {
+        if pause { return await withCheckedContinuation { continuation = $0 } }
+        return allowed
+    }
+    func save(_ request: CalendarEventRequest) throws {
+        saves += 1
+        if let failure { throw failure }
     }
 }

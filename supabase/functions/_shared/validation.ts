@@ -117,6 +117,8 @@ export function validateInterpretation(
   const hasFact = (id: string, kind?: string) =>
     result.facts.some((f) => f.id === id && (!kind || f.kind === kind));
   for (const action of result.actions) {
+    if (![action.calendar_title.en, action.calendar_title.zh].every((text) => text.trim() && text.length <= 100)) fail();
+    if (![action.calendar_notes.en, action.calendar_notes.zh].every((text) => text.trim() && text.length <= 1500)) fail();
     if (!action.description_en.trim() || !action.description_zh.trim()) fail();
     if (action.suggested_duration_minutes !== null &&
         (action.deadline_fact_id !== null ||

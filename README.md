@@ -11,7 +11,8 @@ No email, signup, login, database or chat history is required. Clone the source 
 - Native iPhone camera, ordered multi-page capture and individual retakes.
 - On-device readability checks, with Retake / Use anyway for uncertain quality. These checks do not call AI or check cropping/page numbering.
 - Source-grounded bilingual explanations: what the letter says, what to pay attention to, actions/choices and relevant timing.
-- Review and create all-day deadlines/reminders or timed appointments in the iPhone calendar. No event is saved until you save it in Apple's editor.
+- Review and create all-day deadlines/reminders or timed appointments in the iPhone calendar. Tap Add to calendar to save directly to the default calendar; first use requests write-only permission.
+- Concise calendar notes with an in-app preview, separate from source excerpts and review instructions.
 - A clearly labeled no-AI calendar test entry with fictional examples.
 
 Photos and analysis stay in the current session. Finishing or restarting does not save an archive. Events you save remain in Calendar and can be changed or removed there.
@@ -68,7 +69,7 @@ For a physical phone, set `RELAY_HOST` to your Mac's private IPv4 address and `R
 3. In Signing & Capabilities, select **your own development team** and, if needed, a unique bundle identifier. Do not assume the repository's existing team settings work for your account.
 4. Select your connected iPhone and run the app. Allow camera/local-network access when requested.
 5. Choose English or Chinese, photograph a fictional letter, handle its photo check, and finish capture for analysis. The Mac relay must remain running.
-6. Under an action, tap **Review calendar event / 查看并添加到日历**, verify the proposal and save or cancel in Apple's editor.
+6. Under an action, tap **Review calendar event / 查看并添加到日历**, review the proposal, then tap **Add to calendar / 添加到日历**. Allow calendar adding permission on first use; no second editor opens.
 
 Restart the relay after changing API settings. Rebuild/reinstall the app after changing the local plist. Release builds deliberately exclude the local relay settings, so a successful Release build does not provide this AI connection.
 
@@ -76,9 +77,9 @@ This local HTTP phone-to-Mac path is for trusted-network demos with fictional le
 
 ## Test the calendar without AI
 
-On the Debug home screen expand **Demo tools / 演示工具**, then tap **Test calendar without AI / 日历测试（无需 AI）**. Choose a deadline, a reminder without a deadline, or an appointment. No photo, key or running relay is needed. Titles are marked `[TEST]` / `【测试】`; saving in the system editor creates a real event.
+On the Debug home screen expand **Demo tools / 演示工具**, then tap **Test calendar without AI / 日历测试（无需 AI）**. Choose a deadline, a reminder without a deadline, or an appointment. No photo, key or running relay is needed. Titles are marked `[TEST]` / `【测试】`; tapping Add creates a real event.
 
-Deadlines/reminders are all-day events. Explicitly extracted appointment times and stated time zones now prefill the review; missing or ambiguous times still need entry, and the phone time zone is disclosed when none is stated. Appointment time and time zone must still be checked; Timed appointments use the AI-suggested duration when available, clearly labeled as an estimate, with a 30-minute fallback. Choose a duration preset or enter 1–1,440 custom minutes; the review shows the resulting end time. Choose an alert during review: all-day events default to 9 AM on the event date, and appointments default to 15 minutes before. Options include additional advance reminders, None, and a custom date/time. Custom alerts keep their exact date/time when the event date changes. You can adjust alerts in the system editor before saving. Cancel may ask you to **Discard Changes**. Unknown/interrupted outcomes ask you to check Calendar before retrying to avoid duplicates. Later changes are made in Calendar.
+Deadlines/reminders are all-day events. Explicitly extracted appointment times and stated time zones now prefill the review; missing or ambiguous times still need entry, and the phone time zone is disclosed when none is stated. Appointment time and time zone must still be checked; Timed appointments use the AI-suggested duration when available, clearly labeled as an estimate, with a 30-minute fallback. Choose a duration preset or enter 1–1,440 custom minutes; the review shows the resulting end time. Choose an alert during review: all-day events default to 9 AM on the event date, and appointments default to 15 minutes before. Options include additional advance reminders, None, and a custom date/time. Custom alerts keep their exact date/time when the event date changes. Adjust alerts in the app before adding. Not now dismisses without saving. Permission denial offers Settings; an unavailable default calendar or a save error keeps the form available. Unknown/interrupted outcomes ask you to check Calendar before retrying to avoid duplicates. Later changes are made in Calendar.
 
 ## Verification and known limits
 
@@ -89,7 +90,7 @@ xcrun simctl list devices available
 xcodebuild -project ios/LetterAssistant.xcodeproj -scheme LetterAssistant -destination 'platform=iOS Simulator,name=YOUR_INSTALLED_IPHONE_SIMULATOR' -derivedDataPath /tmp/letter-assistant-build CODE_SIGNING_ALLOWED=NO test
 ```
 
-Replace the simulator-name placeholder with an installed device. The test suites cover capture state, image quality, contracts/provider failures, date policies, all-day EventKit construction and calendar confirmation/cancel UI. Mock-provider tests do not establish real AI accuracy.
+Replace the simulator-name placeholder with an installed device. The test suites cover capture state, image quality, contracts/provider failures, date policies, all-day EventKit construction and calendar field-validation/cancel UI. Mock-provider tests do not establish real AI accuracy.
 
 Recorded development evidence includes successful backend checks, iOS unit/UI tests and signed phone builds. The all-day time-zone bug has a passing regression test and an installed fix; the learner's real-phone retry is still pending. Conditional enrollment extraction remains a known reliability concern despite successful individual runs. Provider quotas may block real analysis. Photos/results are not persisted, urgency-based reminder recommendations are not implemented, and the demo does not include chat or synchronization.
 

@@ -146,3 +146,31 @@ The app uses the bounded estimate as its initial duration, labels it as an AI es
 Backend typecheck and 26 tests passed. The initial iOS run completed with 29 unit tests and the four existing UI tests passing. New live AI outputs and physical-phone notification/duration behavior remain unverified; restart the relay, rebuild and analyze a fresh fictional letter for that acceptance.
 
 Final UI verification: all five UI tests passed, including the 50-minute estimated default, switching to custom entry, rejection of zero, valid 75-minute entry/end preview, and retained confirmation gating.
+
+
+### October 2 — remove redundant calendar verification switches
+
+User requested removal of both date/time and overall confirmation toggles. The review now opens Calendar directly when the title, date/time and duration are complete. Explicitly prefilled appointments and known dates require no extra acknowledgment; missing dates/times are supplied with a date-entry sheet or reminder shortcut. Invalid durations and blank titles still block handoff. Date/alert/duration edits no longer require re-confirmation. The midnight date notice retains a second Open Calendar tap, and Apple’s Save remains the actual event-creation decision. Removed the event-note claim that the user verified date/time through a checkbox. Current PRD/spec/checklist supersede earlier confirmation-gate requirements; historical entries are retained.
+
+Verification: a stale cached UI-test bundle still queried the old button and was stopped. A fresh derived-data build completed with TEST SUCCEEDED: seven UI tests passed, covering direct continuation for known appointments, choosing missing date/time, reminder-date selection without switches, cancellation, custom alerts/durations and Chinese large text. No physical-device acceptance or new AI test is claimed.
+
+
+### October 2 — direct calendar creation requested by learner
+
+User explicitly requested Add to save immediately without Apple’s review editor. Replaced EventKitUI handoff with a write-only EventKit service and permission usage description. The app writes to the default writable calendar, preserves existing event date/duration/alert construction, disables repeated taps/dismissal while saving, and reports success only after save returns. Denied permission offers Settings; no calendar/save failure retains the form. A pending-write flag supports interrupted-result messaging. No calendar reading, automatic retry or existing-event modification was added. Test-only writers isolate automated tests from real calendars. This supersedes earlier system-editor/save-callback requirements; real permission and save behavior on a phone still require acceptance.
+
+Verification: 31 unit tests and eight UI tests passed, including direct-save success without a system editor, denied-permission recovery, unavailable/save-error handling, and concurrent/repeated-add guards. These use injected writers; actual phone permission grants and default-calendar writes remain unverified.
+
+
+### October 2 — calendar notes as event briefs
+
+User showed saved notes containing review instructions and AI-duration disclaimers. Added a dedicated bilingual calendar_notes action field and prompt guidance for concise, source-grounded event notes. The app now previews and saves the event brief separately from source-review text, preserving relevant conditions, optionality, cutoff and uncertainty annotations. Older responses fall back to the action description; fictional examples use short test-event notes. Removed automatic concatenation of source text, duplicate appointment date and duration disclaimers into saved notes. Existing saved events are not modified.
+
+Verification: backend typecheck and 27 tests passed; the iOS run completed with 32 unit tests and eight UI tests passing. Regression coverage includes bilingual note decoding, condition/cutoff preservation, legacy fallback, concise fictional-event notes and unchanged EventKit note content. Live AI note quality and newly saved physical-phone notes remain pending.
+
+
+### October 2 — bill calendar repetition and mislabeled source date
+
+User provided a fictional USD 125 bill example due November 15, 2026. Fixed duplicate source rendering from action/deadline references by deduplicating normalized excerpts on the same page (different-page evidence remains). Removed the redundant raw date row for extracted proposals and corrected the label for demo/source-date rows. Added a separate concise bilingual calendar_title field with validation and legacy payment-title fallback. Calendar notes no longer append the entire confirmed date-only payment sentence; explicit clock/cutoff qualifiers and uncertain deadlines remain preserved. Updated the prompt to avoid repeated due-date prose and OCR/training commentary, and removed duration wording from the all-day Add description. Original deadline dates and user-selected alert behavior remain unchanged. No supplied screenshot was sent to an AI provider.
+
+Verification: backend typecheck and 28 tests passed; 33 iOS unit tests and eight UI tests passed. The new fictional-bill regression checks the unchanged USD 125 amount/date, compact title fallback, a single same-page source excerpt, no duplicate raw date/notes, distinct-page evidence and preservation of a 5 PM cutoff. Fresh live AI title/note quality and physical-phone acceptance remain pending.

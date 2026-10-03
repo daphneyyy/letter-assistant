@@ -49,6 +49,8 @@ export interface Action {
   deadline_fact_id: string | null;
   appointment_fact_ids: string[];
   suggested_duration_minutes: number | null;
+  calendar_notes: Bilingual;
+  calendar_title: Bilingual;
 }
 export interface Summary {
   what_this_is: string;
@@ -162,6 +164,8 @@ export function interpretationSchemaFor(pageCount = 1) {
         amount_fact_ids: strings,
         deadline_fact_id: nullable,
         appointment_fact_ids: strings,
+        calendar_notes: bilingual,
+        calendar_title: bilingual,
         suggested_duration_minutes: { type: ["integer", "null"], minimum: 1, maximum: 1440 },
       }),
     },

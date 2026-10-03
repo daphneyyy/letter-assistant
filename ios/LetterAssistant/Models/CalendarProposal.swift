@@ -13,6 +13,7 @@ struct CalendarProposal: Identifiable {
     var date: Date?
     let reviewedDay: Date
     let timeZone: TimeZone
+    var eventNotes: String = ""
     var hasAppointmentTime = false
     var hasSourceTimeZone = false
     var suggestedDurationMinutes: Int? = nil
@@ -42,14 +43,16 @@ struct CalendarProposal: Identifiable {
                 hasTime = true
             }
         }
-        let prefix = kind == .deadline ? language.text("Deadline: ", "截止：") : kind == .reminder ? language.text("Reminder: ", "提醒：") : ""
-        let refs = action.sourceRefs + (kind == .appointment ? linked.flatMap(\.sourceRefs) : (fact?.sourceRefs ?? []))
+        let allRefs = action.sourceRefs + (kind == .appointment ? linked.flatMap(\.sourceRefs) : (fact?.sourceRefs ?? []))
+        var seen = Set<String>()
+        let refs = allRefs.filter { seen.insert("\($0.page):" + CalendarNoteBuilder.normalized($0.excerpt)).inserted }
         return CalendarProposal(kind: kind,
-            title: prefix + (language == .en ? action.descriptionEn : action.descriptionZh),
+            title: CalendarNoteBuilder.title(action: action, facts: facts, language: language),
             source: refs.map { language.text("Photo \($0.page): ", "第 \($0.page) 张照片：") + $0.excerpt }.joined(separator: "\n"),
-            sourceDate: kind == .appointment ? linked.map(\.rawText).joined(separator: " · ") : fact?.rawText, condition: action.condition?.text(language),
+            sourceDate: nil, condition: action.condition?.text(language),
             requiresVerification: action.status != "confirmed" || (fact != nil && parsed == nil) || appointments.count > 1 || (kind == .appointment && !hasTime),
             date: parsed, reviewedDay: eventCalendar.startOfDay(for: now), timeZone: eventCalendar.timeZone,
+            eventNotes: CalendarNoteBuilder.make(action: action, deadline: deadline, language: language, facts: linked),
             hasAppointmentTime: hasTime, hasSourceTimeZone: kind == .appointment && sourceZone != nil,
             suggestedDurationMinutes: kind == .appointment ? CalendarDurationPolicy.valid(action.suggestedDurationMinutes) : nil)
     }
@@ -90,7 +93,7 @@ enum CalendarDatePolicy {
     }
 }
 
-enum CalendarEditorOutcome: String {
+enum CalendarSaveOutcome: String {
     case saved, canceled, unknown
     func message(_ language: AppLanguage) -> String {
         switch self {
@@ -130,6 +133,11 @@ extension CalendarProposal {
             condition: kind == .reminder ? language.text("If you want to change plans", "如果你希望更换计划") : nil,
             requiresVerification: false, date: kind == .reminder ? nil : (kind == .appointment ? appointmentDate : day),
             reviewedDay: calendar.startOfDay(for: now), timeZone: calendar.timeZone,
+            eventNotes: kind == .appointment
+                ? language.text("Clinic appointment. Fictional test event.", "诊所预约。虚构测试事项。")
+                : kind == .deadline
+                    ? language.text("Submit the insurance form. Fictional test event.", "提交保险表格。虚构测试事项。")
+                    : language.text("Contact the insurance office if changing plans. Personal reminder; no deadline stated. Fictional test event.", "如需更换计划，联系保险公司。个人提醒；信中未注明截止日期。虚构测试事项。"),
             hasAppointmentTime: kind == .appointment)
     }
 }
@@ -146,5 +154,51 @@ enum CalendarDurationPolicy {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty, trimmed.allSatisfy({ $0.isASCII && $0.isNumber }) else { return nil }
         return valid(Int(trimmed))
+    }
+}
+
+
+enum CalendarNoteBuilder {
+    static func normalized(_ text: String) -> String {
+        text.split(whereSeparator: \.isWhitespace).joined(separator: " ").lowercased()
+    }
+    static func title(action: LetterAction, facts: [LetterFact], language: AppLanguage) -> String {
+        if let title = action.calendarTitle?.text(language).trimmingCharacters(in: .whitespacesAndNewlines), !title.isEmpty { return title }
+        if action.actionKind == "payment" {
+            let amounts = facts.filter { action.amountFactIds.contains($0.id) && $0.kind == "amount" && $0.status == "confirmed" }
+            let details = amounts.compactMap { fact -> String? in
+                guard let value = fact.value else { return nil }
+                return [fact.currency, value].compactMap { $0 }.joined(separator: " ")
+            }.joined(separator: ", ")
+            return language.text("Pay bill", "支付账单") + (details.isEmpty ? "" : " · " + details)
+        }
+        return language == .en ? action.descriptionEn : action.descriptionZh
+    }
+
+    static func make(action: LetterAction, deadline: LetterFact?, language: AppLanguage, facts: [LetterFact] = []) -> String {
+        let generated = action.calendarNotes?.text(language).trimmingCharacters(in: .whitespacesAndNewlines)
+        let description = language == .en ? action.descriptionEn : action.descriptionZh
+        var parts = [generated.flatMap { $0.isEmpty ? nil : $0 } ?? description]
+        if let condition = action.condition?.text(language), !condition.isEmpty {
+            parts.append(language.text("Condition: ", "适用条件：") + condition)
+        } else if action.requirement == "optional" {
+            parts.append(language.text("Optional action.", "可选事项。"))
+        }
+        if let deadline {
+            // A date-only deadline is already represented by the calendar day.
+            // Keep clock cutoffs/qualifiers and uncertain source text in the note.
+            let cutoffPattern = #"(?i)(\b\d{1,2}:\d{2}\b|\b\d{1,2}\s*[ap]\.?m\.?|\b(noon|midnight|business|postmark|received|end of|before)\b|上午|下午|中午|午夜|点|時|时|工作日|寄出|收到|之前)"#
+            let needsCutoff = deadline.status != "confirmed" || deadline.value == nil || deadline.rawText.range(of: cutoffPattern, options: .regularExpression) != nil
+            if needsCutoff, !deadline.rawText.isEmpty,
+               !normalized(parts.joined(separator: " ")).contains(normalized(deadline.rawText)) {
+                parts.append(language.text("Deadline details: ", "截止要求：") + deadline.rawText)
+            }
+        } else if action.appointmentFactIds.isEmpty {
+            parts.append(language.text("Personal reminder; no deadline stated.", "个人提醒；信中未注明截止日期。"))
+        }
+        if action.status != "confirmed" || (deadline != nil && deadline?.status != "confirmed") || facts.contains(where: { $0.status != "confirmed" }) {
+            parts.append(language.text("Unconfirmed details in the letter.", "信件中有尚未确认的信息。"))
+        }
+        return parts.joined(separator: "\n\n")
     }
 }

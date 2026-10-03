@@ -420,6 +420,8 @@ const conditionalAction: Action = {
   deadline_fact_id: null,
   appointment_fact_ids: [],
   suggested_duration_minutes: null,
+  calendar_title: { en: "Update account information", zh: "更新账户信息" },
+  calendar_notes: { en: "Contact the office to correct account information.", zh: "联系办公室更正账户信息。" },
 };
 function enrollmentContract(): Interpretation {
   const value = structuredClone(result);
@@ -647,6 +649,31 @@ Deno.test("duration estimates are bounded and only allowed for timed appointment
       copy.facts.push({ ...structuredClone(coverageFact), id: "deadline", kind: "deadline" });
       copy.actions[0].deadline_fact_id = "deadline";
     } else { copy.actions[0].appointment_fact_ids = []; }
+    let rejected = false;
+    try { validateInterpretation(copy); } catch { rejected = true; }
+    assert(rejected);
+  }
+});
+
+
+Deno.test("calendar notes require concise bilingual content and survive validation", () => {
+  const value = enrollmentContract();
+  value.actions[0].calendar_notes = { en: "Contact the insurance office to update account information.", zh: "联系保险办公室更新账户信息。" };
+  assert(validateInterpretation(value).actions[0].calendar_notes.en.startsWith("Contact"));
+  for (const notes of [{ en: "", zh: "事项" }, { en: "Task", zh: " " }, { en: "x".repeat(1501), zh: "事项" }]) {
+    const copy = structuredClone(value); copy.actions[0].calendar_notes = notes;
+    let rejected = false;
+    try { validateInterpretation(copy); } catch { rejected = true; }
+    assert(rejected);
+  }
+});
+
+
+Deno.test("calendar titles are concise and bilingual", () => {
+  const value = enrollmentContract();
+  assert(validateInterpretation(value).actions[0].calendar_title.en === "Update account information");
+  for (const title of [{ en: "", zh: "更新" }, { en: "Update", zh: " " }, { en: "x".repeat(101), zh: "更新" }]) {
+    const copy = structuredClone(value); copy.actions[0].calendar_title = title;
     let rejected = false;
     try { validateInterpretation(copy); } catch { rejected = true; }
     assert(rejected);

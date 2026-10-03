@@ -22,13 +22,13 @@ People who struggle to read English medical and health-insurance letters. The in
 3. Check readability locally; retake unreadable images, or explicitly accept uncertain quality.
 4. Finish capture to analyze the ordered pages using the operator's own AI API key.
 5. Read the explanation and source-backed facts, actions and relevant dates.
-6. Review an action and its calendar date, then save or cancel in Apple's calendar editor.
+6. Review an action and its calendar date, then tap Add to save directly to the default iPhone calendar (write-only permission), or dismiss without adding.
 
 ## The POC Boundary
 
 - Native iPhone app, local photo checks, temporary ordered multi-page capture and per-page retakes.
 - AI interpretation of medical/health-insurance letters, bilingual output and visible uncertainty.
-- Creation-only iPhone calendar handoff: deadlines, user-selected reminder dates, and user-verified appointments. The review includes user-controlled notification alerts with presets, None, and a custom date/time, passed to the system editor for final saving. These settings do not infer urgency from the letter.
+- Creation-only iPhone calendar handoff: deadlines, user-selected reminder dates, and user-verified appointments. The review includes user-controlled notification alerts with presets, None, and a custom date/time, saved directly after tapping Add; no second system review. These settings do not infer urgency from the letter.
 - No-AI fictional calendar examples for testing, clearly labeled as tests.
 - Open-source, clone-and-run distribution on GitHub; each operator supplies their own compatible API key and model configuration.
 - Current run mode: Mac-hosted local relay plus an iPhone Debug build installed with Xcode. No hosted shared service is promised.

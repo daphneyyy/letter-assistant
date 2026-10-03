@@ -9,6 +9,7 @@
 <key>CFBundleShortVersionString</key><string>0.1</string>
 <key>CFBundleVersion</key><string>1</string>
 <key>LSRequiresIPhoneOS</key><true/>
+<key>NSCalendarsWriteOnlyAccessUsageDescription</key><string>Add the events you choose to your calendar. 将您选择的事项添加到日历。</string>
 <key>NSCameraUsageDescription</key><string>Photograph a letter so you can understand it. 拍摄信件以帮助您理解内容。</string>
 <key>NSLocalNetworkUsageDescription</key><string>Connect to the development Mac to test fictional letter interpretation. 连接开发电脑以测试虚构信件解读。</string>
 <key>NSAppTransportSecurity</key><dict><key>NSAllowsLocalNetworking</key><true/></dict>

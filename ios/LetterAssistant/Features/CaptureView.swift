@@ -3,8 +3,8 @@ import SwiftUI
 struct CaptureView: View {
     @StateObject private var model = CaptureModel()
     @State private var calendarProposal: CalendarProposal?
-    @State private var pendingCalendarOutcome: CalendarEditorOutcome?
-    @State private var calendarOutcome: CalendarEditorOutcome?
+    @State private var pendingCalendarOutcome: CalendarSaveOutcome?
+    @State private var calendarOutcome: CalendarSaveOutcome?
     @State private var calendarTestMenu = false
     @State private var cameraOpen = false
     @State private var appendPage = false
@@ -116,9 +116,10 @@ struct CaptureView: View {
                 Button(language.text("Cancel", "取消"), role: .cancel) {}
             }
             .onAppear {
-                if calendarProposal == nil && UserDefaults.standard.bool(forKey: "calendarEditorPending") {
+                if calendarProposal == nil && (UserDefaults.standard.bool(forKey: "calendarEditorPending") || UserDefaults.standard.bool(forKey: "calendarSavePending")) {
                     calendarOutcome = .unknown
                     UserDefaults.standard.removeObject(forKey: "calendarEditorPending")
+                    UserDefaults.standard.removeObject(forKey: "calendarSavePending")
                 }
             }
             .sheet(item: $calendarProposal, onDismiss: {
@@ -190,7 +191,7 @@ struct CaptureView: View {
                     Label(language.text("Test calendar without AI", "日历测试（无需 AI）"), systemImage: "calendar.badge.plus")
                         .frame(minHeight: 48)
                 }.buttonStyle(.bordered).disabled(model.phase.busy)
-                Text(language.text("Fictional examples. Saving in the next screen creates a real calendar event.", "使用虚构样例。在系统编辑器中保存，会创建真实日历事项。"))
+                Text(language.text("Fictional examples. Adding creates a real calendar event.", "使用虚构样例。点击添加会创建真实日历事项。"))
                     .font(.footnote).foregroundStyle(.secondary)
             }.padding(.top, 12)
         }.font(.subheadline).padding(.vertical, 8)
