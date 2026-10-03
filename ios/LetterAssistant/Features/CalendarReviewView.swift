@@ -28,10 +28,10 @@ import EventKit
         _alert = State(initialValue: proposal.kind == .appointment ? .fifteenMinutes : .sameDayMorning)
         _customAlertDate = State(initialValue: proposal.date ?? Date())
         _title = State(initialValue: proposal.title)
-        _selectedDate = State(initialValue: proposal.date ?? Date())
+        _selectedDate = State(initialValue: proposal.date.map { proposal.kind == .appointment ? $0 : CalendarDatePolicy.changingZone($0, from: proposal.timeZone, to: .current) } ?? Date())
         _dateEntered = State(initialValue: proposal.date != nil && (proposal.kind != .appointment || proposal.hasAppointmentTime))
-        _zoneID = State(initialValue: proposal.timeZone.identifier)
-        _reviewedDay = State(initialValue: proposal.reviewedDay)
+        _zoneID = State(initialValue: TimeZone.current.identifier)
+        _reviewedDay = State(initialValue: Calendar.current.startOfDay(for: Date()))
     }
     var calendar: Calendar {
         var result = Calendar(identifier: .gregorian)
@@ -58,6 +58,9 @@ import EventKit
                 }
                 Section(language.text("Proposed calendar event", "拟添加的日历事项")) {
                     TextField(language.text("Title", "标题"), text: $title, axis: .vertical)
+                    Picker(language.text("Time zone", "时区"), selection: $zoneID) {
+                        ForEach(Array(Set(TimeZone.knownTimeZoneIdentifiers + [TimeZone.current.identifier])).sorted(), id: \.self) { Text($0).tag($0) }
+                    }.pickerStyle(.navigationLink).accessibilityIdentifier("eventTimeZone")
                     if proposal.kind == .reminder {
                         Text(language.text("No deadline is stated. This is your reminder date, not a letter deadline. Choose a date; no urgency is inferred.", "信中未说明截止日期。这是你选择的提醒日期，不是信件的截止日期。请选择日期；不会推断紧急程度。"))
                         ForEach([1, 3, 7], id: \.self) { days in
@@ -74,9 +77,6 @@ import EventKit
                         if !proposal.hasSourceTimeZone {
                             Text(language.text("Using your phone’s time zone. Verify it against the letter before saving.", "当前使用手机时区。保存前请对照信件核对。"))
                                 .font(.callout).foregroundStyle(.secondary)
-                        }
-                        Picker(language.text("Time zone", "时区"), selection: $zoneID) {
-                            ForEach(TimeZone.knownTimeZoneIdentifiers, id: \.self) { Text($0).tag($0) }
                         }
                         dateSelection
                         Picker(language.text("Duration", "时长"), selection: $durationChoice) {
@@ -110,7 +110,6 @@ import EventKit
                         }
                     } else {
                         dateSelection
-                            .disabled(proposal.kind == .deadline && !proposal.requiresVerification && proposal.date != nil)
                         Text(language.text("All-day event. Choose an alert below.", "全天事项。请在下方选择提醒时间。"))
                     }
                     if (proposal.kind == .appointment ? selectedDate < Date() : calendar.startOfDay(for: selectedDate) < calendar.startOfDay(for: Date())) {
@@ -119,12 +118,9 @@ import EventKit
                     if calendar.isDateInWeekend(selectedDate), proposal.kind == .reminder {
                         Text(language.text("This date is on a weekend. If contacting an office, check its opening hours or choose another date.", "该日期为周末。如需联系机构，请确认办公时间或另选日期。"))
                     }
-                    if proposal.kind != .appointment {
-                        Text(language.text("Time zone: ", "时区：") + zoneID)
-                    }
                 }
                 Section(language.text("Calendar notes", "日历备注")) {
-                    Text(proposal.eventNotes.isEmpty ? title : proposal.eventNotes).textSelection(.enabled)
+                    Text(proposal.notes(for: selectedDate, calendar: calendar, language: language)).textSelection(.enabled)
                 }
                 Section(language.text("Alert", "提醒时间")) {
                     Picker(language.text("Notify me", "提醒我"), selection: $alert) {
@@ -168,6 +164,12 @@ import EventKit
             .environment(\.locale, Locale(identifier: language == .zh ? "zh_CN" : "en_US"))
             .navigationTitle(language.text("Review calendar event", "核对日历事项"))
             .navigationBarTitleDisplayMode(.inline)
+            .onChange(of: zoneID) { oldValue, newValue in
+                if let old = TimeZone(identifier: oldValue), let new = TimeZone(identifier: newValue) {
+                    selectedDate = CalendarDatePolicy.changingZone(selectedDate, from: old, to: new)
+                    reviewedDay = calendar.startOfDay(for: Date())
+                }
+            }
             .onChange(of: alert) { _, newValue in
                 if newValue == .custom {
                     let defaultChoice: CalendarAlertChoice = proposal.kind == .appointment ? .fifteenMinutes : .sameDayMorning
@@ -209,6 +211,7 @@ import EventKit
         if dateEntered {
             DatePicker(language.text(proposal.kind == .appointment ? "Appointment" : "Calendar date", proposal.kind == .appointment ? "预约时间" : "日历日期"), selection: $selectedDate,
                 displayedComponents: proposal.kind == .appointment ? [.date, .hourAndMinute] : [.date])
+                .accessibilityIdentifier("eventDate")
         } else {
             Button(language.text(proposal.kind == .appointment ? "Choose appointment date and time" : "Choose a calendar date", proposal.kind == .appointment ? "选择预约日期和时间" : "选择日历日期")) {
                 datePickerOpen = true
@@ -226,7 +229,7 @@ import EventKit
         }
         let allDay = proposal.kind != .appointment
         let start = allDay ? calendar.startOfDay(for: selectedDate) : selectedDate
-        let request = CalendarEventRequest(title: title, notes: proposal.eventNotes.isEmpty ? title : proposal.eventNotes, start: start,
+        let request = CalendarEventRequest(title: title, notes: proposal.notes(for: selectedDate, calendar: calendar, language: language), start: start,
             end: CalendarDatePolicy.end(start: start, allDay: allDay, minutes: minutes, calendar: calendar),
             allDay: allDay, timeZone: calendar.timeZone, alert: alert, customAlertDate: customAlertDate)
         Task { @MainActor in

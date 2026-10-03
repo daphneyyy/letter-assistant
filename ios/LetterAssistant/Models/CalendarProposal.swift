@@ -14,13 +14,14 @@ struct CalendarProposal: Identifiable {
     let reviewedDay: Date
     let timeZone: TimeZone
     var eventNotes: String = ""
+    var originalDeadline: String? = nil
     var hasAppointmentTime = false
     var hasSourceTimeZone = false
     var suggestedDurationMinutes: Int? = nil
     var initialDurationMinutes: Int { CalendarDurationPolicy.valid(suggestedDurationMinutes) ?? 30 }
 
     static func make(action: LetterAction, facts: [LetterFact], language: AppLanguage,
-                     now: Date = Date(), calendar: Calendar = .current) -> CalendarProposal {
+                     now: Date = Date(), calendar: Calendar = .current, document: LetterInterpretation? = nil) -> CalendarProposal {
         let deadline = facts.first { $0.id == action.deadlineFactId && $0.kind == "deadline" }
         let linked = facts.filter { action.appointmentFactIds.contains($0.id) }
         let appointments = linked.filter { $0.kind == "appointment_date" }
@@ -47,18 +48,34 @@ struct CalendarProposal: Identifiable {
         var seen = Set<String>()
         let refs = allRefs.filter { seen.insert("\($0.page):" + CalendarNoteBuilder.normalized($0.excerpt)).inserted }
         return CalendarProposal(kind: kind,
-            title: CalendarNoteBuilder.title(action: action, facts: facts, language: language),
+            title: CalendarNoteBuilder.contextualTitle(action: action, facts: facts, language: language, document: document),
             source: refs.map { language.text("Photo \($0.page): ", "第 \($0.page) 张照片：") + $0.excerpt }.joined(separator: "\n"),
             sourceDate: nil, condition: action.condition?.text(language),
             requiresVerification: action.status != "confirmed" || (fact != nil && parsed == nil) || appointments.count > 1 || (kind == .appointment && !hasTime),
             date: parsed, reviewedDay: eventCalendar.startOfDay(for: now), timeZone: eventCalendar.timeZone,
-            eventNotes: CalendarNoteBuilder.make(action: action, deadline: deadline, language: language, facts: linked),
+            eventNotes: CalendarNoteBuilder.contextualNotes(action: action, deadline: deadline, language: language, facts: facts, document: document),
+            originalDeadline: deadline?.status == "confirmed" ? deadline?.value : nil,
             hasAppointmentTime: hasTime, hasSourceTimeZone: kind == .appointment && sourceZone != nil,
             suggestedDurationMinutes: kind == .appointment ? CalendarDurationPolicy.valid(action.suggestedDurationMinutes) : nil)
     }
+    func notes(for date: Date, calendar: Calendar, language: AppLanguage) -> String {
+        let base = eventNotes.isEmpty ? title : eventNotes
+        guard let originalDeadline,
+              let original = CalendarDatePolicy.parseDay(originalDeadline, calendar: calendar),
+              !calendar.isDate(original, inSameDayAs: date) else { return base }
+        return base + "\n\n" + language.text("Original payment/action deadline: ", "信件原始付款／办理截止日期：") + originalDeadline
+    }
+
 }
 
 enum CalendarDatePolicy {
+    /// Preserve the displayed calendar day/clock when the user changes scheduling zone.
+    static func changingZone(_ date: Date, from oldZone: TimeZone, to newZone: TimeZone) -> Date {
+        var old = Calendar(identifier: .gregorian); old.timeZone = oldZone
+        var new = old; new.timeZone = newZone
+        return new.date(from: old.dateComponents([.year, .month, .day, .hour, .minute, .second], from: date)) ?? date
+    }
+
     static func parseDay(_ value: String?, calendar: Calendar) -> Date? {
         guard let value, value.range(of: #"^\d{4}-\d{2}-\d{2}$"#, options: .regularExpression) != nil else { return nil }
         let parts = value.split(separator: "-").compactMap { Int($0) }
@@ -159,6 +176,37 @@ enum CalendarDurationPolicy {
 
 
 enum CalendarNoteBuilder {
+    static func billContext(_ document: LetterInterpretation?, language: AppLanguage) -> String? {
+        guard let document, document.category == "bills", ["medical", "insurance"].contains(document.domain) else { return nil }
+        let type = language.text(document.domain == "medical" ? "Medical bill" : "Health-insurance bill", document.domain == "medical" ? "医疗账单" : "健康保险账单")
+        let organization = document.organization?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        return type + (organization.isEmpty ? "" : " · " + organization)
+    }
+    static func contextualTitle(action: LetterAction, facts: [LetterFact], language: AppLanguage, document: LetterInterpretation?) -> String {
+        guard action.actionKind == "payment", let context = billContext(document, language: language) else {
+            return title(action: action, facts: facts, language: language)
+        }
+        let amounts = facts.filter { action.amountFactIds.contains($0.id) && $0.status == "confirmed" && $0.kind == "amount" }
+            .compactMap { fact in fact.value.map { [fact.currency, $0].compactMap { $0 }.joined(separator: " ") } }
+        return language.text("Pay ", "支付：") + context + (amounts.isEmpty ? "" : " · " + amounts.joined(separator: ", "))
+    }
+    static func contextualNotes(action: LetterAction, deadline: LetterFact?, language: AppLanguage, facts: [LetterFact], document: LetterInterpretation?) -> String {
+        let linked = facts.filter { action.appointmentFactIds.contains($0.id) }
+        var notes = make(action: action, deadline: deadline, language: language, facts: linked)
+        if action.actionKind == "payment", let context = billContext(document, language: language) {
+            let type = context.components(separatedBy: " · ")[0]
+            let organization = document?.organization?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+            if !normalized(notes).contains(normalized(type)) || (!organization.isEmpty && !normalized(notes).contains(normalized(organization))) {
+                notes = context + "\n\n" + notes
+            }
+            for fact in facts where action.amountFactIds.contains(fact.id) && fact.kind == "amount" && fact.status == "confirmed" {
+                if let value = fact.value, !notes.contains(value) {
+                    notes += "\n" + language.text("Payment amount: ", "付款金额：") + [fact.currency, value].compactMap { $0 }.joined(separator: " ")
+                }
+            }
+        }
+        return notes
+    }
     static func normalized(_ text: String) -> String {
         text.split(whereSeparator: \.isWhitespace).joined(separator: " ").lowercased()
     }

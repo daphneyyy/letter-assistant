@@ -61,3 +61,5 @@ The learner's October 2 instruction directly approves this scope revision. Retai
 ## October 2 — UI and Alert Follow-up
 
 The learner requested a clearer UI, removal of the decorative envelope logo, explicit alerts and more notification options. These refinements remain within the core loop. The later usability review identified calendar-review complexity, event-date versus notification-time confusion, and app/system language transitions as open concerns. Record proposed improvements and target-user validation separately from implemented behavior; do not expand this revision into accounts, archives, chat or synchronization.
+
+Calendar refinements also include editable event dates and time zones (default phone zone) for all event types, bill identity in calendar titles/notes, and original source deadlines retained when the user schedules a different date. These changes remain within the existing review-and-add loop.

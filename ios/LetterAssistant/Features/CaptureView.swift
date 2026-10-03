@@ -277,7 +277,7 @@ struct CaptureView: View {
                     }
                     Text(language == .en ? action.descriptionEn : action.descriptionZh).font(.title3)
                     Button {
-                        calendarProposal = CalendarProposal.make(action: action, facts: result.facts, language: language)
+                        calendarProposal = CalendarProposal.make(action: action, facts: result.facts, language: language, document: result)
                     } label: {
                         Label(language.text("Review calendar event", "查看并添加到日历"), systemImage: "calendar.badge.plus")
                             .frame(minHeight: 48)

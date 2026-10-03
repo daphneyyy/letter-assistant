@@ -24,11 +24,12 @@ private struct CalendarReviewTestHarness: View {
             Button("Open test review") { reviewOpen = true }
         }.sheet(isPresented: $reviewOpen) {
             let known = ProcessInfo.processInfo.arguments.contains("--known-appointment")
+            let deadline = ProcessInfo.processInfo.arguments.contains("--known-deadline")
             let appointment = ProcessInfo.processInfo.arguments.contains("--appointment")
-            CalendarReviewView(proposal: CalendarProposal(kind: appointment ? .appointment : .reminder,
+            CalendarReviewView(proposal: CalendarProposal(kind: appointment ? .appointment : (deadline ? .deadline : .reminder),
                 title: "虚构测试：联系保险公司", source: "Photo 1: If you want to change plans, contact the office.",
                 sourceDate: nil, condition: "如果你希望更换计划", requiresVerification: false,
-                date: known ? CalendarProposal.testExample(.appointment, language: .zh).date : nil, reviewedDay: Calendar.current.startOfDay(for: Date()), timeZone: .current, hasAppointmentTime: known,
+                date: deadline ? CalendarProposal.testExample(.deadline, language: .zh).date : (known ? CalendarProposal.testExample(.appointment, language: .zh).date : nil), reviewedDay: Calendar.current.startOfDay(for: Date()), timeZone: .current, hasAppointmentTime: known,
                 suggestedDurationMinutes: ProcessInfo.processInfo.arguments.contains("--duration-estimate") ? 50 : nil),
                 language: .zh, saver: CalendarSaveModel(writer: CalendarTestWriter())) { outcome = $0 }
         }

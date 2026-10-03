@@ -282,6 +282,44 @@ final class LetterAssistantTests: XCTestCase {
         XCTAssertTrue(CalendarNoteBuilder.make(action: action, deadline: cutoff, language: .en).contains("5 PM"))
     }
 
+    func testBillContextSurvivesGenericAICalendarText() throws {
+        let summary = LetterSummary(whatThisIs: "Medical bill", whatToNote: "Example", whatToDo: "Pay", when: "Due", factIds: [], actionIds: [])
+        let document = LetterInterpretation(schemaVersion: 1, domain: "medical", recipient: nil, organization: "Harbor Example Clinic", category: "bills", needsReview: false, facts: [], actions: [], summaries: LetterSummaries(en: summary, zh: summary))
+        let text = BilingualText(en: "Payment", zh: "付款")
+        let due = LetterFact(id: "due", kind: "deadline", rawText: "Pay by November 15, 2026", value: "2026-11-15", currency: nil, status: "confirmed", origin: "letter_fact", label: text, explanation: text, sourceRefs: [])
+        let amount = LetterFact(id: "amount", kind: "amount", rawText: "USD 125.00", value: "125.00", currency: "USD", status: "confirmed", origin: "letter_fact", label: text, explanation: text, sourceRefs: [])
+        var action = LetterAction(id: "pay", descriptionEn: "Pay balance", descriptionZh: "支付余额", actionKind: "payment", status: "confirmed", sourceRefs: [], requirement: "required", condition: nil, amountFactIds: ["amount"], deadlineFactId: "due", appointmentFactIds: [])
+        action.calendarTitle = BilingualText(en: "Pay bill", zh: "支付账单")
+        action.calendarNotes = BilingualText(en: "Pay the balance.", zh: "支付余额。")
+        for language in [AppLanguage.en, .zh] {
+            let proposal = CalendarProposal.make(action: action, facts: [due, amount], language: language, calendar: calendar, document: document)
+            XCTAssertTrue(proposal.title.contains("Harbor Example Clinic"))
+            XCTAssertTrue(proposal.title.contains(language == .en ? "Medical bill" : "医疗账单"))
+            XCTAssertTrue(proposal.eventNotes.contains("Harbor Example Clinic"))
+            XCTAssertTrue(proposal.eventNotes.contains("USD 125.00"))
+            let original = try XCTUnwrap(proposal.date)
+            XCTAssertEqual(proposal.notes(for: original, calendar: calendar, language: language), proposal.eventNotes)
+            let changed = CalendarDatePolicy.addingDays(-1, to: original, calendar: calendar)
+            XCTAssertTrue(proposal.notes(for: changed, calendar: calendar, language: language).contains("2026-11-15"))
+        }
+        let eob = LetterInterpretation(schemaVersion: 1, domain: "insurance", recipient: nil, organization: "Example insurer", category: "insurance_explanations", needsReview: false, facts: [], actions: [], summaries: document.summaries)
+        XCTAssertNil(CalendarNoteBuilder.billContext(eob, language: .en))
+        // Without classified source context, no provider or bill type is invented.
+        XCTAssertEqual(CalendarNoteBuilder.contextualTitle(action: action, facts: [], language: .en, document: nil), "Pay bill")
+    }
+
+    func testChangingTimeZonePreservesUserSelectedDayAndClock() throws {
+        let date = try XCTUnwrap(CalendarDatePolicy.parseDay("2026-11-15", calendar: calendar))
+        let timed = try XCTUnwrap(CalendarDatePolicy.appointmentDate(day: date, time: "10:30", calendar: calendar))
+        let tokyo = try XCTUnwrap(TimeZone(identifier: "Asia/Tokyo"))
+        var target = calendar; target.timeZone = tokyo
+        let day = CalendarDatePolicy.changingZone(date, from: calendar.timeZone, to: tokyo)
+        XCTAssertEqual(target.dateComponents([.year, .month, .day], from: day), calendar.dateComponents([.year, .month, .day], from: date))
+        let changed = CalendarDatePolicy.changingZone(timed, from: calendar.timeZone, to: tokyo)
+        XCTAssertEqual(target.component(.hour, from: changed), 10)
+        XCTAssertEqual(target.component(.minute, from: changed), 30)
+    }
+
     func testCalendarStrictDatesDoNotNormalizeInvalidInput() {
         XCTAssertNil(CalendarDatePolicy.parseDay("2026-02-30", calendar: calendar))
         XCTAssertNil(CalendarDatePolicy.parseDay("11/12", calendar: calendar))

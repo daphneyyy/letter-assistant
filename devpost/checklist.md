@@ -118,3 +118,7 @@ No completed learning wrap-up is inferred from the scope change. Keep it proport
 - [ ] Check the note on a newly saved phone event; existing events retain their old notes.
 
 - Bill calendar follow-up: verify concise bilingual titles/notes with a fresh live interpretation, unique source excerpts and preserved explicit clock cutoffs. Screenshot-based deterministic regressions do not establish live provider output quality.
+
+- [x] Restore editable dates and time-zone selection for all-day deadlines/reminders; default every review to the phone zone and preserve displayed wall date/time on zone changes.
+- [x] Carry bill type, organization and linked payment amount into calendar titles/notes, including generic or older AI responses. Preserve the original deadline when choosing another calendar date.
+- [ ] Restart the relay and analyze a fresh fictional bill; verify summary, contextual calendar heading/notes, editable date/time-zone and the saved phone event. Existing saved events remain unchanged.

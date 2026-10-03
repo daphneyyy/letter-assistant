@@ -1,6 +1,25 @@
 import XCTest
 
 final class LetterAssistantUITests: XCTestCase {
+    func testDeadlineDateAndTimeZoneAreEditable() {
+        let app = XCUIApplication()
+        app.launchArguments += ["--calendar-review-test", "--known-deadline"]
+        app.launch(); app.buttons["Open test review"].tap()
+        let zone = app.buttons["eventTimeZone"]
+        XCTAssertTrue(zone.waitForExistence(timeout: 3))
+        XCTAssertEqual(zone.value as? String, TimeZone.current.identifier)
+        zone.tap()
+        let alternate = app.buttons["Africa/Abidjan"]
+        for _ in 0..<30 where !alternate.isHittable { app.swipeDown() }
+        XCTAssertTrue(alternate.isHittable); alternate.tap()
+        XCTAssertEqual(zone.value as? String, "Africa/Abidjan")
+        let date = app.datePickers["eventDate"]
+        XCTAssertTrue(date.exists); XCTAssertTrue(date.isEnabled)
+        date.tap()
+        let screenshot = XCTAttachment(screenshot: app.screenshot())
+        screenshot.name = "Editable-deadline-date"; screenshot.lifetime = .keepAlways; add(screenshot)
+    }
+
     func testCalendarRequiresDateWithoutConfirmationSwitches() {
         let app = XCUIApplication()
         app.launchArguments += ["--calendar-review-test"]
