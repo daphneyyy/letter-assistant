@@ -28,7 +28,7 @@ struct LetterAction: Codable, Identifiable {
     let amountFactIds: [String]; let deadlineFactId: String?; let appointmentFactIds: [String]
 }
 struct LetterSummary: Codable {
-    let whatThisIs: String; let whatToDo: String; let when: String
+    let whatThisIs: String; let whatToNote: String; let whatToDo: String; let when: String
     let factIds: [String]; let actionIds: [String]
 }
 struct LetterSummaries: Codable {

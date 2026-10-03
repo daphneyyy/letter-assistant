@@ -97,7 +97,7 @@ struct CaptureView: View {
             } message: {
                 Text(language.text("This explanation has not been saved. Finishing clears this letter and returns to the start screen.", "本次解读尚未保存。结束后将清除当前信件，并返回开始页。"))
             }
-            .sheet(isPresented: $cameraOpen) { CameraSheet(language: language, pageNumber: appendPage ? model.pages.count + 1 : max(1, model.currentPageIndex + 1), receive: { model.accept($0, asNextPage: appendPage) }) }
+            .fullScreenCover(isPresented: $cameraOpen) { CameraSheet(language: language, pageNumber: appendPage ? model.pages.count + 1 : max(1, model.currentPageIndex + 1), receive: { model.accept($0, asNextPage: appendPage) }) }
         }
     }
     @ViewBuilder var controls: some View {
@@ -105,6 +105,10 @@ struct CaptureView: View {
         case .ready, .retake:
             primary(language.text(model.phase == .ready ? "Photograph a letter" : "Retake this page", model.phase == .ready ? "拍摄信件" : "重新拍摄这一页"), icon: "camera.fill") {
                 appendPage = false; model.capturePrompt(); cameraOpen = true
+            }
+            if model.validation?.verdict == "uncertain" {
+                Button(language.text("Use anyway", "仍然使用")) { model.usePhotoAnyway() }
+                    .font(.title3).buttonStyle(.bordered).frame(minHeight: 56)
             }
             #if targetEnvironment(simulator) && DEBUG
             Button(language.text("Use fictional sample (simulator)", "使用虚构样本（模拟器）")) {
@@ -159,7 +163,8 @@ struct CaptureView: View {
             section(language.text("Unsupported letter", "暂不支持此类信件"), text: language.text("This first version supports medical and insurance letters.", "首个版本支持医疗和保险信件。"), icon: "info.circle")
         } else {
             let summary = result.summaries.selected(language)
-            section(language.text("What this is", "这是什么"), text: summary.whatThisIs, icon: "doc.text")
+            section(language.text("What this letter says", "这封信主要说什么"), text: summary.whatThisIs, icon: "doc.text")
+            section(language.text("What to pay attention to", "你需要留意什么"), text: summary.whatToNote, icon: "eye")
             section(language.text("Actions and choices", "事项与选择"), text: summary.whatToDo, icon: "list.bullet")
             ForEach(result.actions) { action in
                 VStack(alignment: .leading, spacing: 10) {

@@ -49,6 +49,7 @@ export interface Action {
 }
 export interface Summary {
   what_this_is: string;
+  what_to_note: string;
   what_to_do: string;
   when: string;
   fact_ids: string[];
@@ -87,6 +88,7 @@ const status = enumeration([
 ]);
 const summary = object({
   what_this_is: str,
+  what_to_note: str,
   what_to_do: str,
   when: str,
   fact_ids: strings,

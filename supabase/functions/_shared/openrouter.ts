@@ -13,13 +13,14 @@ import {
 
 export const FREE_MODEL = "dots-studio/dots-3-note-preview:free";
 
-// Explicit free model plus zero-price routing. No automatic model/provider retry.
+// Configurable Chat Completions transport; never retries with another model/provider.
 export class OpenRouterProvider implements AIProvider {
   constructor(
     private key: string | undefined,
     private model = FREE_MODEL,
     private transport: typeof fetch = fetch,
     private recordUsage: (usage: UsageRecord) => void = () => {},
+    private options: { baseURL?: string; freeOnly?: boolean } = {},
   ) {}
 
   private async request(
@@ -29,17 +30,26 @@ export class OpenRouterProvider implements AIProvider {
     name: string,
     additionalImages: string[] = [],
   ): Promise<unknown> {
-    if (!/^[a-zA-Z0-9._-]+\/[a-zA-Z0-9._-]+:free$/.test(this.model)) {
+    const freeOnly = this.options.freeOnly ?? true;
+    let endpoint: URL;
+    try {
+      endpoint = new URL((this.options.baseURL ?? "https://openrouter.ai/api/v1").replace(/\/$/, "") + "/chat/completions");
+      if (endpoint.protocol !== "https:" || endpoint.username || endpoint.password || endpoint.search || endpoint.hash) throw new Error();
+    } catch { throw new SafeError("invalid_provider_configuration", 503); }
+    const router = endpoint.hostname === "openrouter.ai";
+    if (!this.model.trim() || /[\r\n]/.test(this.model)) throw new SafeError("invalid_provider_configuration", 503);
+    if (freeOnly && (!router || !/^[a-zA-Z0-9._-]+\/[a-zA-Z0-9._-]+:free$/.test(this.model))) {
       throw new SafeError("free_model_required", 503);
     }
     if (!this.key) throw new SafeError("provider_not_configured", 503);
     let response: Response;
     try {
       response = await this.transport(
-        "https://openrouter.ai/api/v1/chat/completions",
+        endpoint.href,
         {
           method: "POST",
           signal: AbortSignal.timeout(60000),
+          redirect: "error",
           headers: {
             Authorization: `Bearer ${this.key}`,
             "Content-Type": "application/json",
@@ -48,12 +58,11 @@ export class OpenRouterProvider implements AIProvider {
             model: this.model,
             stream: false,
             max_tokens: 6000,
-            reasoning: { enabled: false },
-            provider: {
+            ...(router ? { reasoning: { enabled: false }, provider: {
               require_parameters: true,
               allow_fallbacks: false,
-              max_price: { prompt: 0, completion: 0, request: 0, image: 0 },
-            },
+              ...(freeOnly ? { max_price: { prompt: 0, completion: 0, request: 0, image: 0 } } : {}),
+            } } : {}),
             messages: [
               {
                 role: "system",

@@ -117,7 +117,7 @@ Deno.test("OpenRouter selection never retries on OpenAI and refuses nonfree mode
     )(request());
     assert(
       response.status === 503 &&
-        (await response.json()).error.code === "free_model_required",
+        (await response.json()).error.code === (model.includes("\n") ? "invalid_provider_configuration" : "free_model_required"),
     );
   }
   assert(calls === 1);
@@ -204,4 +204,40 @@ Deno.test("OpenRouter refusal, truncation, malformed and failures return safe er
     assert(response.status === status);
     assert(await response.text() === JSON.stringify({ error: { code } }));
   }
+});
+
+Deno.test("unified configuration switches endpoint model and key without router-only fields or fallback", async () => {
+  let calls = 0;
+  const env: Record<string, string> = {
+    AI_BASE_URL: "https://example.test/v1/", AI_MODEL: "vision-model",
+    AI_API_KEY: "test-new-key", AI_FREE_ONLY: "false", OPENROUTER_API_KEY: "old-unused-key",
+  };
+  const transport = (async (url: unknown, init: RequestInit) => {
+    calls++;
+    assert(url === "https://example.test/v1/chat/completions");
+    assert((init.headers as Record<string, string>).Authorization === "Bearer test-new-key");
+    assert(init.redirect === "error");
+    const body = JSON.parse(init.body as string);
+    assert(body.model === "vision-model" && !body.provider && !body.reasoning);
+    assert(body.response_format.json_schema.strict);
+    return Response.json(completion());
+  }) as typeof fetch;
+  assert((await configuredProvider(k => env[k], transport).validate(image)).verdict === "valid");
+  env.AI_API_KEY = "";
+  const missing = await createHandler(token, configuredProvider(k => env[k], transport))(request());
+  assert((await missing.json()).error.code === "provider_not_configured" && calls === 1);
+  env.AI_API_KEY = "test-new-key";
+  env.AI_BASE_URL = "http://example.test/v1";
+  const insecure = await createHandler(token, configuredProvider(k => env[k], transport))(request());
+  assert((await insecure.json()).error.code === "invalid_provider_configuration" && calls === 1);
+});
+Deno.test("explicit paid OpenRouter selection removes only the free-price restriction", async () => {
+  const env: Record<string, string> = { AI_MODEL: "vendor/paid-model", AI_API_KEY: "test-key", AI_FREE_ONLY: "false" };
+  const transport = (async (_url: unknown, init: RequestInit) => {
+    const body = JSON.parse(init.body as string);
+    assert(body.model === "vendor/paid-model" && body.provider.max_price === undefined);
+    assert(body.provider.allow_fallbacks === false);
+    return Response.json(completion());
+  }) as typeof fetch;
+  assert((await configuredProvider(k => env[k], transport).validate(image)).verdict === "valid");
 });

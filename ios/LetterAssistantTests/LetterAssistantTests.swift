@@ -1,5 +1,6 @@
 import XCTest
 import UIKit
+import CoreImage
 @testable import LetterAssistant
 
 final class LetterAssistantTests: XCTestCase {
@@ -65,11 +66,11 @@ private final class StubAPI: LetterAPIClient {
     }
     func interpret(pages: [LetterPageInput], captureID: UUID) async throws -> LetterInterpretation {
         interpretationCalls += 1; submittedPages = pages
-        throw RelayError(code: "provider_unavailable")
+        throw RelayError(code: shouldFail ? failureCode : "provider_unavailable")
     }
     func interpret(image: Data, captureID: UUID, pageID: UUID, token: String) async throws -> LetterInterpretation {
         interpretationCalls += 1
-        throw RelayError(code: "provider_unavailable")
+        throw RelayError(code: shouldFail ? failureCode : "provider_unavailable")
     }
 }
 extension LetterAssistantTests {
@@ -84,7 +85,7 @@ extension LetterAssistantTests {
     }
     @MainActor func testRejectedPhotoCannotCallInterpretation() async throws {
         let api = StubAPI(); api.shouldReject = true
-        let model = CaptureModel(api: api, inspect: { _ in })
+        let model = CaptureModel(api: api, inspect: { _ in throw RelayError(code: "photo_unreadable") })
         model.accept(photo()); try await waitForWork(model)
         XCTAssertEqual(model.phase, .retake)
         model.interpret()
@@ -95,13 +96,13 @@ extension LetterAssistantTests {
         let api = StubAPI(); api.shouldFail = true
         let model = CaptureModel(api: api, inspect: { _ in })
         model.accept(photo()); try await waitForWork(model)
-        XCTAssertEqual(model.phase, .checkFailed)
+        XCTAssertEqual(model.phase, .valid)
         XCTAssertNotNil(model.image)
         XCTAssertNil(model.result)
         api.shouldFail = false
         model.validate(); try await waitForWork(model)
         XCTAssertEqual(model.phase, .valid)
-        XCTAssertEqual(api.validationCalls, 2)
+        XCTAssertEqual(api.validationCalls, 0)
         model.interpret(); try await waitForWork(model)
         XCTAssertEqual(model.phase, .interpretFailed)
         model.changeLanguage(.zh)
@@ -115,7 +116,10 @@ extension LetterAssistantTests {
         let model = CaptureModel(api: api, inspect: { _ in })
         model.changeLanguage(.zh)
         model.accept(photo()); try await waitForWork(model)
-        XCTAssertEqual(model.phase, .checkFailed)
+        XCTAssertEqual(model.phase, .valid)
+        XCTAssertEqual(api.validationCalls, 0)
+        model.interpret(); try await waitForWork(model)
+        XCTAssertEqual(model.phase, .interpretFailed)
         XCTAssertTrue(model.message.contains("密钥无效"))
         XCTAssertNotNil(model.image)
         XCTAssertNil(model.result)
@@ -130,7 +134,7 @@ extension LetterAssistantTests {
         model.accept(photo(), asNextPage: true); try await waitForWork(model)
         XCTAssertEqual(model.pages.count, 2)
         XCTAssertEqual(model.pages[0].id, originalID)
-        XCTAssertEqual(Set(api.captureIDs).count, 1)
+        XCTAssertEqual(api.validationCalls, 0)
         let secondID = model.pages[1].id
         model.selectPage(0)
         model.accept(photo(color: .black)); try await waitForWork(model)
@@ -147,11 +151,13 @@ extension LetterAssistantTests {
         model.reset(); XCTAssertTrue(model.pages.isEmpty)
     }
     @MainActor func testRejectedNextPageBlocksWholeLetterWithoutDiscardingEarlierPage() async throws {
-        let api = StubAPI(); let model = CaptureModel(api: api, inspect: { _ in })
+        let api = StubAPI(); let model = CaptureModel(api: api, inspect: { data in
+            if [CGFloat(1000), 2000, 3000].contains(UIImage(data: data)?.size.width ?? 0) { throw RelayError(code: "photo_unreadable") }
+        })
         model.accept(photo()); try await waitForWork(model)
         let firstID = model.pages[0].id
-        api.shouldReject = true
-        model.accept(photo(), asNextPage: true); try await waitForWork(model)
+        let unreadable = UIGraphicsImageRenderer(size: CGSize(width: 1000, height: 1200)).image { _ in }
+        model.accept(unreadable, asNextPage: true); try await waitForWork(model)
         XCTAssertEqual(model.pages.count, 2)
         XCTAssertEqual(model.pages[0].id, firstID)
         XCTAssertFalse(model.canFinishCapture)
@@ -161,6 +167,40 @@ extension LetterAssistantTests {
         model.selectPage(1); api.shouldReject = false
         model.accept(photo()); try await waitForWork(model)
         XCTAssertTrue(model.canFinishCapture)
+    }
+    @MainActor func testUncertainPhotoRequiresExplicitChoiceAndPreservesImage() async throws {
+        let api = StubAPI()
+        let model = CaptureModel(api: api, inspect: { _ in throw RelayError(code: "photo_quality_uncertain") })
+        model.accept(photo()); try await waitForWork(model)
+        let bytes = model.pages[0].bytes
+        XCTAssertFalse(model.canFinishCapture)
+        XCTAssertEqual(model.validation?.verdict, "uncertain")
+        model.selectPage(0)
+        model.changeLanguage(.zh)
+        XCTAssertTrue(model.message.contains("仍然使用"))
+        model.usePhotoAnyway()
+        XCTAssertTrue(model.canFinishCapture)
+        XCTAssertEqual(model.pages[0].bytes, bytes)
+        XCTAssertEqual(api.validationCalls, 0)
+        model.accept(photo()); try await waitForWork(model)
+        XCTAssertFalse(model.canFinishCapture)
+        XCTAssertEqual(model.validation?.verdict, "uncertain")
+    }
+    @MainActor func testUnreadablePhotoCannotBeOverridden() async throws {
+        let model = CaptureModel(api: StubAPI(), inspect: { _ in throw RelayError(code: "photo_unreadable") })
+        model.accept(photo()); try await waitForWork(model)
+        model.usePhotoAnyway()
+        XCTAssertFalse(model.canFinishCapture)
+    }
+    @MainActor func testMotionBlurredLetterRequiresRetake() throws {
+        let path = try XCTUnwrap(Bundle.main.url(forResource: "fictional-bill", withExtension: "jpg"))
+        let source = try XCTUnwrap(CIImage(contentsOf: path))
+        let blurred = source.applyingFilter("CIMotionBlur", parameters: ["inputRadius": 8, "inputAngle": 0.3])
+        let image = try XCTUnwrap(CIContext().createCGImage(blurred, from: source.extent))
+        let prepared = try PageQualityService.prepare(UIImage(cgImage: image))
+        XCTAssertThrowsError(try PageQualityService.inspect(prepared.bytes)) { error in
+            XCTAssertTrue(["photo_unreadable", "photo_quality_uncertain"].contains((error as? RelayError)?.code ?? ""))
+        }
     }
     @MainActor func testFictionalImagePassesLocalReadabilityAndPreservesPixels() throws {
         let path = try XCTUnwrap(Bundle.main.url(forResource: "fictional-bill", withExtension: "jpg"))

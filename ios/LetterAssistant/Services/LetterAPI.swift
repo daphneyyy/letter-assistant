@@ -51,7 +51,7 @@ struct LetterAPI: LetterAPIClient {
     }
     func interpret(pages: [LetterPageInput], captureID: UUID) async throws -> LetterInterpretation {
         let payload: [String: Any] = ["capture_id": captureID.uuidString, "pages": pages.map {
-            ["page_id": $0.id.uuidString, "image_base64": $0.image.base64EncodedString(), "validation_token": $0.token]
+            ["page_id": $0.id.uuidString, "image_base64": $0.image.base64EncodedString(), "local_readability": true] as [String: Any]
         }]
         return try await send("interpret", payload: payload)
     }

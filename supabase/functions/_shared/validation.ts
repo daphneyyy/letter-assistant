@@ -125,7 +125,7 @@ export function validateInterpretation(
   }
   for (const summary of Object.values(result.summaries)) {
     if (
-      ![summary.what_this_is, summary.what_to_do, summary.when].every((s) =>
+      ![summary.what_this_is, summary.what_to_note, summary.what_to_do, summary.when].every((s) =>
         s.trim()
       )
     ) fail();
@@ -144,9 +144,9 @@ export function validateInterpretation(
   // This is deterministic presentation copy, not a fabricated extracted fact.
   if (result.domain !== "unsupported" && result.actions.length === 0) {
     result.summaries.en.what_to_do =
-      "No action steps were identified in the supplied pages; this does not establish that nothing needs to be done.";
+      "No action steps were identified in the supplied pages.";
     result.summaries.zh.what_to_do =
-      "提供的页面中未识别到明确的办理步骤，不能据此认定无需处理。";
+      "提供的页面中未识别到办理事项。";
   }
   return result;
 }

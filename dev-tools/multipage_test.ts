@@ -20,6 +20,7 @@ const images = [1, 2].map((byte) =>
 );
 const summary = {
   what_this_is: "Test",
+  what_to_note: "Source-grounded points to note / 原文重点",
   what_to_do: "The letter does not specify what you need to do",
   when: "The letter does not specify a deadline",
   fact_ids: ["date"],
@@ -53,6 +54,7 @@ const interpretation: Interpretation = {
     zh: {
       ...summary,
       what_this_is: "测试",
+      what_to_note: "Source-grounded points to note / 原文重点",
       what_to_do: "信中未说明您需要做什么",
       when: "信中未注明截止日期",
     },
@@ -273,11 +275,11 @@ Deno.test("photo validation uses neutral photo-quality instructions without capt
       const label = messages[1].content[0].text;
       assert(
         label ===
-          "Check this photo for readability and cropping only; printed page numbers and references to other pages are irrelevant.",
+          "Check only visible text readability. Do not check cropping or page edges; printed page numbers and references to other pages are irrelevant.",
       );
       assert(
         !label.includes("Page 1") &&
-          messages[0].content.includes("clear, uncropped continuation sheet"),
+          messages[0].content.includes("Do not check cropping, page edges, or whether the full sheet is in frame."),
       );
       assert(
         messages[0].content.includes(
@@ -302,4 +304,14 @@ Deno.test("photo validation uses neutral photo-quality instructions without capt
       : new OpenAIProvider("fake-key", undefined, transport);
     assert((await provider.validate(images[1])).verdict === "valid");
   }
+});
+
+Deno.test("local readability pages need no online validation before one interpretation", async () => {
+  let checks = 0, interpretations = 0;
+  const handler = createHandler(token, {
+    validate: async () => { checks++; throw new Error("Online validation must not run"); },
+    interpret: async () => { interpretations++; return structuredClone(interpretation); },
+  });
+  const response = await handler(request("/interpret", { capture_id: capture, pages: images.map((image, i) => ({page_id: pageIds[i], image_base64: image, local_readability: true})) }));
+  assert(response.status === 200 && checks === 0 && interpretations === 1);
 });

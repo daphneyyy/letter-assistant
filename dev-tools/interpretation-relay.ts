@@ -23,6 +23,15 @@ export function configuredProvider(
   transport: typeof fetch = fetch,
   recordUsage: (usage: UsageRecord) => void = () => {},
 ): AIProvider {
+  // Explicit unified settings take precedence; never borrow a different provider's key.
+  if (env("AI_API_KEY") !== undefined || env("AI_MODEL") !== undefined || env("AI_BASE_URL") !== undefined) {
+    const flag = env("AI_FREE_ONLY") ?? "true";
+    if (flag !== "true" && flag !== "false") throw new Error("AI_FREE_ONLY must be true or false");
+    return new OpenRouterProvider(
+      env("AI_API_KEY"), env("AI_MODEL") ?? FREE_MODEL, transport, recordUsage,
+      { baseURL: env("AI_BASE_URL"), freeOnly: flag === "true" },
+    );
+  }
   // An explicitly configured OpenRouter key never falls back to paid OpenAI,
   // even if the key is empty/invalid or the free endpoint is unavailable.
   if (env("OPENROUTER_API_KEY") !== undefined) {
@@ -222,7 +231,7 @@ export function createHandler(
         if (
           !page || typeof page !== "object" || Array.isArray(page) ||
           Object.keys(page).some((k) =>
-            !["page_id", "image_base64", "validation_token"].includes(k)
+            !["page_id", "image_base64", "validation_token", "local_readability"].includes(k)
           ) || typeof page.page_id !== "string" || !UUID.test(page.page_id) ||
           typeof page.image_base64 !== "string" || ids.has(page.page_id)
         ) throw new SafeError("invalid_request", 400);
@@ -231,9 +240,12 @@ export function createHandler(
         const record = typeof page.validation_token === "string"
           ? accepted.get(page.validation_token)
           : undefined;
+        // Local readability is a client quality check, not server attestation.
+        // Auth, byte/size limits and output grounding still apply to every request.
         if (
+          page.local_readability !== true && (
           !record || record.capture !== body.capture_id ||
-          record.page !== page.page_id || record.digest !== digest
+          record.page !== page.page_id || record.digest !== digest)
         ) throw new SafeError("validation_required", 409);
         images.push(page.image_base64);
       }

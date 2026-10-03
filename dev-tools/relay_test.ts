@@ -24,6 +24,7 @@ const payload = {
 };
 const summary = {
   what_this_is: "Test",
+  what_to_note: "Source-grounded points to note / 原文重点",
   what_to_do: "The letter does not specify what you need to do",
   when: "The letter does not specify a deadline",
   fact_ids: [],
@@ -43,6 +44,7 @@ const result: Interpretation = {
     zh: {
       ...summary,
       what_this_is: "测试",
+      what_to_note: "Source-grounded points to note / 原文重点",
       what_to_do: "信中未说明您需要做什么",
       when: "信中未注明截止日期",
     },
@@ -428,6 +430,7 @@ function enrollmentContract(): Interpretation {
   value.summaries = {
     en: {
       what_this_is: "Health coverage enrollment confirmation",
+      what_to_note: "Source-grounded points to note / 原文重点",
       what_to_do:
         "No required step is stated. Call only if the information is incorrect.",
       when:
@@ -437,6 +440,7 @@ function enrollmentContract(): Interpretation {
     },
     zh: {
       what_this_is: "医疗保险投保确认",
+      what_to_note: "Source-grounded points to note / 原文重点",
       what_to_do: "信中未要求必须采取步骤。仅在信息有误时致电。",
       when: "生效日期表示保险开始生效的时间。信中未注明截止日期。",
       fact_ids: ["coverage_start"],
@@ -568,11 +572,11 @@ Deno.test("empty in-scope action extraction cannot produce blanket no-action cla
   const checked = validateInterpretation(empty);
   assert(
     checked.summaries.en.what_to_do ===
-      "No action steps were identified in the supplied pages; this does not establish that nothing needs to be done.",
+      "No action steps were identified in the supplied pages.",
   );
   assert(
     checked.summaries.zh.what_to_do ===
-      "提供的页面中未识别到明确的办理步骤，不能据此认定无需处理。",
+      "提供的页面中未识别到办理事项。",
   );
   assert(
     JSON.stringify(checked.summaries.en.fact_ids) === '["coverage_start"]',

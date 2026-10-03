@@ -69,7 +69,7 @@ struct CapturedPage: Identifiable {
                 let inspect = self.inspect
                 try await Task.detached { try inspect(page.bytes) }.value
                 try Task.checkCancellation()
-                let verdict = try await api.validate(image: page.bytes, captureID: captureID, pageID: page.id)
+                let verdict = PageValidation(verdict: "valid", reason: BilingualText(en: "Photo checked", zh: "照片已通过检查"), validationToken: "local-readability")
                 guard generation == version, !Task.isCancelled else { return }
                 pages[index].validation = verdict
                 phase = pages[index].isValid ? .valid : .retake
@@ -79,11 +79,26 @@ struct CapturedPage: Identifiable {
                 }
             } catch {
                 guard generation == version, !Task.isCancelled else { return }
-                if let error = error as? RelayError, ["photo_unreadable", "photo_cropped"].contains(error.code) { phase = .retake }
+                if let error = error as? RelayError, error.code == "photo_quality_uncertain" {
+                    pages[index].validation = PageValidation(verdict: "uncertain", reason: BilingualText(en: "This photo may be blurry. Retake it, or use it if you can read the text.", zh: "照片可能模糊。你可以重拍，或确认文字可读后仍然使用。"), validationToken: nil)
+                    phase = .retake
+                    message = validationMessage(pages[index].validation!)
+                    guidance.speak(message, language: language); announce(message)
+                    return
+                }
+                if let error = error as? RelayError, error.code == "photo_unreadable" { phase = .retake }
                 else { phase = .checkFailed }
                 report(error)
             }
         }
+    }
+    func usePhotoAnyway() {
+        guard !phase.busy, result == nil, pages.indices.contains(currentPageIndex),
+              validation?.verdict == "uncertain" else { return }
+        pages[currentPageIndex].validation = PageValidation(verdict: "valid", reason: BilingualText(en: "Photo accepted by you", zh: "已按你的选择使用照片"), validationToken: "local-user-confirmed")
+        errorCode = nil; phase = .valid
+        message = validationMessage(pages[currentPageIndex].validation!)
+        guidance.stop()
     }
     func interpret() {
         guard phase.canInterpret, canFinishCapture else { return }
@@ -120,6 +135,8 @@ struct CapturedPage: Identifiable {
         else if result == nil, let validation { message = validationMessage(validation) }
     }
     private func validationMessage(_ verdict: PageValidation) -> String {
+        if verdict.verdict == "uncertain" { return verdict.reason.text(language) }
+        if verdict.validationToken == "local-user-confirmed" { return verdict.reason.text(language) }
         if verdict.verdict == "valid", verdict.validationToken != nil {
             return language.text("Photo checked", "照片已通过检查")
         }
@@ -132,7 +149,7 @@ struct CapturedPage: Identifiable {
         return language == .zh ? sentence + "。请重拍这一页。" : sentence + ". Please retake this page."
     }
     func capturePrompt() {
-        guidance.speak(language.text("Place the letter on a flat surface. Keep all four edges visible and hold the phone still.", "请把信件放平，拍到纸张的四边，并保持手机稳定。"), language: language)
+        guidance.speak(language.text("Hold the phone still and keep the text clear.", "请保持手机稳定，确保文字清晰。"), language: language)
     }
     private func report(_ error: Error) {
         let code = (error as? RelayError)?.code ?? "connection_failed"
@@ -143,7 +160,6 @@ struct CapturedPage: Identifiable {
         case "provider_auth_failed": message = language.text("The AI access key was rejected. This photo is still here. Update the API key in the local settings and restart the local service before retrying.", "AI 访问密钥无效，照片仍然保留。请在本地设置中更新 API 密钥，重启本地服务后再试。")
         case "provider_rate_limited": message = language.text("The AI service has reached its current request limit. Your photo is still here. Please wait and retry later.", "AI 服务暂时达到请求限额，照片仍然保留。请稍后重试。")
         case "photo_too_small", "photo_unreadable": message = language.text("The text is unclear. Move closer and retake this page.", "文字不清晰，请靠近一些重拍。")
-        case "photo_cropped": message = language.text("Text may be cut off. Include all four edges and retake.", "文字可能被裁切，请拍全纸张四边后重拍。")
         case "photo_too_large": message = language.text("This photo is too large to process. Please retake at a lower camera resolution.", "照片过大，无法处理。请降低相机分辨率后重拍。")
         case "validation_expired", "validation_required", "validation_mismatch", "invalid_validation_token": message = language.text("Please check this photo again before interpreting it.", "请先重新检查这张照片，再进行解读。")
         default: message = language.text("We could not complete this step. Your photo is still here. Check the connection and retry.", "未能完成此步骤，照片仍然保留。请检查连接后重试。")

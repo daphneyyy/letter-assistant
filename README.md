@@ -62,3 +62,17 @@ The approved order and all remaining work live in `devpost/checklist.md`.
 ## Interpretation refinement
 
 Within medical and health-insurance scope, explanations adapt to the actual purpose of a statement, EOB, result, or enrollment notice. The screen shows purpose, actions/choices, and relevant timing. Facts have bilingual role labels and explanations; detailed values and source excerpts are expandable. Actions distinguish explicit instructions, options, and conditional steps, while effective/service dates stay separate from deadlines. No extracted steps uses conservative wording, not a blanket claim that no action is needed. Fixtures cover these cases; free-model output still requires checking against originals.
+
+
+### Change AI model or API key
+
+Edit `.env.local` (ignored by Git):
+
+```dotenv
+AI_BASE_URL=https://openrouter.ai/api/v1
+AI_MODEL=dots-studio/dots-3-note-preview:free
+AI_API_KEY=your-key
+AI_FREE_ONLY=true
+```
+
+Use the service's OpenAI-compatible Chat Completions base URL, without `/chat/completions`. The selected model must accept image inputs and strict JSON-schema output. Other API formats are not supported by this adapter. Set `AI_FREE_ONLY=false` to use a non-free model or another compatible provider; charges then follow that provider. No automatic model/provider fallback is used. Restart the relay after edits (`deno task relay`); phone reinstall is unnecessary. If launching Deno with a restricted `--allow-net` list, include the new API host. Keys remain on the Mac, never in the phone app. Unified `AI_*` settings take precedence over legacy `OPENROUTER_*` / `OPENAI_*` settings; an empty unified key does not fall back to a legacy key.
