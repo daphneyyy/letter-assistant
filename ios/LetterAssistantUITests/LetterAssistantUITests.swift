@@ -148,6 +148,7 @@ final class LetterAssistantUITests: XCTestCase {
         app.buttons["中文"].tap()
         XCTAssertFalse(app.staticTexts["一封信，清楚的下一步。"].exists)
         XCTAssertFalse(app.staticTexts["One letter. Clear next steps."].exists)
+        XCTAssertTrue(app.buttons["使用测试照片"].exists)
         let take = app.buttons["拍摄信件"]
         for _ in 0..<5 where !take.isHittable { app.swipeUp() }
         XCTAssertTrue(take.isHittable)

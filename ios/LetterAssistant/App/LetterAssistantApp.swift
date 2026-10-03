@@ -3,7 +3,7 @@ import SwiftUI
 @main struct LetterAssistantApp: App {
     var body: some Scene {
         WindowGroup {
-            #if DEBUG && targetEnvironment(simulator)
+            #if TEST_BUILD && targetEnvironment(simulator)
             if ProcessInfo.processInfo.arguments.contains("--calendar-review-test") {
                 CalendarReviewTestHarness()
             } else { LaunchWelcomeView() }
@@ -58,7 +58,7 @@ private struct LaunchWelcomeView: View {
     }
 }
 
-#if DEBUG && targetEnvironment(simulator)
+#if TEST_BUILD && targetEnvironment(simulator)
 private struct CalendarReviewTestHarness: View {
     @State private var outcome: CalendarSaveOutcome?
     @State private var reviewOpen = false

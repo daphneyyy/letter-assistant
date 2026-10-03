@@ -199,8 +199,6 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				839FB4A9D2D4DCF8FBFBCF21 /* ../fixtures/letters/fictional-bill.jpg in Resources */,
-				08493276B13442FA695A3A06 /* ../fixtures/letters/fictional-bill-page2.jpg in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -220,7 +218,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "if [ \"$CONFIGURATION\" = \"Debug\" ] && [ -f \"$SRCROOT/Config/Debug.local.plist\" ]; then\n  cp \"$SRCROOT/Config/Debug.local.plist\" \"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/Debug.local.plist\"\nelse\n  rm -f \"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/Debug.local.plist\"\nfi\n";
+			shellScript = "set -eu\nbundle_dir=\"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH\"\nrm -f \"$bundle_dir/Debug.local.plist\" \"$bundle_dir/Prod.local.plist\" \"$bundle_dir/fictional-bill.jpg\" \"$bundle_dir/fictional-bill-page2.jpg\"\nif [ \"$CONFIGURATION\" = \"Debug\" ]; then\n  config_name=\"Debug\"\n  cp \"$SRCROOT/../fixtures/letters/fictional-bill.jpg\" \"$bundle_dir/fictional-bill.jpg\"\n  cp \"$SRCROOT/../fixtures/letters/fictional-bill-page2.jpg\" \"$bundle_dir/fictional-bill-page2.jpg\"\nelse\n  config_name=\"Prod\"\nfi\nif [ -f \"$SRCROOT/Config/$config_name.local.plist\" ]; then\n  cp \"$SRCROOT/Config/$config_name.local.plist\" \"$bundle_dir/$config_name.local.plist\"\nfi\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 
@@ -297,7 +295,7 @@
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.example.LetterAssistantUITests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG TEST_BUILD";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				TEST_TARGET_NAME = LetterAssistant;
 			};
@@ -309,6 +307,7 @@
 				DEVELOPMENT_TEAM = VKM739ZS8W;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = LetterAssistant/Info.plist;
+                LETTER_DISPLAY_NAME = "Letter Assistant";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -329,7 +328,7 @@
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				SDKROOT = iphoneos;
-				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG TEST_BUILD";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = 1;
@@ -343,13 +342,14 @@
 				ENABLE_TESTABILITY = YES;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = LetterAssistant/Info.plist;
+                LETTER_DISPLAY_NAME = "Letter Assistant Test";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.example.LetterAssistant;
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG TEST_BUILD";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 			};
 			name = Debug;
@@ -386,7 +386,7 @@
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.example.LetterAssistantTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG TEST_BUILD";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/LetterAssistant.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/LetterAssistant";
 			};

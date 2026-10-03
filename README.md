@@ -110,3 +110,17 @@ These features are outside the hackathon. Their storage, authentication and sync
 ## Open-source publication readiness
 
 The intended distribution is a public GitHub repository with operator-owned API keys. An open-source license still needs to be selected and added before publication. Audit tracked files and Git history for credentials, local signing/configuration, private learner context and real letter images before pushing publicly. Only fictional fixtures should be published. This requirements revision does not publish the repository.
+
+
+### Test and Prod builds
+
+Choose a scheme in Xcode before Run (automated tests use `LetterAssistant-Test`):
+
+| Scheme | Configuration | Photo and demo tools | AI connection |
+| --- | --- | --- | --- |
+| `LetterAssistant-Test` | Debug, `TEST_BUILD` | Test photos on simulator or phone; fictional calendar tools | Ignored `ios/Config/Debug.local.plist` |
+| `LetterAssistant-Prod` | Release | Camera capture only; no test photos bundled or demo tools | Ignored `ios/Config/Prod.local.plist` |
+
+Test is labeled **Letter Assistant Test** on the device. Prod is labeled **Letter Assistant**. Both currently use the same bundle ID, so installing one replaces the other. The existing `LetterAssistant` scheme retains its Debug-run/Release-archive behavior.
+
+For Prod connection settings, copy `ios/Config/Prod.example.plist` to `ios/Config/Prod.local.plist` and set your relay URL/token. Prod accepts HTTPS or the existing trusted local-network HTTP relay; Test retains its local HTTP relay. The build copies only the selected environment's configuration. Missing configuration shows an honest setup message; there is no automatic fallback to Test credentials. This separates app builds and test assets; it does not deploy a production backend.

@@ -4,19 +4,25 @@ struct RelayConfiguration {
     let url: URL
     let token: String
     static func load() -> RelayConfiguration? {
-        #if DEBUG
-        guard let file = Bundle.main.url(forResource: "Debug.local", withExtension: "plist"),
+        #if TEST_BUILD
+        let configName = "Debug.local"
+        #else
+        let configName = "Prod.local"
+        #endif
+        guard let file = Bundle.main.url(forResource: configName, withExtension: "plist"),
               let data = try? Data(contentsOf: file),
               let values = try? PropertyListSerialization.propertyList(from: data, format: nil) as? [String: String],
               let address = values["RELAY_URL"], let url = URL(string: address),
-              let host = url.host, url.scheme == "http", url.user == nil, url.password == nil,
-              let token = values["RELAY_TOKEN"], token.count >= 32,
-              isLocalHost(host) else { return nil }
-        return RelayConfiguration(url: url, token: token)
+              let host = url.host, url.user == nil, url.password == nil,
+              let token = values["RELAY_TOKEN"], token.count >= 32 else { return nil }
+        #if TEST_BUILD
+        guard url.scheme == "http", isLocalHost(host) else { return nil }
         #else
-        return nil
+        guard url.scheme == "https" || (url.scheme == "http" && isLocalHost(host)) else { return nil }
         #endif
+        return RelayConfiguration(url: url, token: token)
     }
+
     static func isLocalHost(_ host: String) -> Bool {
         if host == "localhost" || host == "127.0.0.1" || host.hasSuffix(".local") { return true }
         let components = host.split(separator: ".", omittingEmptySubsequences: false)

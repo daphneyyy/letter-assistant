@@ -108,7 +108,7 @@ struct CaptureView: View {
                 Text(language.text("This explanation has not been saved. Finishing clears this letter and returns to the start screen.", "本次解读尚未保存。结束后将清除当前信件，并返回开始页。"))
             }
             .confirmationDialog(language.text("Choose a calendar test", "选择日历测试场景"), isPresented: $calendarTestMenu, titleVisibility: .visible) {
-                #if DEBUG
+                #if TEST_BUILD
                 Button(language.text("Deadline", "截止日期")) { calendarProposal = .testExample(.deadline, language: language) }
                 Button(language.text("Reminder without a deadline", "无截止日期的提醒")) { calendarProposal = .testExample(.reminder, language: language) }
                 Button(language.text("Appointment", "预约")) { calendarProposal = .testExample(.appointment, language: language) }
@@ -146,17 +146,25 @@ struct CaptureView: View {
 
     private var welcome: some View {
         VStack(alignment: .leading, spacing: 24) {
-            VStack(alignment: .leading, spacing: 20) {
-                welcomeStep("1", title: language.text("Photograph your letter", "拍摄信件"), detail: language.text("One page at a time, with all edges visible.", "逐页拍摄，确保页面边缘完整可见。"))
-                welcomeStep("2", title: language.text("Read a clear explanation", "阅读清晰解读"), detail: language.text("Understand the details and your next steps.", "了解重要信息和下一步事项。"))
-                welcomeStep("3", title: language.text("Review dates together", "核对相关日期"), detail: language.text("Choose whether to add an event to Calendar.", "自行决定是否添加到日历。"))
+            controls
+            DisclosureGroup {
+                VStack(alignment: .leading, spacing: 20) {
+                    welcomeStep("1", title: language.text("Photograph your letter", "拍摄信件"), detail: language.text("One page at a time, with all edges visible.", "逐页拍摄，确保页面边缘完整可见。"))
+                    welcomeStep("2", title: language.text("Read a clear explanation", "阅读清晰解读"), detail: language.text("Understand the details and your next steps.", "了解重要信息和下一步事项。"))
+                    welcomeStep("3", title: language.text("Review dates together", "核对相关日期"), detail: language.text("Choose whether to add an event to Calendar.", "自行决定是否添加到日历。"))
+                }.padding(.top, 12)
+            } label: {
+                Label(language.text("How to use", "如何使用"), systemImage: "questionmark.circle")
+                    .font(.headline).frame(minHeight: 44)
             }
+            .accessibilityIdentifier("howToUse")
             .padding(20).frame(maxWidth: .infinity, alignment: .leading)
             .background(LetterStyle.surface, in: RoundedRectangle(cornerRadius: 22))
-            controls
-            Label(language.text("Demo • fictional letters only • not saved", "演示版 · 仅使用虚构信件 · 不保存"), systemImage: "info.circle")
+            #if TEST_BUILD
+            Label(language.text("Test version • fictional letters • not saved", "测试版 · 虚构信件 · 不保存"), systemImage: "info.circle")
                 .font(.footnote).foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
+            #endif
         }
     }
 
@@ -174,10 +182,10 @@ struct CaptureView: View {
 
     @ViewBuilder private var developmentTools: some View {
         if !model.configured {
-            Label(language.text("AI connection setup is still needed for this test build.", "此测试版本仍需设置 AI 连接。"), systemImage: "info.circle")
+            Label(language.text("AI connection is not configured.", "尚未配置 AI 连接。"), systemImage: "info.circle")
                 .font(.callout).foregroundStyle(.secondary)
         }
-        #if DEBUG
+        #if TEST_BUILD
         DisclosureGroup(language.text("Demo tools", "演示工具")) {
             VStack(alignment: .leading, spacing: 12) {
                 Button { calendarTestMenu = true } label: {
@@ -201,8 +209,8 @@ struct CaptureView: View {
                 Button(language.text("Use anyway", "仍然使用")) { model.usePhotoAnyway() }
                     .font(.title3).buttonStyle(.bordered).frame(minHeight: 56)
             }
-            #if targetEnvironment(simulator) && DEBUG
-            Button(language.text("Use fictional sample (simulator)", "使用虚构样本（模拟器）")) {
+            #if TEST_BUILD
+            Button(language.text("Use test photo", "使用测试照片")) {
                 if let path = Bundle.main.url(forResource: "fictional-bill", withExtension: "jpg"),
                    let image = UIImage(contentsOfFile: path.path) { model.accept(image) }
             }.buttonStyle(.bordered).frame(minHeight: 44)
@@ -221,8 +229,8 @@ struct CaptureView: View {
             if model.pages.count == 10 {
                 Text(language.text("The 10-page limit has been reached.", "已达到每封信 10 页的上限。")).font(.callout)
             }
-            #if targetEnvironment(simulator) && DEBUG
-            Button(language.text("Add fictional next page (simulator)", "添加虚构下一页（模拟器）")) {
+            #if TEST_BUILD
+            Button(language.text("Add next test photo", "添加下一张测试照片")) {
                 if let path = Bundle.main.url(forResource: "fictional-bill-page2", withExtension: "jpg"),
                    let image = UIImage(contentsOfFile: path.path) { model.accept(image, asNextPage: true) }
             }.buttonStyle(.bordered).frame(minHeight: 44).disabled(!model.canAddPage)

@@ -8,6 +8,7 @@
 .Rhistory
 /ios/Config/Local.xcconfig
 /ios/Config/Debug.local.plist
+/ios/Config/Prod.local.plist
 /ios/**/xcuserdata/
 /ios/**/DerivedData/
 /build/

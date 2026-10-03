@@ -1,6 +1,7 @@
 """Generate the small dependency-free Xcode project; rerun after adding source files."""
 from pathlib import Path
 import hashlib
+import re
 root=Path(__file__).resolve().parent
 objects={}
 def ident(name): return hashlib.sha256(name.encode()).hexdigest()[:24].upper()
@@ -19,7 +20,7 @@ for p in sorted((root/'LetterAssistantTests').glob('*.swift')):
 resources=[]
 for fixture in ['fictional-bill', 'fictional-bill-page2']:
  r=ref(f'../fixtures/letters/{fixture}.jpg','image.jpeg');refs.append(r)
- resources.append(obj('fixture-build:'+fixture,f'isa = PBXBuildFile; fileRef = {r};'))
+ # Test fixtures are copied only for Debug by the environment build phase.
 product=obj('app-product','isa = PBXFileReference; explicitFileType = wrapper.application; path = LetterAssistant.app; sourceTree = BUILT_PRODUCTS_DIR;')
 tproduct=obj('test-product','isa = PBXFileReference; explicitFileType = wrapper.cfbundle; path = LetterAssistantTests.xctest; sourceTree = BUILT_PRODUCTS_DIR;')
 products=obj('products',f'isa = PBXGroup; children = {listing([product,tproduct])}; name = Products; sourceTree = "<group>";')
@@ -30,7 +31,7 @@ a_res=phase('resources','PBXResourcesBuildPhase',resources)
 a_framework=phase('frameworks','PBXFrameworksBuildPhase',[])
 t_sources=phase('test-sources','PBXSourcesBuildPhase',test_sources)
 t_framework=phase('test-frameworks','PBXFrameworksBuildPhase',[])
-script='if [ "$CONFIGURATION" = "Debug" ] && [ -f "$SRCROOT/Config/Debug.local.plist" ]; then\n  cp "$SRCROOT/Config/Debug.local.plist" "$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/Debug.local.plist"\nelse\n  rm -f "$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/Debug.local.plist"\nfi\n'
+script='set -eu\nbundle_dir="$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH"\nrm -f "$bundle_dir/Debug.local.plist" "$bundle_dir/Prod.local.plist" "$bundle_dir/fictional-bill.jpg" "$bundle_dir/fictional-bill-page2.jpg"\nif [ "$CONFIGURATION" = "Debug" ]; then\n  config_name="Debug"\n  cp "$SRCROOT/../fixtures/letters/fictional-bill.jpg" "$bundle_dir/fictional-bill.jpg"\n  cp "$SRCROOT/../fixtures/letters/fictional-bill-page2.jpg" "$bundle_dir/fictional-bill-page2.jpg"\nelse\n  config_name="Prod"\nfi\nif [ -f "$SRCROOT/Config/$config_name.local.plist" ]; then\n  cp "$SRCROOT/Config/$config_name.local.plist" "$bundle_dir/$config_name.local.plist"\nfi\n'
 import json
 shell=obj('local-config',f'isa = PBXShellScriptBuildPhase; buildActionMask = 2147483647; files = (); inputPaths = (); outputPaths = (); alwaysOutOfDate = 1; name = "Development connection only"; shellPath = /bin/sh; shellScript = {json.dumps(script)}; runOnlyForDeploymentPostprocessing = 0;')
 def configlist(name,settings):
@@ -38,7 +39,8 @@ def configlist(name,settings):
  for mode in ('Debug','Release'):
   values=settings.copy()
   values['SWIFT_OPTIMIZATION_LEVEL']='-Onone' if mode=='Debug' else '-O'
-  values['SWIFT_ACTIVE_COMPILATION_CONDITIONS']='DEBUG' if mode=='Debug' else ''
+  values['SWIFT_ACTIVE_COMPILATION_CONDITIONS']='DEBUG TEST_BUILD' if mode=='Debug' else ''
+  if name == 'app': values['LETTER_DISPLAY_NAME']='Letter Assistant Test' if mode=='Debug' else 'Letter Assistant'
   if mode=='Debug':values['ENABLE_TESTABILITY']='YES'
   body=' '.join(f'{k} = {json.dumps(v)};' for k,v in values.items())
   configs.append(obj(name+mode,f'isa = XCBuildConfiguration; buildSettings = {{{body}}}; name = {mode};'))
@@ -78,3 +80,7 @@ def buildref(i,name):return f'<BuildableReference BuildableIdentifier="primary" 
 <AnalyzeAction buildConfiguration="Debug"/><ArchiveAction buildConfiguration="Release" revealArchiveInOrganizer="YES"/>
 </Scheme>''')
 print('Generated shared Xcode app/test project.')
+
+base_scheme=(schemes/'LetterAssistant.xcscheme').read_text()
+(schemes/'LetterAssistant-Test.xcscheme').write_text(base_scheme.replace('buildConfiguration="Release"', 'buildConfiguration="Debug"'))
+(schemes/'LetterAssistant-Prod.xcscheme').write_text(re.sub(r'<TestAction\b.*?</TestAction>\n', '', base_scheme.replace('buildConfiguration="Debug"', 'buildConfiguration="Release"'), flags=re.S))
