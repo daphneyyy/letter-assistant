@@ -1,89 +1,109 @@
 # Letter Assistant
 
-An iPhone proof of concept that explains fictional medical and insurance letters in English or Chinese: **what this is → what to do → when**.
+An iPhone hackathon demo that turns an English medical or health-insurance letter into a plain-language English or Chinese explanation and a reviewed phone-calendar event.
 
-## Current milestone
+**Photograph → check the photo → analyze the letter → add to the iPhone calendar.**
 
-Slice 1 is in progress: temporary multi-page capture, local readability checks, spoken capture guidance, an OpenRouter integration using a free vision model, and an accessible explanation screen. Photos and results stay in memory for this slice. Accounts, archive, and voice questions belong to later slices. Calendar creation review is now available from extracted actions as an early implementation checkpoint; physical calendar acceptance and evidence-driven reminder suggestions remain pending. Debug and Release simulator builds, eleven unit tests, one Chinese large-text UI test, and twenty-one relay tests pass. The OpenRouter key is verified. The fictional bill now passes real photo validation and interpretation through the local relay (both HTTP 200), with the expected USD 125.00 payment and 2026-11-15 deadline in both languages. A direct successful interpretation reported cost 0. Remaining fixture cases and physical-device acceptance are pending. The earlier 401 came from sending an OpenRouter key to the wrong provider.
+No email, signup, login, database or chat history is required. Clone the source and use your own AI API key. The current demo runs as a Debug app installed with Xcode, with a local relay running on your Mac; it is not an App Store release or hosted service.
 
-## Run the first slice
+## What it does
 
-1. Open `ios/LetterAssistant.xcodeproj` in Xcode and select the shared **LetterAssistant** scheme.
-2. Configure the local relay below. The simulator uses `http://127.0.0.1:8787`. For a physical iPhone, connect it to Xcode, choose your signing team and a unique bundle identifier, and use the Mac's private LAN address in both settings files. The phone and Mac must be on the same trusted network. Never expose this development relay publicly.
-3. Start the relay, then press **Run** in Xcode. Choose English or 中文. Photograph a printed fictional letter from `fixtures/letters/`, keeping all page edges visible. The simulator has a clearly labeled fictional-sample button because it has no physical camera. After validation, use Add fictional next page (simulator) to append the bundled continuation page, then Finish taking photos.
-4. An accepted page enables **Photograph next page** and **Finish taking photos**. Next page preserves earlier originals; finish interprets all accepted pages together. Printed page numbering is not checked. Use page selectors to review or retake a captured page. Rejected/uncertain pages require a retake. Connection/provider failures keep the photo and offer retry. An absent key produces an honest setup error, not a sample interpretation.
+- Native iPhone camera, ordered multi-page capture and individual retakes.
+- On-device readability checks, with Retake / Use anyway for uncertain quality. These checks do not call AI or check cropping/page numbering.
+- Source-grounded bilingual explanations: what the letter says, what to pay attention to, actions/choices and relevant timing.
+- Review and create all-day deadlines/reminders or timed appointments in the iPhone calendar. No event is saved until you save it in Apple's editor.
+- A clearly labeled no-AI calendar test entry with fictional examples.
 
-The target phone is user-reported as iPhone 18 Pro. Device connection, OS compatibility, signing, actual camera quality, and audio/VoiceOver behavior must be checked on that phone before slice 1 passes. If its OS is newer than the installed Xcode supports, update Xcode before device installation.
+Photos and analysis stay in the current session. Finishing or restarting does not save an archive. Events you save remain in Calendar and can be changed or removed there.
 
-## Local relay configuration
+## Requirements
 
-The relay requires Deno 2.x; verified locally with 2.9.6. It uses TypeScript and native fetch with no third-party runtime imports.
+- A Mac and Xcode supporting your iPhone's iOS version; app deployment target is iOS 17+.
+- An iPhone for real camera and calendar acceptance, with development signing/Developer Mode configured as required by Xcode.
+- Deno 2.x on the Mac; the project has been tested with 2.9.6.
+- Your own API key and a vision model supporting the OpenAI-compatible Chat Completions endpoint and this app's structured JSON-schema output.
+- Phone and Mac on the same trusted local network for this demo.
 
-- `.env.local` holds the **OpenRouter API key on the Mac only**, model name, temporary relay token, and bind address. The ignored local file is configured for this workspace. For a fresh checkout, copy `.env.example` to `.env.local`.
-- `ios/Config/Debug.local.plist` holds only `RELAY_URL` and the temporary `RELAY_TOKEN`. For a fresh checkout, copy `Debug.example.plist` and replace the placeholder. Use a random token of at least 32 characters in both files. These local files are ignored by Git.
-- Use an [OpenRouter API key](https://openrouter.ai/settings/keys) in `OPENROUTER_API_KEY`; never paste it in chat. The pinned free vision model is `dots-studio/dots-3-note-preview:free`. Only `:free` models are accepted on this path, with zero token/request/image price ceilings and no automatic provider fallback. Free capacity and account quotas may cause retryable errors. Structured output is validated locally before display. See [OpenRouter routing](https://openrouter.ai/docs/guides/routing/provider-selection).
-- For a physical phone, set `RELAY_HOST` to the Mac's explicit private IPv4 address (not `0.0.0.0`) and `RELAY_URL` to `http://that-address:8787`. The local HTTP transport is solely for this fictional-data development milestone. The development connection file is copied into Debug builds only; Release excludes it and disables this path.
+No Supabase or email-service setup is needed. The `supabase/functions/_shared/` folder holds shared AI modules used by the local relay; it does not require running Supabase.
 
-```sh
-deno task relay
-```
+## Clone and configure your own key
 
-If Deno is not installed, this session used a temporary npm-provided runtime:
-
-```sh
-npm --cache /tmp/letter-assistant-npm exec --yes --package=deno@2.9.6 -- deno task relay
-```
-
-The relay requires its development token, refuses public/wildcard bind addresses, bounds image bodies to 10 MiB, and allows one active request. Validation expires after 15 minutes; interpretation must use the same accepted photo bytes. Usage logs contain only model/input/output token counts. There is no database or image logging. Stop with Control-C. Rebuild the app after changing its local connection settings.
-
-## Verification
-
-Installed toolchain: Xcode 26.5 (17F42), Swift 6.3.2, iOS 26.5 simulator. The project supports iOS 17+ and uses no third-party Swift packages in slice 1.
+Clone this GitHub repository, then open a terminal in the repository root. Create your local configuration:
 
 ```sh
-xcodebuild -project ios/LetterAssistant.xcodeproj -scheme LetterAssistant -sdk iphonesimulator -configuration Debug -derivedDataPath /tmp/letter-assistant-build CODE_SIGNING_ALLOWED=NO build
-xcodebuild -project ios/LetterAssistant.xcodeproj -scheme LetterAssistant -destination 'platform=iOS Simulator,name=iPhone 17 Pro' -derivedDataPath /tmp/letter-assistant-build CODE_SIGNING_ALLOWED=NO test
-deno task check
-deno task test
+cp .env.example .env.local
+cp ios/Config/Debug.example.plist ios/Config/Debug.local.plist
+openssl rand -hex 32
 ```
 
-Use an installed simulator from `xcrun simctl list devices available`; the name above exists on this Mac. XCTest checks photo gating, failed-request retention/retry, local readability, transport configuration, and Chinese controls at large text sizes. Deno tests use isolated fake providers for error/contract checks; they do not establish successful real AI extraction. Fixtures have hand-checked expectations in `fixtures/expected.json`. Compare real outputs with those facts when credentials are ready.
+Copy the random token printed by the last command into both `DEV_ACCESS_TOKEN` in `.env.local` and `RELAY_TOKEN` in `ios/Config/Debug.local.plist`. They must match. This protects your local relay; it is not a user account or login.
 
-The project is checked in as a normal Xcode project. `python3 ios/generate_project.py` regenerates it after adding source/test files. `swift fixtures/generate.swift` regenerates the fictional JPEGs. Do not regenerate over manual signing changes without preserving them.
-
-## Remaining slice-1 acceptance
-
-- Real fixture photos through OpenRouter: both languages, amounts/dates/evidence, missing action/deadline, uncertainty and retry behavior.
-- Physical iPhone capture/retake, readable full-resolution photo, English/Mandarin text-to-speech, Dynamic Type, tap targets and VoiceOver reading order.
-- Learner's early hands-on review. Only then commit/tick slice 1 and continue to email-only accounts.
-
-The approved order and all remaining work live in `devpost/checklist.md`.
-
-## Interpretation refinement
-
-Within medical and health-insurance scope, explanations adapt to the actual purpose of a statement, EOB, result, or enrollment notice. The screen shows purpose, actions/choices, and relevant timing. Facts have bilingual role labels and explanations; detailed values and source excerpts are expandable. Actions distinguish explicit instructions, options, and conditional steps, while effective/service dates stay separate from deadlines. No extracted steps uses conservative wording, not a blanket claim that no action is needed. Fixtures cover these cases; free-model output still requires checking against originals.
-
-
-### Change AI model or API key
-
-Edit `.env.local` (ignored by Git):
+Edit `.env.local`:
 
 ```dotenv
 AI_BASE_URL=https://openrouter.ai/api/v1
-AI_MODEL=dots-studio/dots-3-note-preview:free
-AI_API_KEY=your-key
+AI_MODEL=your-compatible-vision-model
+AI_API_KEY=your-own-api-key
 AI_FREE_ONLY=true
+DEV_ACCESS_TOKEN=your-generated-local-token
+RELAY_HOST=your-macs-private-ipv4-address
+RELAY_PORT=8787
 ```
 
-Use the service's OpenAI-compatible Chat Completions base URL, without `/chat/completions`. The selected model must accept image inputs and strict JSON-schema output. Other API formats are not supported by this adapter. Set `AI_FREE_ONLY=false` to use a non-free model or another compatible provider; charges then follow that provider. No automatic model/provider fallback is used. Restart the relay after edits (`deno task relay`); phone reinstall is unnecessary. If launching Deno with a restricted `--allow-net` list, include the new API host. Keys remain on the Mac, never in the phone app. Unified `AI_*` settings take precedence over legacy `OPENROUTER_*` / `OPENAI_*` settings; an empty unified key does not fall back to a legacy key.
+Replace every placeholder. `AI_BASE_URL` is the provider's base URL without `/chat/completions`. With `AI_FREE_ONLY=true`, select an OpenRouter `:free` vision model; availability and quotas vary. To use a paid model or another compatible provider, explicitly set `AI_FREE_ONLY=false`; your provider may charge your account. The code never automatically falls back to a paid service. The model in `.env.example` is only an example, not an availability guarantee.
 
+For a physical phone, set `RELAY_HOST` to your Mac's private IPv4 address and `RELAY_URL` in the local plist to `http://that-address:8787`. For the simulator, use `127.0.0.1` in both. Do not bind the relay to `0.0.0.0` or publish it on the internet.
 
-## Try calendar creation
+`.env.local` and `Debug.local.plist` are ignored by Git. The provider API key stays on your Mac; the phone receives only the local relay token. Never put your provider key in the plist or commit local configuration.
 
-After interpreting a fictional letter, select **Review calendar event / 查看并添加到日历** under an action. Check the source and any condition. Confirmed deadlines retain their original date; a no-deadline action asks you to choose a reminder date. Appointment times must be entered and checked against the letter, including time zone. The proposed duration is editable. Confirm the review to open Apple's editor, then save or cancel there. Set alerts in that editor and verify them in Calendar; an all-day event does not guarantee an alert. Later changes belong in Calendar. Repeated explicit creation may produce duplicates.
+## Run on your iPhone
 
-Only Apple's saved callback displays success. Cancel leaves the letter unchanged. After an interrupted editor, check Calendar before retrying. If there is no usable calendar account, cancel and configure one in iPhone Settings. This follows [Apple's editor-only creation guidance](https://developer.apple.com/documentation/eventkit/accessing-the-event-store) and requests no broad calendar access.
+1. Run the relay from the repository root:
 
-The current AI contract provides date-only facts and no structured urgency/risk/preparation evidence. No time or urgency is inferred from prose. User reminder choices are available; automatic evidence-based reminder recommendations remain unimplemented. Calendar events are separate from the temporary letter explanation and are not deleted when finishing a reading.
+   ```sh
+   deno task relay
+   ```
 
-Calendar checkpoint verification: 20 unit cases passed (six calendar-specific); the separate final UI run passed all three tests, including opening and canceling the real system editor. Signed Debug and unsigned Release compilation passed and Debug was installed on the connected iPhone. Actual saved-event dates, notes, alerts, unavailable-calendar and interruption scenarios on the phone remain to be checked.
+2. Open `ios/LetterAssistant.xcodeproj` in Xcode. Select the **LetterAssistant** scheme and **Debug** configuration.
+3. In Signing & Capabilities, select **your own development team** and, if needed, a unique bundle identifier. Do not assume the repository's existing team settings work for your account.
+4. Select your connected iPhone and run the app. Allow camera/local-network access when requested.
+5. Choose English or Chinese, photograph a fictional letter, handle its photo check, and finish capture for analysis. The Mac relay must remain running.
+6. Under an action, tap **Review calendar event / 查看并添加到日历**, verify the proposal and save or cancel in Apple's editor.
+
+Restart the relay after changing API settings. Rebuild/reinstall the app after changing the local plist. Release builds deliberately exclude the local relay settings, so a successful Release build does not provide this AI connection.
+
+This local HTTP phone-to-Mac path is for trusted-network demos with fictional letters. Interpretation sends the photos to the provider you configure over HTTPS. There is no shared project API key or central photo archive.
+
+## Test the calendar without AI
+
+On the Debug home screen tap **Test calendar without AI / 日历测试（无需 AI）**. Choose a deadline, a reminder without a deadline, or an appointment. No photo, key or running relay is needed. Titles are marked `[TEST]` / `【测试】`; saving in the system editor creates a real event.
+
+Deadlines/reminders are all-day events. Appointment time and time zone must be checked/entered; 30 minutes is an editable suggested duration. Set alerts in the system editor—an all-day event alone does not guarantee an alert. Cancel may ask you to **Discard Changes**. Unknown/interrupted outcomes ask you to check Calendar before retrying to avoid duplicates. Later changes are made in Calendar.
+
+## Verification and known limits
+
+```sh
+deno task check
+deno task test
+xcrun simctl list devices available
+xcodebuild -project ios/LetterAssistant.xcodeproj -scheme LetterAssistant -destination 'platform=iOS Simulator,name=YOUR_INSTALLED_IPHONE_SIMULATOR' -derivedDataPath /tmp/letter-assistant-build CODE_SIGNING_ALLOWED=NO test
+```
+
+Replace the simulator-name placeholder with an installed device. The test suites cover capture state, image quality, contracts/provider failures, date policies, all-day EventKit construction and calendar confirmation/cancel UI. Mock-provider tests do not establish real AI accuracy.
+
+Recorded development evidence includes successful backend checks, iOS unit/UI tests and signed phone builds. The all-day time-zone bug has a passing regression test and an installed fix; the learner's real-phone retry is still pending. Conditional enrollment extraction remains a known reliability concern despite successful individual runs. Provider quotas may block real analysis. Photos/results are not persisted, urgency-based reminder recommendations are not implemented, and the demo does not include chat or synchronization.
+
+See `devpost/checklist.md` for current acceptance work and `devpost/build-history.md` for historical evidence. The build is not claimed fully accepted merely because it compiles.
+
+## Future commercial direction
+
+- An in-app calendar synchronized with the phone calendar.
+- An account/login system.
+- A chatbox for letter-related questions.
+- Saved letter summaries, extracted information, summaries of the user's questions, and summaries of calendar items added.
+
+These features are outside the hackathon. Their storage, authentication and synchronization design is future work, not a requirement for running this demo.
+
+## Open-source publication readiness
+
+The intended distribution is a public GitHub repository with operator-owned API keys. An open-source license still needs to be selected and added before publication. Audit tracked files and Git history for credentials, local signing/configuration, private learner context and real letter images before pushing publicly. Only fictional fixtures should be published. This requirements revision does not publish the repository.
