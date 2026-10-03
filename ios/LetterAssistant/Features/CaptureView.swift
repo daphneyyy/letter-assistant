@@ -15,7 +15,6 @@ struct CaptureView: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 24) {
-                    header
                     if let result = model.result {
                         explanation(result)
                     } else if model.pages.isEmpty {
@@ -92,9 +91,26 @@ struct CaptureView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 if model.phase != .complete && (model.image != nil || model.phase != .ready) {
-                    ToolbarItem(placement: .topBarTrailing) {
+                    ToolbarItem(placement: .topBarLeading) {
                         Button(language.text("Start over", "重新开始")) { discardPrompt = true }.frame(minHeight: 44)
                     }
+                }
+                ToolbarItem(placement: .topBarTrailing) {
+                    Menu {
+                        Picker(language.text("Language", "语言"), selection: Binding(get: { model.language }, set: { model.changeLanguage($0) })) {
+                            Text("English").tag(AppLanguage.en)
+                            Text("中文").tag(AppLanguage.zh)
+                        }
+                    } label: {
+                        Image(systemName: "globe")
+                            .font(.title3).frame(width: 44, height: 44)
+                    }
+                    .buttonStyle(.plain)
+                    .frame(width: 44, height: 44)
+                    .accessibilityLabel(language.text("Change language", "切换语言"))
+                    .accessibilityValue(language == .en ? "English" : "中文")
+                    .accessibilityIdentifier("languageMenu")
+                    .disabled(model.phase.busy)
                 }
             }
             .confirmationDialog(language.text("Discard this unsaved letter?", "丢弃这封尚未保存的信件？"), isPresented: $discardPrompt, titleVisibility: .visible) {
@@ -134,16 +150,6 @@ struct CaptureView: View {
             .fullScreenCover(isPresented: $cameraOpen) { CameraSheet(language: language, pageNumber: appendPage ? model.pages.count + 1 : max(1, model.currentPageIndex + 1), receive: { model.accept($0, asNextPage: appendPage) }) }
         }
     }
-    private var header: some View {
-        HStack(spacing: 8) {
-            languageButton("English", choice: .en)
-            languageButton("中文", choice: .zh)
-        }
-        .padding(4)
-        .background(LetterStyle.surface, in: RoundedRectangle(cornerRadius: 16))
-        .disabled(model.phase.busy)
-    }
-
     private var welcome: some View {
         VStack(alignment: .leading, spacing: 24) {
             controls
@@ -247,15 +253,6 @@ struct CaptureView: View {
             }.buttonStyle(.bordered)
         case .checking, .interpreting: EmptyView()
         }
-    }
-    func languageButton(_ title: String, choice: AppLanguage) -> some View {
-        Button { model.changeLanguage(choice) } label: {
-            Text(title).font(.headline).frame(maxWidth: .infinity, minHeight: 48)
-                .foregroundStyle(language == choice ? Color(uiColor: .systemBackground) : .primary)
-                .background(language == choice ? LetterStyle.accent : Color.clear, in: RoundedRectangle(cornerRadius: 12))
-        }.buttonStyle(.plain)
-            .accessibilityLabel(choice == .en ? "English" : "中文")
-            .accessibilityAddTraits(language == choice ? .isSelected : [])
     }
     func primary(_ title: String, icon: String, action: @escaping () -> Void) -> some View {
         Button(action: action) { Label(title, systemImage: icon).font(.title3.weight(.semibold)).frame(maxWidth: .infinity, minHeight: 56).padding(.vertical, 4) }
