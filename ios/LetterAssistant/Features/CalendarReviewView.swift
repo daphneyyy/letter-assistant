@@ -9,7 +9,6 @@ import EventKit
     @State private var title: String
     @State private var selectedDate: Date
     @State private var dateEntered = false
-    @State private var datePickerOpen = false
     @State private var durationChoice: Int
     @State private var customDuration: String
     @FocusState private var durationFocused: Bool
@@ -60,7 +59,7 @@ import EventKit
                     TextField(language.text("Title", "标题"), text: $title, axis: .vertical)
                     Picker(language.text("Time zone", "时区"), selection: $zoneID) {
                         ForEach(Array(Set(TimeZone.knownTimeZoneIdentifiers + [TimeZone.current.identifier])).sorted(), id: \.self) { Text($0).tag($0) }
-                    }.pickerStyle(.navigationLink).accessibilityIdentifier("eventTimeZone")
+                    }.pickerStyle(.menu).accessibilityIdentifier("eventTimeZone")
                     if proposal.kind == .reminder {
                         Text(language.text("No deadline is stated. This is your reminder date, not a letter deadline. Choose a date; no urgency is inferred.", "信中未说明截止日期。这是你选择的提醒日期，不是信件的截止日期。请选择日期；不会推断紧急程度。"))
                         ForEach([1, 3, 7], id: \.self) { days in
@@ -185,38 +184,15 @@ import EventKit
                     Button(language.text("Done", "完成")) { durationFocused = false }
                 }
             }
-            .sheet(isPresented: $datePickerOpen) {
-                NavigationStack {
-                    Form {
-                        DatePicker(language.text("Date and time", "日期和时间"), selection: $selectedDate,
-                            displayedComponents: proposal.kind == .appointment ? [.date, .hourAndMinute] : [.date])
-                    }
-                    .environment(\.timeZone, calendar.timeZone)
-                    .environment(\.locale, Locale(identifier: language == .zh ? "zh_CN" : "en_US"))
-                    .navigationTitle(language.text("Choose a date", "选择日期"))
-                    .toolbar {
-                        ToolbarItem(placement: .cancellationAction) {
-                            Button(language.text("Cancel", "取消")) { datePickerOpen = false }
-                        }
-                        ToolbarItem(placement: .confirmationAction) {
-                            Button(language.text("Done", "完成")) { dateEntered = true; datePickerOpen = false }
-                        }
-                    }
-                }
-            }
 
         }
     }
-    @ViewBuilder private var dateSelection: some View {
-        if dateEntered {
-            DatePicker(language.text(proposal.kind == .appointment ? "Appointment" : "Calendar date", proposal.kind == .appointment ? "预约时间" : "日历日期"), selection: $selectedDate,
-                displayedComponents: proposal.kind == .appointment ? [.date, .hourAndMinute] : [.date])
-                .accessibilityIdentifier("eventDate")
-        } else {
-            Button(language.text(proposal.kind == .appointment ? "Choose appointment date and time" : "Choose a calendar date", proposal.kind == .appointment ? "选择预约日期和时间" : "选择日历日期")) {
-                datePickerOpen = true
-            }.frame(minHeight: 44).accessibilityIdentifier("chooseMissingDate")
-        }
+    private var dateSelection: some View {
+        DatePicker(language.text(proposal.kind == .appointment ? "Appointment" : (dateEntered ? "Calendar date" : "Choose a calendar date"), proposal.kind == .appointment ? "预约时间" : (dateEntered ? "日历日期" : "选择日历日期")),
+            selection: Binding(get: { selectedDate }, set: { selectedDate = $0; dateEntered = true }),
+            displayedComponents: proposal.kind == .appointment ? [.date, .hourAndMinute] : [.date])
+            .datePickerStyle(.compact)
+            .accessibilityIdentifier("eventDate")
     }
 
     private func addToCalendar() {

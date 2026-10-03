@@ -122,3 +122,5 @@ No completed learning wrap-up is inferred from the scope change. Keep it proport
 - [x] Restore editable dates and time-zone selection for all-day deadlines/reminders; default every review to the phone zone and preserve displayed wall date/time on zone changes.
 - [x] Carry bill type, organization and linked payment amount into calendar titles/notes, including generic or older AI responses. Preserve the original deadline when choosing another calendar date.
 - [ ] Restart the relay and analyze a fresh fictional bill; verify summary, contextual calendar heading/notes, editable date/time-zone and the saved phone event. Existing saved events remain unchanged.
+
+- [x] Use an in-page time-zone menu and compact date/time control alongside the label, including missing-date reminders; remove the separate date-entry sheet.

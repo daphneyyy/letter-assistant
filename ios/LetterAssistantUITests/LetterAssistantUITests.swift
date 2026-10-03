@@ -7,12 +7,12 @@ final class LetterAssistantUITests: XCTestCase {
         app.launch(); app.buttons["Open test review"].tap()
         let zone = app.buttons["eventTimeZone"]
         XCTAssertTrue(zone.waitForExistence(timeout: 3))
-        XCTAssertEqual(zone.value as? String, TimeZone.current.identifier)
+        XCTAssertTrue(zone.label.contains(TimeZone.current.identifier) || (zone.value as? String) == TimeZone.current.identifier)
         zone.tap()
-        let alternate = app.buttons["Africa/Abidjan"]
-        for _ in 0..<30 where !alternate.isHittable { app.swipeDown() }
+        let alternate = app.buttons["America/Lima"]
         XCTAssertTrue(alternate.isHittable); alternate.tap()
-        XCTAssertEqual(zone.value as? String, "Africa/Abidjan")
+        XCTAssertTrue(app.navigationBars["核对日历事项"].exists)
+        XCTAssertTrue(zone.label.contains("America/Lima") || (zone.value as? String) == "America/Lima")
         let date = app.datePickers["eventDate"]
         XCTAssertTrue(date.exists); XCTAssertTrue(date.isEnabled)
         date.tap()
@@ -110,10 +110,18 @@ final class LetterAssistantUITests: XCTestCase {
         app.launchArguments += ["--calendar-review-test", "--appointment"]
         app.launch()
         app.buttons["Open test review"].tap()
-        let choose = app.buttons["chooseMissingDate"]
+        let choose = app.datePickers["eventDate"]
         for _ in 0..<8 where !choose.isHittable { app.swipeUp() }
-        choose.tap()
-        app.navigationBars.buttons["完成"].tap()
+        choose.buttons.firstMatch.tap()
+        let tomorrow = Calendar.current.date(byAdding: .day, value: 1, to: Date())!
+        if Calendar.current.component(.month, from: tomorrow) != Calendar.current.component(.month, from: Date()) {
+            app.buttons["DatePicker.NextMonth"].tap()
+        }
+        let formatter = DateFormatter(); formatter.locale = Locale(identifier: "en_US")
+        formatter.dateFormat = "EEEE, MMMM d"
+        app.buttons[formatter.string(from: tomorrow)].tap()
+        XCTAssertFalse(app.navigationBars["选择日期"].exists)
+        app.navigationBars["核对日历事项"].tap()
         let open = app.buttons["添加到日历"]
         for _ in 0..<12 where !open.isHittable { app.swipeUp() }
         XCTAssertTrue(open.isEnabled)
