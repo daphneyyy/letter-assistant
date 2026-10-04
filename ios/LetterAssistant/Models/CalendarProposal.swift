@@ -19,6 +19,10 @@ struct CalendarProposal: Identifiable {
     var hasSourceTimeZone = false
     var suggestedDurationMinutes: Int? = nil
     var initialDurationMinutes: Int { CalendarDurationPolicy.valid(suggestedDurationMinutes) ?? 30 }
+    func initialDate(now: Date = Date(), calendar: Calendar = .current) -> Date {
+        if let date { return kind == .appointment ? date : CalendarDatePolicy.changingZone(date, from: timeZone, to: calendar.timeZone) }
+        return kind == .reminder ? CalendarDatePolicy.addingDays(1, to: now, calendar: calendar) : now
+    }
 
     static func make(action: LetterAction, facts: [LetterFact], language: AppLanguage,
                      now: Date = Date(), calendar: Calendar = .current, document: LetterInterpretation? = nil) -> CalendarProposal {

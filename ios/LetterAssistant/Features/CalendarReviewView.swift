@@ -27,8 +27,8 @@ import EventKit
         _alert = State(initialValue: CalendarAlertChoice.defaultChoice(for: proposal.kind))
         _customAlertDate = State(initialValue: proposal.date ?? Date())
         _title = State(initialValue: proposal.title)
-        _selectedDate = State(initialValue: proposal.date.map { proposal.kind == .appointment ? $0 : CalendarDatePolicy.changingZone($0, from: proposal.timeZone, to: .current) } ?? Date())
-        _dateEntered = State(initialValue: proposal.date != nil && (proposal.kind != .appointment || proposal.hasAppointmentTime))
+        _selectedDate = State(initialValue: proposal.initialDate())
+        _dateEntered = State(initialValue: proposal.kind == .reminder || (proposal.date != nil && (proposal.kind != .appointment || proposal.hasAppointmentTime)))
         _zoneID = State(initialValue: TimeZone.current.identifier)
         _reviewedDay = State(initialValue: Calendar.current.startOfDay(for: Date()))
     }

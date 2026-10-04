@@ -5,6 +5,15 @@ import EventKit
 @testable import LetterAssistant
 
 final class LetterAssistantTests: XCTestCase {
+    func testUndatedReminderDefaultsToTomorrowAcrossMidnightAndDST() {
+        for date in ["2026-03-07", "2026-10-31", "2026-12-31"] {
+            let today = CalendarDatePolicy.parseDay(date, calendar: calendar)!
+            let now = calendar.date(bySettingHour: 23, minute: 59, second: 0, of: today)!
+            let reminder = CalendarProposal.testExample(.reminder, language: .en, now: now, calendar: calendar)
+            XCTAssertNil(reminder.date)
+            XCTAssertEqual(reminder.initialDate(now: now, calendar: calendar), CalendarDatePolicy.addingDays(1, to: today, calendar: calendar))
+        }
+    }
     func testDatedEventDefaultsAlertToPreviousDay() {
         let day = CalendarDatePolicy.parseDay("2026-11-02", calendar: calendar)!
         let appointment = CalendarDatePolicy.appointmentDate(day: day, time: "10:30", calendar: calendar)!

@@ -53,7 +53,7 @@ final class LetterAssistantUITests: XCTestCase {
         screenshot.name = "Editable-deadline-date"; screenshot.lifetime = .keepAlways; add(screenshot)
     }
 
-    func testCalendarRequiresDateWithoutConfirmationSwitches() {
+    func testUndatedReminderDefaultsToTomorrowWithoutConfirmationSwitches() {
         let app = XCUIApplication()
         app.launchArguments += ["--calendar-review-test"]
         app.launch()
@@ -61,7 +61,7 @@ final class LetterAssistantUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["如果你希望更换计划"].exists)
         let open = app.buttons["添加到日历"]
         app.swipeUp(); app.swipeUp()
-        XCTAssertFalse(open.isEnabled)
+        XCTAssertTrue(open.isEnabled)
         app.swipeDown(); app.swipeDown()
         app.buttons["明天"].tap()
         app.swipeUp(); app.swipeUp()
