@@ -3,7 +3,7 @@ import XCTest
 final class LetterAssistantUITests: XCTestCase {
     func testPageNavigationAndDeletion() {
         let app = XCUIApplication()
-        app.launchArguments = ["-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryL"]
+        app.launchArguments = ["-AppleLanguages", "(en)", "-AppleLocale", "en_US", "-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryL"]
         app.launch()
         let welcomeContinue = app.buttons["Continue"]
         if welcomeContinue.exists && welcomeContinue.isHittable { welcomeContinue.tap() }
@@ -70,7 +70,17 @@ final class LetterAssistantUITests: XCTestCase {
         let attachment = XCTAttachment(screenshot: app.screenshot())
         attachment.name = "Calendar-confirmation-Chinese"; attachment.lifetime = .keepAlways; add(attachment)
         open.tap()
-        XCTAssertTrue(app.staticTexts["已保存到日历。后续修改和提醒设置请在日历中管理。"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["calendarConfirmation"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["savedEventTitle"].exists)
+        XCTAssertTrue(app.staticTexts["savedEventDate"].exists)
+        XCTAssertTrue(app.otherElements["savedEventAlert"].exists || app.staticTexts["savedEventAlert"].exists)
+        let confirmation = XCTAttachment(screenshot: app.screenshot())
+        confirmation.name = "Saved-calendar-confirmation"; confirmation.lifetime = .keepAlways; add(confirmation)
+        let back = app.buttons["backToResult"]
+        for _ in 0..<5 where !back.isHittable { app.swipeUp() }
+        XCTAssertTrue(back.isHittable)
+        back.tap()
+        XCTAssertTrue(app.buttons["Open test review"].waitForExistence(timeout: 3))
         XCTAssertFalse(app.navigationBars["New Event"].exists)
     }
     func testAppointmentRequiresExplicitDateTimeReviewAtLargeText() {
@@ -102,6 +112,8 @@ final class LetterAssistantUITests: XCTestCase {
         for _ in 0..<5 where !picker.exists { app.swipeUp() }
         XCTAssertTrue(picker.exists)
         XCTAssertTrue(app.datePickers["customAlertTime"].exists)
+        let custom = XCTAttachment(screenshot: app.screenshot())
+        custom.name = "Aligned-custom-alert-controls"; custom.lifetime = .keepAlways; add(custom)
     }
 
     func testDurationEstimateAndCustomEntry() {
@@ -142,7 +154,7 @@ final class LetterAssistantUITests: XCTestCase {
 
     func testMissingAppointmentTimeCanBeSelectedWithoutCheckbox() {
         let app = XCUIApplication()
-        app.launchArguments += ["--calendar-review-test", "--appointment"]
+        app.launchArguments += ["--calendar-review-test", "--appointment", "-AppleLanguages", "(zh-Hans)", "-AppleLocale", "zh_CN"]
         app.launch()
         app.buttons["Open test review"].tap()
         let choose = app.datePickers["eventDate"]
@@ -152,8 +164,8 @@ final class LetterAssistantUITests: XCTestCase {
         if Calendar.current.component(.month, from: tomorrow) != Calendar.current.component(.month, from: Date()) {
             app.buttons["DatePicker.NextMonth"].tap()
         }
-        let formatter = DateFormatter(); formatter.locale = Locale(identifier: "en_US")
-        formatter.dateFormat = "EEEE, MMMM d"
+        let formatter = DateFormatter(); formatter.locale = Locale(identifier: "zh_CN")
+        formatter.dateFormat = "M月d日 EEEE"
         app.buttons[formatter.string(from: tomorrow)].tap()
         XCTAssertFalse(app.navigationBars["选择日期"].exists)
         app.navigationBars["核对日历事项"].tap()
@@ -172,7 +184,7 @@ final class LetterAssistantUITests: XCTestCase {
         add.tap()
         XCTAssertTrue(app.staticTexts["calendarSaveError"].waitForExistence(timeout: 3))
         XCTAssertTrue(app.buttons["打开设置"].exists)
-        XCTAssertFalse(app.staticTexts["已保存到日历。后续修改和提醒设置请在日历中管理。"].exists)
+        XCTAssertFalse(app.staticTexts["calendarConfirmation"].exists)
     }
 
     func testChineseCaptureScreenAtLargeText() {

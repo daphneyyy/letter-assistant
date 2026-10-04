@@ -17,6 +17,7 @@ import EventKit
     @State private var zoneID: String
     @State private var reviewedDay: Date
     @State private var midnightNotice = false
+    @State private var savedRequest: CalendarEventRequest?
     @StateObject private var saver: CalendarSaveModel
 
     init(proposal: CalendarProposal, language: AppLanguage, saver: CalendarSaveModel? = nil, report: @escaping (CalendarSaveOutcome) -> Void) {
@@ -44,6 +45,9 @@ import EventKit
     var canContinue: Bool { (proposal.kind != .appointment || durationMinutes != nil) && dateEntered && !title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
     var body: some View {
         NavigationStack {
+            if let savedRequest {
+                CalendarConfirmationView(request: savedRequest, kind: proposal.kind, language: language) { dismiss() }
+            } else {
             Form {
                 Section {
                     VStack(alignment: .leading, spacing: 12) {
@@ -214,7 +218,7 @@ import EventKit
                     Button(language.text("Done", "完成")) { durationFocused = false }
                 }
             }
-
+            }
         }
     }
     private var dateSelection: some View {
@@ -239,8 +243,78 @@ import EventKit
             end: CalendarDatePolicy.end(start: start, allDay: allDay, minutes: minutes, calendar: calendar),
             allDay: allDay, timeZone: calendar.timeZone, alert: alert, customAlertDate: customAlertDate)
         Task { @MainActor in
-            if await saver.save(request) { report(.saved); dismiss() }
+            if await saver.save(request) { savedRequest = request; report(.saved) }
         }
+    }
+}
+
+private struct CalendarConfirmationView: View {
+    let request: CalendarEventRequest
+    let kind: CalendarProposal.Kind
+    let language: AppLanguage
+    let back: () -> Void
+    private let background = Color(red: 0.97, green: 0.965, blue: 0.945)
+    private let ink = Color(red: 0.12, green: 0.20, blue: 0.19)
+    private let accent = Color(red: 0.08, green: 0.36, blue: 0.33)
+    private var locale: Locale { Locale(identifier: language == .zh ? "zh_CN" : "en_US") }
+    private var dateText: String {
+        request.start.formatted(Date.FormatStyle(date: .long, time: .omitted, locale: locale, timeZone: request.timeZone))
+    }
+    private var eventDetail: String {
+        if request.allDay {
+            return kind == .deadline ? language.text("All-day deadline", "全天截止事项") : language.text("All-day reminder", "全天提醒事项")
+        }
+        let format = Date.FormatStyle(date: .omitted, time: .shortened, locale: locale, timeZone: request.timeZone)
+        return request.start.formatted(format) + " – " + request.end.formatted(format)
+    }
+    private var reminderText: String {
+        if request.alert == .custom, let date = request.customAlertDate {
+            return date.formatted(Date.FormatStyle(date: .abbreviated, time: .shortened, locale: locale, timeZone: request.timeZone))
+        }
+        return request.alert.label(language)
+    }
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 28) {
+                Text(language.text("Calendar confirmation", "日历确认"))
+                    .font(.title2.bold()).padding(.top, 16)
+                VStack(spacing: 24) {
+                    Image(systemName: "calendar.badge.checkmark")
+                        .font(.system(size: 40, weight: .light)).foregroundStyle(accent)
+                        .frame(width: 112, height: 112)
+                        .background(Color(red: 0.89, green: 0.94, blue: 0.91), in: Circle())
+                        .accessibilityHidden(true)
+                    Text(language.text("Added to Calendar", "已添加到日历"))
+                        .font(.largeTitle.bold()).multilineTextAlignment(.center)
+                        .accessibilityIdentifier("calendarConfirmation")
+                        .accessibilityAddTraits(.isHeader)
+                    Text(language.text("Your event is on your iPhone calendar.", "事项已添加到你的 iPhone 日历。"))
+                        .font(.title3).foregroundStyle(ink.opacity(0.75)).multilineTextAlignment(.center)
+                }.frame(maxWidth: .infinity).padding(.top, 44).padding(.bottom, 12)
+                VStack(alignment: .leading, spacing: 20) {
+                    Text(request.title).font(.title2.weight(.semibold))
+                        .accessibilityIdentifier("savedEventTitle")
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(dateText).accessibilityIdentifier("savedEventDate")
+                        Text(eventDetail)
+                    }.font(.title3)
+                    Label {
+                        Text(language.text("Reminder: ", "提醒：") + reminderText + "\n" + request.timeZone.identifier)
+                    } icon: { Image(systemName: "bell") }
+                    .font(.body).foregroundStyle(accent).accessibilityIdentifier("savedEventAlert")
+                }.padding(28).frame(maxWidth: .infinity, alignment: .leading)
+                    .background(.white, in: RoundedRectangle(cornerRadius: 28))
+                Text(language.text("You can edit or remove this event in your iPhone Calendar app.", "你可以在 iPhone 日历 App 中修改或删除这个事项。"))
+                    .foregroundStyle(ink.opacity(0.75))
+                Button(action: back) {
+                    Text(language.text("Back to result", "返回解读结果"))
+                        .font(.headline).frame(maxWidth: .infinity, minHeight: 60)
+                        .foregroundStyle(.white).background(accent, in: RoundedRectangle(cornerRadius: 20))
+                }.buttonStyle(.plain).accessibilityIdentifier("backToResult")
+            }.padding(24).frame(maxWidth: 680).frame(maxWidth: .infinity)
+        }
+        .foregroundStyle(ink).background(background.ignoresSafeArea())
+        .toolbar(.hidden, for: .navigationBar)
     }
 }
 

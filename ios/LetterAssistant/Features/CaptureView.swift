@@ -140,7 +140,7 @@ struct CaptureView: View {
                 }
             }
             .sheet(item: $calendarProposal, onDismiss: {
-                calendarOutcome = pendingCalendarOutcome
+                calendarOutcome = pendingCalendarOutcome == .saved ? nil : pendingCalendarOutcome
                 pendingCalendarOutcome = nil
             }) { proposal in
                 CalendarReviewView(proposal: proposal, language: language) { pendingCalendarOutcome = $0 }
