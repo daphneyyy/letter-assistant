@@ -339,7 +339,7 @@ struct CaptureView: View {
             #endif
             DisclosureGroup {
                 VStack(alignment: .leading, spacing: 20) {
-                    welcomeStep("1", title: language.text("Photograph your letter", "拍摄信件"), detail: language.text("One page at a time, with all edges visible.", "逐页拍摄，确保页面边缘完整可见。"))
+                    welcomeStep("1", title: language.text("Photograph your letter", "拍摄信件"), detail: language.text("One page at a time, with clear, readable text.", "逐页拍摄，确保文字清晰可读。"))
                     welcomeStep("2", title: language.text("Read a clear explanation", "阅读清晰解读"), detail: language.text("Understand the details and your next steps.", "了解重要信息和下一步事项。"))
                     welcomeStep("3", title: language.text("Review dates together", "核对相关日期"), detail: language.text("Choose whether to add an event to Calendar.", "自行决定是否添加到日历。"))
                 }.padding(.top, 12)

@@ -1,5 +1,5 @@
 {
-  "note": "Hand-checked fictional source facts; real model evaluations are pending API access. Do not treat these expectations as model outputs.",
+  "note": "Hand-checked fictional source facts, not model outputs. Live-provider evaluation evidence and remaining acceptance work are recorded in devpost/checklist.md.",
   "fictional-bill.jpg": {
     "domain": "medical",
     "recipient": "Alex Example",

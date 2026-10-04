@@ -93,7 +93,7 @@ The current Swift models in `Models/Letter.swift` and validated schema in `_shar
 
 Retain accepted four-section explanations, concise contextual wording, expanded source detail on demand, large Dynamic Type, Chinese wrapping, 44-point controls, basic VoiceOver and quiet successful photo checks. The subsequent user-requested UI pass adds adaptive grouped backgrounds with teal accents, a prominent capture action, a three-step introduction, selected-page styling and expandable original photos. The decorative envelope logo has been removed. This supersedes the earlier statement that the scope revision itself included no redesign.
 
-Older-adult usability remains unverified. The current calendar form still exposes the complete preset list and detailed review fields; a concise action/date/notification summary and common-options-first design are proposed follow-ups, not existing components. The home-screen instruction to show all page edges is a known copy mismatch with the no-cropping requirement. Track it in the checklist. Test VoiceOver, contrast, long Chinese labels and the system-permission language transition on actual devices.
+Older-adult usability remains unverified. The current calendar form still exposes the complete preset list and detailed review fields; a concise action/date/notification summary and common-options-first design are proposed follow-ups, not existing components. Home-screen capture guidance asks for clear, readable text one page at a time, consistent with the no-cropping requirement. Test VoiceOver, contrast, long Chinese labels and the system-permission language transition on actual devices.
 
 ## Important Failure Modes
 

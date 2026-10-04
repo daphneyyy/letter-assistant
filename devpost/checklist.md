@@ -74,7 +74,7 @@ No second phone, account isolation, email delivery or saved-conversation review 
 
 - [x] Implement the requested home/result styling, remove the decorative envelope logo and group calendar examples under Demo tools.
 - [x] Add in-app notification presets, None and custom date/time; save alarms with the event without requiring confirmation switches.
-- [ ] Replace the home-screen “all edges visible” instruction with readable-text guidance consistent with the no-cropping requirement.
+- [x] Replace the home-screen “all edges visible” instruction with readable-text guidance consistent with the no-cropping requirement (English and Chinese; October 4 simulator build verified).
 - [ ] Evaluate a concise action/event-date/notification-time summary and common-options-first alert selection; these are proposed refinements, not completed UI.
 - [ ] Verify contrast, actual touch targets, Chinese wrapping and VoiceOver across the current screens.
 - [ ] Check the Calendar permission dialog and whether users understand that Add saves immediately to their default calendar.
@@ -96,6 +96,10 @@ No second phone, account isolation, email delivery or saved-conversation review 
 No completed learning wrap-up is inferred from the scope change. Keep it proportional to the smaller demo.
 
 ## Revisions
+
+- October 4 resumed build: corrected English/Chinese capture guidance to ask for readable text. Backend type check and 29 tests passed; the iPhone 17 Pro / iOS 26.5 simulator unit run passed 43 tests with zero failures. No new physical-device installation or UI test run was performed.
+- October 4 live-provider checks: one fresh enrollment response preserved conditional plan change, November 15 deadline, January 1 coverage start and optional October 20 session without inventing its time; one EOB response preserved USD 200 billed / USD 150 paid / USD 50 responsibility, optional record keeping and no payment request; one informational result response returned no actions/deadline without asserting no action is needed. Both languages were reviewed against fictional source expectations. These individual responses predate the classification-wording prompt correction and do not establish broad extraction reliability.
+- October 4 evaluation repair: the no-deadline fixture said only “insurance,” so its unsupported result was consistent with the health-insurance scope. Clarified the fixture title/organization to explicitly say health insurance, retaining the address-confirmation request and absence of a deadline. Its first rerun extracted the call correctly but exposed irrelevant archive-category wording in both summaries; corrected the prompt to keep classification metadata out of reader-facing copy. No wire schema or product scope changed. A fresh response after the prompt correction extracted the address-confirmation call with no deadline, retained the fictional warning and omitted classification/archive wording in English and Chinese; backend type check and all 29 tests passed again. Physical capture/retake, broader extraction cases and learner acceptance remain open.
 
 - October 2: learner explicitly removed email/accounts, cloud archive and chat from hackathon delivery. In-app calendar/phone sync, login, chatbox and saved letter/extracted/question/added-item summaries are future commercial scope.
 - Clone-and-run with each operator's own API key is the distribution target. Preserve the current local relay; no in-app key entry or hosted service was requested.
