@@ -421,11 +421,6 @@ struct CaptureView: View {
                     addPageCell(language.text("Library", "相册"), icon: "photo")
                 }.buttonStyle(.plain).accessibilityIdentifier("choosePhoto")
             }.fixedSize(horizontal: false, vertical: true).disabled(!model.canAddPage)
-            Label(language.text("Capture all pages of this letter before analyzing. AI reads your photos only when you tap Analyze.", "请在分析前拍摄这封信的所有页面。只有点击分析后，AI 才会读取照片。"), systemImage: "info.circle")
-                .font(.callout).foregroundStyle(LetterStyle.accent)
-                .fixedSize(horizontal: false, vertical: true)
-                .padding(14).frame(maxWidth: .infinity, alignment: .leading)
-                .background(LetterStyle.softMint.opacity(0.35), in: RoundedRectangle(cornerRadius: 16))
             Button { model.interpret() } label: {
                 HStack(spacing: 12) {
                     LetterScanIcon().stroke(.white, style: StrokeStyle(lineWidth: 1, lineCap: .round))
