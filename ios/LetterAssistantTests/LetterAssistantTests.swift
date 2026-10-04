@@ -5,6 +5,16 @@ import EventKit
 @testable import LetterAssistant
 
 final class LetterAssistantTests: XCTestCase {
+    func testDatedEventDefaultsAlertToPreviousDay() {
+        let day = CalendarDatePolicy.parseDay("2026-11-02", calendar: calendar)!
+        let appointment = CalendarDatePolicy.appointmentDate(day: day, time: "10:30", calendar: calendar)!
+        let alert = CalendarAlertChoice.defaultChoice(for: .appointment).fireDate(start: appointment, calendar: calendar)!
+        XCTAssertTrue(calendar.isDate(alert, inSameDayAs: CalendarDatePolicy.addingDays(-1, to: day, calendar: calendar)))
+        XCTAssertEqual(calendar.component(.hour, from: alert), 10)
+        let deadlineAlert = CalendarAlertChoice.defaultChoice(for: .deadline).fireDate(start: day, calendar: calendar)!
+        XCTAssertTrue(calendar.isDate(deadlineAlert, inSameDayAs: alert))
+        XCTAssertEqual(calendar.component(.hour, from: deadlineAlert), 9)
+    }
     func testPhoneLanguageSelectionUsesPreferenceOrderAndEnglishFallback() {
         XCTAssertEqual(AppLanguage.preferred(for: ["zh-Hans-CN", "en-US"]), .zh)
         XCTAssertEqual(AppLanguage.preferred(for: ["zh-Hant-TW"]), .zh)

@@ -24,7 +24,7 @@ import EventKit
         self.proposal = proposal; self.language = language; self.report = report
         _durationChoice = State(initialValue: proposal.initialDurationMinutes)
         _customDuration = State(initialValue: String(proposal.initialDurationMinutes))
-        _alert = State(initialValue: proposal.kind == .appointment ? .fifteenMinutes : .sameDayMorning)
+        _alert = State(initialValue: CalendarAlertChoice.defaultChoice(for: proposal.kind))
         _customAlertDate = State(initialValue: proposal.date ?? Date())
         _title = State(initialValue: proposal.title)
         _selectedDate = State(initialValue: proposal.date.map { proposal.kind == .appointment ? $0 : CalendarDatePolicy.changingZone($0, from: proposal.timeZone, to: .current) } ?? Date())
@@ -187,9 +187,9 @@ import EventKit
                     reviewedDay = calendar.startOfDay(for: Date())
                 }
             }
-            .onChange(of: alert) { _, newValue in
+            .onChange(of: alert) { oldValue, newValue in
                 if newValue == .custom {
-                    let defaultChoice: CalendarAlertChoice = proposal.kind == .appointment ? .fifteenMinutes : .sameDayMorning
+                    let defaultChoice = oldValue == .none ? CalendarAlertChoice.defaultChoice(for: proposal.kind) : oldValue
                     customAlertDate = defaultChoice.fireDate(start: selectedDate, calendar: calendar) ?? selectedDate
                 }
             }
@@ -324,6 +324,14 @@ enum CalendarSaveFailure: Error, Equatable {
 enum CalendarAlertChoice: Hashable {
     case none, sameDayMorning, previousDayMorning, twoDaysMorning, weekMorning
     case atStart, fiveMinutes, tenMinutes, fifteenMinutes, thirtyMinutes, oneHour, twoHours, oneDay, twoDays, oneWeek, custom
+
+    static func defaultChoice(for kind: CalendarProposal.Kind) -> Self {
+        switch kind {
+        case .deadline: return .previousDayMorning
+        case .appointment: return .oneDay
+        case .reminder: return .sameDayMorning
+        }
+    }
 
     static func options(allDay: Bool) -> [Self] {
         allDay
