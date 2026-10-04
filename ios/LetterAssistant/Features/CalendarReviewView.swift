@@ -9,9 +9,8 @@ import EventKit
     @State private var title: String
     @State private var selectedDate: Date
     @State private var dateEntered = false
-    @State private var durationChoice: Int
-    @State private var customDuration: String
-    @FocusState private var durationFocused: Bool
+    @State private var durationHours: Int
+    @State private var durationMinutePart: Int
     @State private var alert: CalendarAlertChoice
     @State private var customAlertDate: Date
     @State private var zoneID: String
@@ -23,8 +22,8 @@ import EventKit
     init(proposal: CalendarProposal, language: AppLanguage, saver: CalendarSaveModel? = nil, report: @escaping (CalendarSaveOutcome) -> Void) {
         _saver = StateObject(wrappedValue: saver ?? CalendarSaveModel())
         self.proposal = proposal; self.language = language; self.report = report
-        _durationChoice = State(initialValue: proposal.initialDurationMinutes)
-        _customDuration = State(initialValue: String(proposal.initialDurationMinutes))
+        _durationHours = State(initialValue: proposal.initialDurationMinutes / 60)
+        _durationMinutePart = State(initialValue: proposal.initialDurationMinutes % 60)
         _alert = State(initialValue: CalendarAlertChoice.defaultChoice(for: proposal.kind))
         _customAlertDate = State(initialValue: proposal.date ?? Date())
         _title = State(initialValue: proposal.title)
@@ -39,9 +38,8 @@ import EventKit
         return result
     }
     var durationMinutes: Int? {
-        durationChoice == 0 ? CalendarDurationPolicy.custom(customDuration) : CalendarDurationPolicy.valid(durationChoice)
+        CalendarDurationPolicy.valid(durationHours * 60 + durationMinutePart)
     }
-    var durationOptions: [Int] { Array(Set(CalendarDurationPolicy.presets + [proposal.initialDurationMinutes])).sorted() }
     var canContinue: Bool { (proposal.kind != .appointment || durationMinutes != nil) && dateEntered && !title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
     var body: some View {
         NavigationStack {
@@ -84,23 +82,27 @@ import EventKit
                                 .font(.callout).foregroundStyle(.secondary)
                         }
                         dateSelection
-                        Picker(language.text("Duration", "时长"), selection: $durationChoice) {
-                            ForEach(durationOptions, id: \.self) { value in
-                                Text(language.text("\(value) minutes", "\(value) 分钟")).tag(value)
-                            }
-                            Text(language.text("Custom duration", "自定义时长")).tag(0)
-                        }.pickerStyle(.navigationLink).accessibilityIdentifier("durationPicker")
-                        if durationChoice == 0 {
-                            TextField(language.text("Duration in minutes", "时长（分钟）"), text: $customDuration)
-                                .keyboardType(.numberPad).focused($durationFocused)
-                                .accessibilityIdentifier("customDuration")
-                            Text(language.text("Enter 1–1,440 minutes (up to 24 hours).", "请输入 1–1,440 分钟（最多 24 小时）。"))
+                        VStack(alignment: .leading, spacing: 12) {
+                            Text(language.text("Duration", "时长")).font(.body.weight(.medium))
+                            HStack(spacing: 16) {
+                                Picker(language.text("Hours", "小时"), selection: $durationHours) {
+                                    ForEach(0...24, id: \.self) { hours in
+                                        Text(language.text("\(hours) h", "\(hours) 小时")).tag(hours)
+                                    }
+                                }.accessibilityIdentifier("durationHours")
+                                Picker(language.text("Minutes", "分钟"), selection: $durationMinutePart) {
+                                    ForEach(0..<(durationHours == 24 ? 1 : 60), id: \.self) { minutes in
+                                        Text(language.text("\(minutes) min", "\(minutes) 分钟")).tag(minutes)
+                                    }
+                                }.accessibilityIdentifier("durationMinutes")
+                            }.pickerStyle(.wheel).frame(height: 150)
+                            Text(language.text("Choose any duration from 1 minute to 24 hours.", "可选择 1 分钟至 24 小时的任意时长。"))
                                 .font(.footnote).foregroundStyle(.secondary)
                             if durationMinutes == nil {
-                                Text(language.text("Enter a whole number from 1 to 1,440.", "请输入 1 至 1,440 的整数。"))
+                                Text(language.text("Choose a duration of at least 1 minute.", "请选择至少 1 分钟的时长。"))
                                     .foregroundStyle(.red).accessibilityIdentifier("invalidDuration")
                             }
-                        }
+                        }.padding(.vertical, 8)
                         if let suggested = proposal.suggestedDurationMinutes {
                             Text(language.text("AI estimate: \(suggested) minutes. This is a suggested calendar block; check and adjust it.", "AI 估计：\(suggested) 分钟。这是建议的日历时长，请核对并按需调整。"))
                                 .font(.callout).foregroundStyle(.secondary)
@@ -202,14 +204,8 @@ import EventKit
                     customAlertDate = defaultChoice.fireDate(start: selectedDate, calendar: calendar) ?? selectedDate
                 }
             }
-            .onChange(of: durationChoice) { oldValue, newValue in
-                if newValue == 0 && oldValue > 0 { customDuration = String(oldValue) }
-            }
-            .toolbar {
-                ToolbarItemGroup(placement: .keyboard) {
-                    Spacer()
-                    Button(language.text("Done", "完成")) { durationFocused = false }
-                }
+            .onChange(of: durationHours) { _, hours in
+                if hours == 24 { durationMinutePart = 0 }
             }
             }
         }

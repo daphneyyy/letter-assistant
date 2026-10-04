@@ -156,24 +156,26 @@ final class LetterAssistantUITests: XCTestCase {
 
     func testDurationEstimateAndCustomEntry() {
         let app = XCUIApplication()
-        app.launchArguments += ["--calendar-review-test", "--appointment", "--duration-estimate"]
+        app.launchArguments += ["--calendar-review-test", "--appointment", "--duration-estimate", "-AppleLanguages", "(zh-Hans)", "-AppleLocale", "zh_CN"]
         app.launch()
         app.buttons["Open test review"].tap()
-        let duration = app.buttons["durationPicker"]
-        for _ in 0..<10 where !duration.isHittable { app.swipeUp() }
-        XCTAssertTrue(duration.isHittable)
-        XCTAssertTrue((duration.value as? String)?.contains("50") == true)
-        duration.tap()
-        app.buttons["自定义时长"].tap()
-        let field = app.textFields["customDuration"]
-        XCTAssertTrue(field.waitForExistence(timeout: 3))
-        field.tap()
-        field.typeText(XCUIKeyboardKey.delete.rawValue + XCUIKeyboardKey.delete.rawValue + "0")
+        let hours = app.pickerWheels.element(boundBy: 0)
+        let minutes = app.pickerWheels.element(boundBy: 1)
+        for _ in 0..<10 where !hours.isHittable { app.swipeUp() }
+        XCTAssertTrue(hours.isHittable)
+        XCTAssertEqual(minutes.value as? String, "50 分钟")
+        minutes.adjust(toPickerWheelValue: "0 分钟")
         XCTAssertTrue(app.staticTexts["invalidDuration"].exists)
-        field.typeText(XCUIKeyboardKey.delete.rawValue + "75")
-        app.buttons["完成"].tap()
+        hours.adjust(toPickerWheelValue: "1 小时")
+        minutes.adjust(toPickerWheelValue: "15 分钟")
         XCTAssertFalse(app.staticTexts["invalidDuration"].exists)
         XCTAssertTrue(app.otherElements["durationEnd"].exists || app.staticTexts["结束时间"].exists)
+        hours.adjust(toPickerWheelValue: "24 小时")
+        XCTAssertEqual(minutes.value as? String, "0 分钟")
+        hours.adjust(toPickerWheelValue: "1 小时")
+        minutes.adjust(toPickerWheelValue: "15 分钟")
+        let attachment = XCTAttachment(screenshot: app.screenshot())
+        attachment.name = "Inline-duration-wheels"; attachment.lifetime = .keepAlways; add(attachment)
         let open = app.buttons["添加到日历"]
         for _ in 0..<10 where !open.isHittable { app.swipeUp() }
         XCTAssertFalse(open.isEnabled)
