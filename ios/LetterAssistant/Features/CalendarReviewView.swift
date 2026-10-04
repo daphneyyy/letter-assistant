@@ -188,6 +188,7 @@ import EventKit
             }
             .scrollContentBackground(.hidden)
             .background(LetterStyle.background.ignoresSafeArea())
+            .foregroundStyle(LetterStyle.ink)
             .listSectionSpacing(28)
             .disabled(saver.isSaving || saver.didSave)
             .interactiveDismissDisabled(saver.isSaving)
@@ -253,8 +254,8 @@ private struct CalendarConfirmationView: View {
     let kind: CalendarProposal.Kind
     let language: AppLanguage
     let back: () -> Void
-    private let ink = LetterStyle.confirmationText
-    private let accent = Color(red: 0.08, green: 0.36, blue: 0.33)
+    private let ink = LetterStyle.ink
+    private let accent = LetterStyle.accent
     private var locale: Locale { Locale(identifier: language == .zh ? "zh_CN" : "en_US") }
     private var dateText: String {
         request.start.formatted(Date.FormatStyle(date: .long, time: .omitted, locale: locale, timeZone: request.timeZone))
@@ -281,7 +282,7 @@ private struct CalendarConfirmationView: View {
                     Image(systemName: "calendar.badge.checkmark")
                         .font(.system(size: 40, weight: .light)).foregroundStyle(accent)
                         .frame(width: 112, height: 112)
-                        .background(Color(red: 0.89, green: 0.94, blue: 0.91), in: Circle())
+                        .background(LetterStyle.softMint, in: Circle())
                         .accessibilityHidden(true)
                     Text(language.text("Added to Calendar", "已添加到日历"))
                         .font(.largeTitle.bold()).multilineTextAlignment(.center)
@@ -308,7 +309,7 @@ private struct CalendarConfirmationView: View {
                 Button(action: back) {
                     Text(language.text("Back to result", "返回解读结果"))
                         .font(.headline).frame(maxWidth: .infinity, minHeight: 60)
-                        .foregroundStyle(.white).background(accent, in: RoundedRectangle(cornerRadius: 20))
+                        .foregroundStyle(.white).background(LetterStyle.button, in: RoundedRectangle(cornerRadius: 20))
                 }.buttonStyle(.plain).accessibilityIdentifier("backToResult")
             }.padding(24).frame(maxWidth: 680).frame(maxWidth: .infinity)
         }

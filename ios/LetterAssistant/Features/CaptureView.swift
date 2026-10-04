@@ -72,6 +72,7 @@ struct CaptureView: View {
             }
             .disabled(importingPhoto)
             .background(LetterStyle.background.ignoresSafeArea())
+            .foregroundStyle(LetterStyle.ink)
             .tint(LetterStyle.accent)
             .safeAreaInset(edge: .bottom) {
                 if model.phase == .complete {
@@ -244,7 +245,7 @@ struct CaptureView: View {
         VStack(alignment: .leading, spacing: 22) {
             VStack(alignment: .leading, spacing: 16) {
                 Label(language.text("Start with your letter", "从您的信件开始"), systemImage: "viewfinder")
-                    .font(.title3.weight(.semibold)).foregroundStyle(.primary)
+                    .font(.title3.weight(.semibold)).foregroundStyle(LetterStyle.ink)
                     .frame(maxWidth: .infinity, alignment: .leading)
                 Button { appendPage = false; model.capturePrompt(); cameraOpen = true } label: {
                     Label(language.text("Take a photo", "拍照"), systemImage: "camera")
@@ -524,33 +525,34 @@ struct CaptureView: View {
     }
 }
 
-// Adaptive colors keep the same hierarchy in light and dark appearances.
+// Light colors sampled from the reference screenshot in its Display P3 color space.
+// Adaptive colors keep the same hierarchy in dark appearance.
 enum LetterStyle {
-    static let button = Color(red: 0.0, green: 0.32, blue: 0.33)
+    static let button = Color(uiColor: UIColor(displayP3Red: 45 / 255, green: 93 / 255, blue: 85 / 255, alpha: 1))
     static let accent = Color(uiColor: UIColor { traits in
         traits.userInterfaceStyle == .dark
             ? UIColor(red: 0.30, green: 0.76, blue: 0.68, alpha: 1)
-            : UIColor(red: 0.0, green: 0.32, blue: 0.33, alpha: 1)
+            : UIColor(displayP3Red: 45 / 255, green: 93 / 255, blue: 85 / 255, alpha: 1)
     })
     static let background = Color(uiColor: UIColor { traits in
         traits.userInterfaceStyle == .dark
             ? UIColor(red: 0.10, green: 0.095, blue: 0.085, alpha: 1)
-            : UIColor(red: 0.97, green: 0.965, blue: 0.945, alpha: 1)
+            : UIColor(displayP3Red: 247 / 255, green: 245 / 255, blue: 240 / 255, alpha: 1)
     })
-    static let confirmationText = Color(uiColor: UIColor { traits in
+    static let ink = Color(uiColor: UIColor { traits in
         traits.userInterfaceStyle == .dark
             ? UIColor(red: 0.90, green: 0.93, blue: 0.91, alpha: 1)
-            : UIColor(red: 0.12, green: 0.20, blue: 0.19, alpha: 1)
+            : UIColor(displayP3Red: 35 / 255, green: 47 / 255, blue: 45 / 255, alpha: 1)
     })
     static let softMint = Color(uiColor: UIColor { traits in
         traits.userInterfaceStyle == .dark
             ? UIColor(red: 0.12, green: 0.20, blue: 0.18, alpha: 1)
-            : UIColor(red: 0.88, green: 0.94, blue: 0.94, alpha: 1)
+            : UIColor(displayP3Red: 229 / 255, green: 239 / 255, blue: 232 / 255, alpha: 1)
     })
     static let supportingText = Color(uiColor: UIColor { traits in
         traits.userInterfaceStyle == .dark
             ? UIColor(red: 0.74, green: 0.81, blue: 0.78, alpha: 1)
-            : UIColor(red: 0.29, green: 0.36, blue: 0.33, alpha: 1)
+            : UIColor(displayP3Red: 88 / 255, green: 100 / 255, blue: 95 / 255, alpha: 1)
     })
     static let rule = accent.opacity(0.20)
     static let surface = Color(uiColor: .secondarySystemGroupedBackground)
