@@ -426,7 +426,7 @@ struct CaptureView: View {
         .accessibilityLabel(language.text(model.phase == .valid ? "Choose next photo" : "Choose a photo", model.phase == .valid ? "选择下一张照片" : "选择照片"))
     }
 
-    func primary(_ title: String, icon: String, showsArrow: Bool = false, action: @escaping () -> Void) -> some View {
+    func primary(_ title: String, icon: String, showsArrow: Bool = false, cornerRadius: CGFloat = 8, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Group {
                 if dynamicTypeSize.isAccessibilitySize {
@@ -446,7 +446,7 @@ struct CaptureView: View {
             }
             .frame(maxWidth: .infinity, minHeight: 60).padding(.horizontal, 16).padding(.vertical, 8)
             .foregroundStyle(.white)
-            .background(LetterStyle.button, in: RoundedRectangle(cornerRadius: 8))
+            .background(LetterStyle.button, in: RoundedRectangle(cornerRadius: cornerRadius))
         }.buttonStyle(.plain).accessibilityLabel(title)
     }
     @ViewBuilder func explanation(_ result: LetterInterpretation) -> some View {
@@ -470,12 +470,11 @@ struct CaptureView: View {
                         Text(condition.text(language)).font(.body)
                     }
                     Text(language == .en ? action.descriptionEn : action.descriptionZh).font(.title3)
-                    Button {
+                    primary(language.text("Add to Calendar", "添加到日历"), icon: "calendar.badge.plus", cornerRadius: 24) {
                         calendarProposal = CalendarProposal.make(action: action, facts: result.facts, language: language, document: result)
-                    } label: {
-                        Label(language.text("Review calendar event", "查看并添加到日历"), systemImage: "calendar.badge.plus")
-                            .frame(minHeight: 48)
-                    }.buttonStyle(.bordered)
+                    }
+                    .accessibilityHint(language.text("Review the event details before saving.", "保存前先核对日历事项。"))
+                    .accessibilityIdentifier("addActionToCalendar")
                     if action.status == "needs_verification" {
                         Text(language.text("Needs verification", "需要核实")).font(.callout)
                     }
