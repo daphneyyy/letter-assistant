@@ -294,6 +294,14 @@ struct CaptureView: View {
 
     private var welcome: some View {
         VStack(alignment: .leading, spacing: 22) {
+            VStack(alignment: .leading, spacing: 12) {
+                Text(language.text("Ready to analyze", "准备开始分析"))
+                    .font(.largeTitle.bold()).foregroundStyle(LetterStyle.ink)
+                    .accessibilityAddTraits(.isHeader)
+                Text(language.text("Choose how you want to start. Take a photo, upload a saved image, or add a PDF.", "选择开始方式：拍摄照片、上传已有图片，或添加 PDF。"))
+                    .font(.title3).foregroundStyle(LetterStyle.supportingText)
+                    .fixedSize(horizontal: false, vertical: true)
+            }.frame(maxWidth: .infinity, alignment: .leading)
             VStack(alignment: .leading, spacing: 16) {
                 Label {
                     Text(language.text("Start with your letter", "从您的信件开始"))
