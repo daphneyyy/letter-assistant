@@ -223,12 +223,20 @@ import EventKit
     }
 
     private func calendarDateControl(_ title: String, selection: Binding<Date>, components: DatePickerComponents, identifier: String) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text(title).font(.body.weight(.medium))
-            DatePicker(title, selection: selection, displayedComponents: components)
-                .labelsHidden().datePickerStyle(.compact)
-                .frame(maxWidth: .infinity, alignment: .trailing)
-                .accessibilityIdentifier(identifier)
+        let picker = DatePicker(title, selection: selection, displayedComponents: components)
+            .labelsHidden().datePickerStyle(.compact)
+            .fixedSize(horizontal: true, vertical: false)
+            .accessibilityIdentifier(identifier)
+        return ViewThatFits(in: .horizontal) {
+            HStack(spacing: 16) {
+                Text(title).font(.body.weight(.medium)).fixedSize()
+                Spacer(minLength: 12)
+                picker
+            }
+            VStack(alignment: .leading, spacing: 10) {
+                Text(title).font(.body.weight(.medium))
+                picker.frame(maxWidth: .infinity, alignment: .trailing)
+            }
         }.frame(maxWidth: .infinity, alignment: .leading).padding(.vertical, 4)
     }
 
