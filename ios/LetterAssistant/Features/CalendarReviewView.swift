@@ -180,7 +180,13 @@ import EventKit
                     .buttonStyle(.borderedProminent).buttonBorderShape(.roundedRectangle(radius: 8))
                     .tint(LetterStyle.button)
                     .disabled(!canContinue || saver.isSaving || saver.didSave)
-                    Button(language.text("Not now", "暂不添加"), role: .cancel) { dismiss() }.frame(minHeight: 44)
+                    Button(role: .cancel) { dismiss() } label: {
+                        Text(language.text("Not now", "暂不添加"))
+                            .font(.headline).frame(maxWidth: .infinity, minHeight: 52)
+                            .foregroundStyle(LetterStyle.accent)
+                            .background(LetterStyle.softMint, in: RoundedRectangle(cornerRadius: 8))
+                            .overlay { RoundedRectangle(cornerRadius: 8).strokeBorder(LetterStyle.rule, lineWidth: 1) }
+                    }.buttonStyle(.plain)
                 }.listRowBackground(Color.clear)
             }
             .scrollContentBackground(.hidden)
