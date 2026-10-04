@@ -130,8 +130,20 @@ import EventKit
                         }
                     }.pickerStyle(.navigationLink)
                     if alert == .custom {
-                        DatePicker(language.text("Alert date and time", "提醒日期和时间"), selection: $customAlertDate, displayedComponents: [.date, .hourAndMinute])
-                            .accessibilityIdentifier("customAlertDate")
+                        HStack {
+                            Text(language.text("Alert date", "提醒日期"))
+                            Spacer(minLength: 12)
+                            DatePicker(language.text("Alert date", "提醒日期"), selection: $customAlertDate, displayedComponents: [.date])
+                                .labelsHidden().datePickerStyle(.compact)
+                                .accessibilityIdentifier("customAlertDate")
+                        }
+                        HStack {
+                            Text(language.text("Alert time", "提醒时间"))
+                            Spacer(minLength: 12)
+                            DatePicker(language.text("Alert time", "提醒时间"), selection: $customAlertDate, displayedComponents: [.hourAndMinute])
+                                .labelsHidden().datePickerStyle(.compact)
+                                .accessibilityIdentifier("customAlertTime")
+                        }
                         Text(language.text("This exact time stays fixed if you change the event date.", "修改事项日期时，此自定义提醒时间保持不变。"))
                             .font(.footnote).foregroundStyle(.secondary)
                     }
