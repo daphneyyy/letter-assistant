@@ -62,7 +62,7 @@ Uncertain fields must be labeled for verification; unsupported domains receive a
 - Request only write-only Calendar access, using the iOS permission dialog on first use. Only a successful EventKit save reports success. Disable repeat taps and dismissal while saving, and prevent a second save within the same review. Permission denial offers Settings; no writable default calendar or save failure retains the form with an explanation. No automatic retry. An interrupted/uncertain result asks the user to check Calendar before retrying. No event reading, link storage or synchronization.
 - Later edits and removal occur in the phone calendar. Finishing a reading does not remove a saved calendar event.
 
-The calendar-save confirmation button reads Back to home / 返回首页.
+The calendar-save confirmation button reads Back to result / 返回解读结果.
 
 ## Calendar Notes
 

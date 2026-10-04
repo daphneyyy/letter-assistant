@@ -359,10 +359,10 @@ private struct CalendarConfirmationView: View {
                 Text(language.text("You can edit or remove this event in your iPhone Calendar app.", "你可以在 iPhone 日历 App 中修改或删除这个事项。"))
                     .foregroundStyle(ink.opacity(0.75))
                 Button(action: back) {
-                    Text(language.text("Back to home", "返回首页"))
+                    Text(language.text("Back to result", "返回解读结果"))
                         .font(.headline).frame(maxWidth: .infinity, minHeight: 60)
                         .foregroundStyle(.white).background(LetterStyle.button, in: RoundedRectangle(cornerRadius: 20))
-                }.buttonStyle(.plain).accessibilityIdentifier("backToHome")
+                }.buttonStyle(.plain).accessibilityIdentifier("backToResult")
             }.padding(24).frame(maxWidth: 680).frame(maxWidth: .infinity)
         }
         .foregroundStyle(ink).background(LetterStyle.background.ignoresSafeArea())

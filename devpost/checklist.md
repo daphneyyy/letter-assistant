@@ -97,6 +97,8 @@ No completed learning wrap-up is inferred from the scope change. Keep it proport
 
 ## Revisions
 
+- October 4 follow-up: restored the calendar-save confirmation label to Back to result / 返回解读结果 at the learner’s request; synchronized its accessibility identifier, existing UI assertion and PRD/spec. This is a text-only reversal; navigation and the compact duration picker are unchanged. Verified the diff and matching strings; no new simulator or phone test was run.
+
 - October 4 real-upload correction: removed unconditional fictional-letter wording from both provider transports and shared grounding. Fictional/test/sample labels now require explicit visible source evidence in both languages, including calendar notes. Backend type check and all 29 tests passed, with outgoing-request coverage for both transports. No private document was used for this verification; the uploaded real-letter result must be regenerated to assess the live correction.
 
 - October 4 button styling correction: learner clarified that only the Not now / 暂不添加 text should change color. Removed the mint background, border and expanded button layout; restored the original cancel button with teal text. Simulator build passed. Phone appearance awaits reinstall/review.

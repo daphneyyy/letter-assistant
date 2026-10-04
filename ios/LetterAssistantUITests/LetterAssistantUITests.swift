@@ -114,8 +114,8 @@ final class LetterAssistantUITests: XCTestCase {
         XCTAssertTrue(app.otherElements["savedEventAlert"].exists || app.staticTexts["savedEventAlert"].exists)
         let confirmation = XCTAttachment(screenshot: app.screenshot())
         confirmation.name = "Saved-calendar-confirmation"; confirmation.lifetime = .keepAlways; add(confirmation)
-        let back = app.buttons["backToHome"]
-        XCTAssertEqual(back.label, "返回首页")
+        let back = app.buttons["backToResult"]
+        XCTAssertEqual(back.label, "返回解读结果")
         for _ in 0..<5 where !back.isHittable { app.swipeUp() }
         XCTAssertTrue(back.isHittable)
         back.tap()

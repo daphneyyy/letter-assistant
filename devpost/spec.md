@@ -51,7 +51,7 @@ Debug builds expose no-AI fictional calendar examples under the expandable Demo 
 
 `CalendarSaveModel` serializes the add operation, rejects repeated/concurrent saves, and exposes in-flight/error/success state. `SystemCalendarWriter` requests `requestWriteOnlyAccessToEvents()` only if needed; `NSCalendarsWriteOnlyAccessUsageDescription` explains the permission. It assigns `defaultCalendarForNewEvents`, checks writability and calls `save(_:span:commit:)`. No EventKitUI editor is presented. Permission rejection offers Settings; unavailable calendar/save error leaves the review intact. A content-free `calendarSavePending` flag surrounds the write, with legacy interrupted-editor flag recovery retained. No automatic retries or calendar queries are used. Test harnesses inject writers and never create real events; physical permission/write/notification validation remains open.
 
-The calendar-save confirmation button reads Back to home / 返回首页.
+The calendar-save confirmation button reads Back to result / 返回解读结果.
 
 ### Timed-Event Duration
 
