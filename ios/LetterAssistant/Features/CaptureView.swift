@@ -149,7 +149,7 @@ struct CaptureView: View {
             .alert(language.text("Calendar", "日历"), isPresented: Binding(get: { calendarOutcome != nil }, set: { if !$0 { calendarOutcome = nil } })) {
                 Button(language.text("OK", "好")) { calendarOutcome = nil }
             } message: { Text(calendarOutcome?.message(language) ?? "") }
-            .fileImporter(isPresented: $fileImportOpen, allowedContentTypes: [.pdf, .image]) { result in
+            .fileImporter(isPresented: $fileImportOpen, allowedContentTypes: [.pdf]) { result in
                 switch result {
                 case .success(let url):
                     Task { @MainActor in
@@ -244,23 +244,27 @@ struct CaptureView: View {
     private var welcome: some View {
         VStack(alignment: .leading, spacing: 22) {
             VStack(alignment: .leading, spacing: 16) {
-                Label(language.text("Start with your letter", "从您的信件开始"), systemImage: "viewfinder")
+                Label {
+                    Text(language.text("Start with your letter", "从您的信件开始"))
+                } icon: {
+                    LetterScanIcon().stroke(LetterStyle.accent, style: StrokeStyle(lineWidth: 1, lineCap: .round))
+                        .frame(width: 25, height: 25).accessibilityHidden(true)
+                }
                     .font(.title3.weight(.semibold)).foregroundStyle(LetterStyle.ink)
                     .frame(maxWidth: .infinity, alignment: .leading)
                 Button { appendPage = false; model.capturePrompt(); cameraOpen = true } label: {
-                    Label(language.text("Take a photo", "拍照"), systemImage: "camera")
+                    Label(language.text("Take a New Photo", "拍摄新照片"), systemImage: "camera")
                         .font(.title3.weight(.semibold)).frame(maxWidth: .infinity, minHeight: 60)
                         .padding(.horizontal, 12).foregroundStyle(.white)
                         .background(LetterStyle.button, in: RoundedRectangle(cornerRadius: 18))
-                }.buttonStyle(.plain)
+                }.buttonStyle(.plain).accessibilityIdentifier("takePhoto")
+                PhotosPicker(selection: $selectedPhoto, matching: .images, preferredItemEncoding: .compatible) {
+                    welcomeUploadLabel(language.text("Upload Existing Photo", "上传已有照片"))
+                }.buttonStyle(.plain).accessibilityIdentifier("uploadExistingPhoto")
                 Button { fileImportOpen = true } label: {
-                    Label(language.text("Upload a file", "上传文件"), systemImage: "square.and.arrow.up")
-                        .font(.title3.weight(.semibold)).frame(maxWidth: .infinity, minHeight: 60)
-                        .padding(.horizontal, 12).foregroundStyle(LetterStyle.accent)
-                        .background(LetterStyle.surface, in: RoundedRectangle(cornerRadius: 18))
-                        .overlay { RoundedRectangle(cornerRadius: 18).strokeBorder(LetterStyle.rule, lineWidth: 1) }
+                    welcomeUploadLabel(language.text("Upload Document (PDF)", "上传文档（PDF）"))
                 }.buttonStyle(.plain).accessibilityIdentifier("uploadFile")
-                Text(language.text("PDFs and photos · Multiple pages supported", "支持 PDF 和照片 · 可添加多页"))
+                Text(language.text("JPG, PNG, or PDF · Add multiple pages", "支持 JPG、PNG 或 PDF · 可添加多页"))
                     .font(.callout).foregroundStyle(LetterStyle.supportingText)
                     .multilineTextAlignment(.center).frame(maxWidth: .infinity)
             }
@@ -427,6 +431,14 @@ struct CaptureView: View {
         .accessibilityLabel(language.text(model.phase == .valid ? "Choose next photo" : "Choose a photo", model.phase == .valid ? "选择下一张照片" : "选择照片"))
     }
 
+    private func welcomeUploadLabel(_ title: String) -> some View {
+        Label(title, systemImage: "square.and.arrow.up")
+            .font(.title3.weight(.semibold)).frame(maxWidth: .infinity, minHeight: 60)
+            .padding(.horizontal, 12).foregroundStyle(LetterStyle.accent)
+            .background(LetterStyle.surface, in: RoundedRectangle(cornerRadius: 18))
+            .overlay { RoundedRectangle(cornerRadius: 18).strokeBorder(LetterStyle.rule, lineWidth: 1) }
+    }
+
     func primary(_ title: String, icon: String, showsArrow: Bool = false, cornerRadius: CGFloat = 8, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Group {
@@ -522,6 +534,34 @@ struct CaptureView: View {
             Label(title, systemImage: icon).font(.headline).foregroundStyle(LetterStyle.accent).accessibilityAddTraits(.isHeader)
             Text(text).font(.title3).fixedSize(horizontal: false, vertical: true)
         }.padding(.vertical, 8).frame(maxWidth: .infinity, alignment: .leading)
+    }
+}
+
+// Vector scan icon based on the supplied SVG.
+private struct LetterScanIcon: Shape {
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        path.move(to: CGPoint(x: 0.5, y: 5.83333))
+        path.addLine(to: CGPoint(x: 0.5, y: 3.16667))
+        path.addCurve(to: CGPoint(x: 3.16667, y: 0.5), control1: CGPoint(x: 0.5, y: 1.69391), control2: CGPoint(x: 1.69391, y: 0.5))
+        path.addLine(to: CGPoint(x: 5.83333, y: 0.5))
+        path.move(to: CGPoint(x: 19.1667, y: 0.5))
+        path.addLine(to: CGPoint(x: 21.8333, y: 0.5))
+        path.addCurve(to: CGPoint(x: 24.5, y: 3.16667), control1: CGPoint(x: 23.3061, y: 0.5), control2: CGPoint(x: 24.5, y: 1.69391))
+        path.addLine(to: CGPoint(x: 24.5, y: 5.83333))
+        path.move(to: CGPoint(x: 24.5, y: 19.1667))
+        path.addLine(to: CGPoint(x: 24.5, y: 21.8333))
+        path.addCurve(to: CGPoint(x: 21.8333, y: 24.5), control1: CGPoint(x: 24.5, y: 23.3061), control2: CGPoint(x: 23.3061, y: 24.5))
+        path.addLine(to: CGPoint(x: 19.1667, y: 24.5))
+        path.move(to: CGPoint(x: 5.83333, y: 24.5))
+        path.addLine(to: CGPoint(x: 3.16667, y: 24.5))
+        path.addCurve(to: CGPoint(x: 0.5, y: 21.8333), control1: CGPoint(x: 1.69391, y: 24.5), control2: CGPoint(x: 0.5, y: 23.3061))
+        path.addLine(to: CGPoint(x: 0.5, y: 19.1667))
+        for (y, endX) in [(7.16667, 16.5), (12.5, 19.1667), (17.8333, 13.8333)] {
+            path.move(to: CGPoint(x: 5.83333, y: y))
+            path.addLine(to: CGPoint(x: endX, y: y))
+        }
+        return path.applying(CGAffineTransform(scaleX: rect.width / 25, y: rect.height / 25).concatenating(CGAffineTransform(translationX: rect.minX, y: rect.minY)))
     }
 }
 

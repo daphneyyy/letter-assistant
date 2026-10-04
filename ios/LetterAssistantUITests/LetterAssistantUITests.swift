@@ -202,8 +202,9 @@ final class LetterAssistantUITests: XCTestCase {
         XCTAssertTrue(app.buttons["使用测试照片"].exists)
         let choosePhoto = app.buttons["uploadFile"]
         XCTAssertTrue(choosePhoto.exists)
-        XCTAssertTrue(choosePhoto.label.contains("上传文件"))
-        let take = app.buttons["拍照"]
+        XCTAssertTrue(choosePhoto.label.contains("上传文档（PDF）"))
+        XCTAssertTrue(app.buttons["uploadExistingPhoto"].exists)
+        let take = app.buttons["takePhoto"]
         for _ in 0..<5 where !take.isHittable { app.swipeUp() }
         XCTAssertTrue(take.isHittable)
         XCTAssertGreaterThanOrEqual(take.frame.height, 44)
