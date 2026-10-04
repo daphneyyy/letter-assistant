@@ -9,7 +9,7 @@ final class LetterAssistantUITests: XCTestCase {
         if welcomeContinue.exists && welcomeContinue.isHittable { welcomeContinue.tap() }
         let sample = app.buttons["Use test photo"]
         XCTAssertTrue(sample.waitForExistence(timeout: 5)); sample.tap()
-        let finish = app.buttons["Start analysis"]
+        let finish = app.buttons["analyzeDocument"]
         XCTAssertTrue(finish.waitForExistence(timeout: 5))
         for _ in 0..<2 {
             let next = app.buttons["Add next test photo"]
@@ -247,10 +247,10 @@ final class LetterAssistantUITests: XCTestCase {
         let sample = app.buttons["Use test photo"]
         XCTAssertTrue(sample.waitForExistence(timeout: 5))
         sample.tap()
-        XCTAssertTrue(app.buttons["Start analysis"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["analyzeDocument"].waitForExistence(timeout: 5))
         app.buttons["languageSettings"].tap()
         XCTAssertTrue(app.alerts["Open language settings?"].waitForExistence(timeout: 3))
         app.alerts.buttons["Keep reading"].tap()
-        XCTAssertTrue(app.buttons["Start analysis"].exists)
+        XCTAssertTrue(app.buttons["analyzeDocument"].exists)
     }
 }
