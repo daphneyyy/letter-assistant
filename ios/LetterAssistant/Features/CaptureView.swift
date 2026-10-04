@@ -9,6 +9,7 @@ struct CaptureView: View {
     @State private var calendarOutcome: CalendarSaveOutcome?
     @State private var calendarTestMenu = false
     @State private var cameraOpen = false
+    @State private var photoZoomOpen = false
     @State private var fileImportOpen = false
     @State private var fileImportError: String?
     @State private var selectedPhoto: PhotosPickerItem?
@@ -194,7 +195,27 @@ struct CaptureView: View {
                 Text(language.text("Choose the photo again or photograph the letter. Your existing pages are still here.", "请重新选择照片，或拍摄信件。已有页面仍然保留。"))
             }
             .fullScreenCover(isPresented: $cameraOpen) { CameraSheet(language: language, pageNumber: appendPage ? model.pages.count + 1 : max(1, model.currentPageIndex + 1), receive: { model.accept($0, asNextPage: appendPage) }) }
-
+            .fullScreenCover(isPresented: $photoZoomOpen) {
+                if let image = model.image {
+                    NavigationStack {
+                        ZoomablePhotoView(image: image)
+                            .background(LetterStyle.background.ignoresSafeArea())
+                            .safeAreaInset(edge: .bottom) {
+                                Text(language.text("Pinch or double-tap to zoom", "双指缩放或双击放大"))
+                                    .font(.callout).foregroundStyle(LetterStyle.supportingText)
+                                    .padding().frame(maxWidth: .infinity).background(LetterStyle.background)
+                            }
+                            .navigationTitle(language.text("Your photo", "你的照片"))
+                            .navigationBarTitleDisplayMode(.inline)
+                            .toolbar {
+                                ToolbarItem(placement: .confirmationAction) {
+                                    Button(language.text("Done", "完成")) { photoZoomOpen = false }
+                                        .accessibilityIdentifier("closePhotoZoom")
+                                }
+                            }
+                    }.tint(LetterStyle.accent).accessibilityIdentifier("photoZoomViewer")
+                }
+            }
         }
     }
     private func openLanguageSettings() {
@@ -213,10 +234,14 @@ struct CaptureView: View {
                     .background(LetterStyle.button, in: Capsule())
             }.padding(16).background(LetterStyle.background)
             if let image = model.image {
-                Image(uiImage: image).resizable().scaledToFit()
-                    .frame(maxWidth: .infinity, maxHeight: 420)
-                    .padding(16)
+                Button { photoZoomOpen = true } label: {
+                    Image(uiImage: image).resizable().scaledToFit()
+                        .frame(maxWidth: .infinity, maxHeight: 420)
+                        .padding(16)
+                }.buttonStyle(.plain)
+                    .accessibilityIdentifier("reviewPhotoPreview")
                     .accessibilityLabel(language.text("Original photo of the current letter", "当前信件的原始照片"))
+                    .accessibilityHint(language.text("Open the photo to zoom in", "打开照片以放大查看"))
             }
         }
         .background(LetterStyle.surface)
@@ -598,6 +623,77 @@ struct CaptureView: View {
             Label(title, systemImage: icon).font(.headline).foregroundStyle(LetterStyle.accent).accessibilityAddTraits(.isHeader)
             Text(text).font(.title3).fixedSize(horizontal: false, vertical: true)
         }.padding(.vertical, 8).frame(maxWidth: .infinity, alignment: .leading)
+    }
+}
+
+private struct ZoomablePhotoView: UIViewRepresentable {
+    let image: UIImage
+
+    func makeUIView(context: Context) -> PhotoZoomScrollView {
+        let view = PhotoZoomScrollView()
+        view.delegate = context.coordinator
+        view.minimumZoomScale = 1
+        view.maximumZoomScale = 6
+        view.bouncesZoom = true
+        view.showsHorizontalScrollIndicator = false
+        view.showsVerticalScrollIndicator = false
+        view.imageView.image = image
+        view.imageView.isAccessibilityElement = true
+        view.imageView.accessibilityIdentifier = "zoomedPhoto"
+        let doubleTap = UITapGestureRecognizer(target: context.coordinator, action: #selector(Coordinator.doubleTap(_:)))
+        doubleTap.numberOfTapsRequired = 2
+        view.addGestureRecognizer(doubleTap)
+        return view
+    }
+    func updateUIView(_ view: PhotoZoomScrollView, context: Context) {
+        view.imageView.image = image
+    }
+    func makeCoordinator() -> Coordinator { Coordinator() }
+    final class Coordinator: NSObject, UIScrollViewDelegate {
+        func viewForZooming(in scrollView: UIScrollView) -> UIView? {
+            (scrollView as? PhotoZoomScrollView)?.imageView
+        }
+        func scrollViewDidZoom(_ scrollView: UIScrollView) {
+            (scrollView as? PhotoZoomScrollView)?.centerPhoto()
+        }
+        @objc func doubleTap(_ gesture: UITapGestureRecognizer) {
+            guard let view = gesture.view as? PhotoZoomScrollView else { return }
+            if view.zoomScale > 1.01 {
+                view.setZoomScale(1, animated: true)
+            } else {
+                let point = gesture.location(in: view.imageView)
+                let width = view.bounds.width / 3
+                let height = view.bounds.height / 3
+                view.zoom(to: CGRect(x: point.x - width / 2, y: point.y - height / 2, width: width, height: height), animated: true)
+            }
+        }
+    }
+}
+
+private final class PhotoZoomScrollView: UIScrollView {
+    let imageView = UIImageView()
+    private var fittedSize = CGSize.zero
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+        imageView.contentMode = .scaleAspectFit
+        addSubview(imageView)
+    }
+    required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        if bounds.size != fittedSize, bounds.width > 0, bounds.height > 0, let image = imageView.image {
+            fittedSize = bounds.size
+            setZoomScale(1, animated: false)
+            let scale = min(bounds.width / image.size.width, bounds.height / image.size.height)
+            imageView.frame = CGRect(origin: .zero, size: CGSize(width: image.size.width * scale, height: image.size.height * scale))
+            contentSize = imageView.bounds.size
+        }
+        centerPhoto()
+    }
+    func centerPhoto() {
+        let horizontal = max(0, (bounds.width - contentSize.width) / 2)
+        let vertical = max(0, (bounds.height - contentSize.height) / 2)
+        contentInset = UIEdgeInsets(top: vertical, left: horizontal, bottom: vertical, right: horizontal)
     }
 }
 

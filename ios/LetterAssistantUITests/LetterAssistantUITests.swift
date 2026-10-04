@@ -1,6 +1,29 @@
 import XCTest
 
 final class LetterAssistantUITests: XCTestCase {
+    func testReviewPhotoCanZoomAndReturnToSamePage() {
+        let app = XCUIApplication()
+        app.launchArguments = ["-AppleLanguages", "(en)", "-AppleLocale", "en_US", "-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryL"]
+        app.launch()
+        let sample = app.buttons["Use test photo"]
+        XCTAssertTrue(sample.waitForExistence(timeout: 5)); sample.tap()
+        let preview = app.buttons["reviewPhotoPreview"]
+        XCTAssertTrue(preview.waitForExistence(timeout: 5))
+        let review = XCTAttachment(screenshot: app.screenshot())
+        review.name = "Photo-review-design"; review.lifetime = .keepAlways; add(review)
+        preview.tap()
+        let image = app.images["zoomedPhoto"]
+        XCTAssertTrue(image.waitForExistence(timeout: 5))
+        image.pinch(withScale: 2, velocity: 1)
+        image.doubleTap()
+        image.doubleTap()
+        let zoom = XCTAttachment(screenshot: app.screenshot())
+        zoom.name = "Photo-zoom-viewer"; zoom.lifetime = .keepAlways; add(zoom)
+        app.buttons["closePhotoZoom"].tap()
+        XCTAssertTrue(preview.waitForExistence(timeout: 3))
+        XCTAssertTrue(app.buttons["pageSelector"].label.contains("Page 1 of 1"))
+    }
+
     func testPageNavigationAndDeletion() {
         let app = XCUIApplication()
         app.launchArguments = ["-AppleLanguages", "(en)", "-AppleLocale", "en_US", "-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryL"]
