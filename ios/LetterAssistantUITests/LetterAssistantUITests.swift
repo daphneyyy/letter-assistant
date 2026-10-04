@@ -97,9 +97,11 @@ final class LetterAssistantUITests: XCTestCase {
         XCTAssertTrue(notify.isHittable)
         notify.tap()
         app.buttons["自定义日期和时间"].tap()
+        XCTAssertTrue(app.navigationBars["核对日历事项"].exists)
         let picker = app.datePickers["customAlertDate"]
         for _ in 0..<5 where !picker.exists { app.swipeUp() }
         XCTAssertTrue(picker.exists)
+        XCTAssertTrue(app.datePickers["customAlertTime"].exists)
     }
 
     func testDurationEstimateAndCustomEntry() {

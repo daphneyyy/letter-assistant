@@ -128,7 +128,7 @@ import EventKit
                         ForEach(CalendarAlertChoice.options(allDay: proposal.kind != .appointment), id: \.self) { choice in
                             Text(choice.label(language)).tag(choice)
                         }
-                    }.pickerStyle(.navigationLink)
+                    }.pickerStyle(.menu).accessibilityIdentifier("alertPicker")
                     if alert == .custom {
                         HStack {
                             Text(language.text("Alert date", "提醒日期"))
