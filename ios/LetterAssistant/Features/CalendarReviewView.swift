@@ -180,8 +180,10 @@ import EventKit
                     Button { addToCalendar() } label: {
                         Label(language.text(saver.isSaving ? "Adding…" : "Add to calendar", saver.isSaving ? "正在添加…" : "添加到日历"), systemImage: "calendar.badge.plus")
                             .font(.headline).frame(maxWidth: .infinity, minHeight: 52)
+                            .foregroundStyle(.white)
                     }
                     .buttonStyle(.borderedProminent).buttonBorderShape(.roundedRectangle(radius: 8))
+                    .tint(LetterStyle.button)
                     .disabled(!canContinue || saver.isSaving || saver.didSave)
                     Button(language.text("Not now", "暂不添加"), role: .cancel) { dismiss() }.frame(minHeight: 44)
                 }.listRowBackground(Color.clear)
