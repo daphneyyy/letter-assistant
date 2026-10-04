@@ -97,7 +97,7 @@ No completed learning wrap-up is inferred from the scope change. Keep it proport
 
 ## Revisions
 
-- October 4 button styling: learner requested color for Not now / 暂不添加. Styled it as a full-width mint button with deep-teal text and a subtle border, retaining its cancel action. Simulator build passed; phone appearance awaits reinstall/review.
+- October 4 button styling correction: learner clarified that only the Not now / 暂不添加 text should change color. Removed the mint background, border and expanded button layout; restored the original cancel button with teal text. Simulator build passed. Phone appearance awaits reinstall/review.
 
 - October 4 UI feedback: replaced always-visible duration wheels with a compact current-value capsule; tapping opens hour/minute wheels in a popover and dismissal retains the value. The 1–1,440-minute range, AI/default initialization, zero-duration validation and end-time calculation remain. Renamed calendar-save confirmation Back to result / 返回解读结果 to Back to home / 返回首页 as requested. The two focused simulator UI tests passed together, covering hidden/open/closed/reopened wheels, retained selection, zero and 24-hour behavior, end-time presence and confirmation return. The first duration run failed only because its end-time assertion did not scroll to the offscreen form row; the revised test checks that row after scrolling. No physical-phone installation or acceptance is inferred.
 
