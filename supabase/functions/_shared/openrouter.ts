@@ -82,7 +82,7 @@ export class OpenRouterProvider implements AIProvider {
                       ? validationImageLabel
                       : `Page ${index + 1} of ${
                         additionalImages.length + 1
-                      }. Read this fictional letter in the supplied page order.`,
+                      }. Read this letter in the supplied page order.`,
                   },
                   {
                     type: "image_url",

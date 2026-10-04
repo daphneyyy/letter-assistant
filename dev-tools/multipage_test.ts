@@ -177,6 +177,11 @@ Deno.test("both AI transports send ordered labeled images and page-count-specifi
         content[0].text.startsWith("Page 1 of 2.") &&
           content[2].text.startsWith("Page 2 of 2."),
       );
+      // Uploads may be real documents: page labels must not declare them fictional.
+      assert(!content[0].text.includes("fictional") && !content[2].text.includes("fictional"));
+      const prompt = router ? body.messages[0].content : body.input[0].content;
+      assert(!prompt.includes("this fictional test letter"));
+      assert(prompt.includes("only when visible source text explicitly establishes that status"));
       const first = router ? content[1].image_url.url : content[1].image_url;
       const second = router ? content[3].image_url.url : content[3].image_url;
       assert(
