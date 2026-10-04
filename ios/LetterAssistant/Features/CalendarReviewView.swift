@@ -71,6 +71,7 @@ import EventKit
                                 selectedDate = CalendarDatePolicy.addingDays(days, to: Date(), calendar: calendar)
                                 dateEntered = true
                             }.frame(minHeight: 44)
+                                .foregroundStyle(LetterStyle.accent)
                         }
                     }
                     if proposal.kind == .appointment {
