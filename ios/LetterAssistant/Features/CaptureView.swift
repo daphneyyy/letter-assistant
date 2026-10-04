@@ -194,16 +194,22 @@ struct CaptureView: View {
             }
             .fullScreenCover(isPresented: $cameraOpen) { CameraSheet(language: language, pageNumber: appendPage ? model.pages.count + 1 : max(1, model.currentPageIndex + 1), receive: { model.accept($0, asNextPage: appendPage) }) }
             .fullScreenCover(isPresented: $photoZoomOpen) {
-                if let image = model.image {
+                if !model.pages.isEmpty {
                     NavigationStack {
-                        ZoomablePhotoView(image: image)
+                        TabView(selection: Binding(get: { model.currentPageIndex }, set: { model.selectPage($0) })) {
+                            ForEach(Array(model.pages.enumerated()), id: \.element.id) { index, page in
+                                ZoomablePhotoView(image: page.image).tag(index)
+                                    .accessibilityHidden(index != model.currentPageIndex)
+                            }
+                        }
+                            .tabViewStyle(.page(indexDisplayMode: .never))
                             .background(LetterStyle.background.ignoresSafeArea())
                             .safeAreaInset(edge: .bottom) {
-                                Text(language.text("Pinch or double-tap to zoom", "双指缩放或双击放大"))
+                                Text(language.text("Swipe to change photos · Pinch or double-tap to zoom", "左右滑动切换照片 · 双指缩放或双击放大"))
                                     .font(.callout).foregroundStyle(LetterStyle.supportingText)
                                     .padding().frame(maxWidth: .infinity).background(LetterStyle.background)
                             }
-                            .navigationTitle(language.text("Your photo", "你的照片"))
+                            .navigationTitle(language.text("Photo \(model.currentPageIndex + 1) of \(model.pages.count)", "第 \(model.currentPageIndex + 1) 张，共 \(model.pages.count) 张"))
                             .navigationBarTitleDisplayMode(.inline)
                             .toolbar {
                                 ToolbarItem(placement: .confirmationAction) {
@@ -656,6 +662,8 @@ private final class PhotoZoomScrollView: UIScrollView {
         centerPhoto()
     }
     func centerPhoto() {
+        // Let the outer pager receive horizontal swipes while the photo fits.
+        panGestureRecognizer.isEnabled = zoomScale > 1.01
         let horizontal = max(0, (bounds.width - contentSize.width) / 2)
         let vertical = max(0, (bounds.height - contentSize.height) / 2)
         contentInset = UIEdgeInsets(top: vertical, left: horizontal, bottom: vertical, right: horizontal)

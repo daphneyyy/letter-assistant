@@ -7,21 +7,30 @@ final class LetterAssistantUITests: XCTestCase {
         app.launch()
         let sample = app.buttons["Use test photo"]
         XCTAssertTrue(sample.waitForExistence(timeout: 5)); sample.tap()
+        let next = app.buttons["Add next test photo"]
+        for _ in 0..<6 where !next.isHittable { app.swipeUp() }
+        next.tap()
         let preview = app.buttons["reviewPhotoPreview"]
+        for _ in 0..<6 where !preview.isHittable { app.swipeDown() }
         XCTAssertTrue(preview.waitForExistence(timeout: 5))
         let review = XCTAttachment(screenshot: app.screenshot())
         review.name = "Photo-review-design"; review.lifetime = .keepAlways; add(review)
         preview.tap()
         let image = app.images["zoomedPhoto"]
         XCTAssertTrue(image.waitForExistence(timeout: 5))
+        image.swipeRight()
+        XCTAssertTrue(app.navigationBars["Photo 1 of 2"].waitForExistence(timeout: 3))
         image.pinch(withScale: 2, velocity: 1)
         image.doubleTap()
         image.doubleTap()
         let zoom = XCTAttachment(screenshot: app.screenshot())
         zoom.name = "Photo-zoom-viewer"; zoom.lifetime = .keepAlways; add(zoom)
+        image.doubleTap()
+        image.swipeLeft()
+        XCTAssertTrue(app.navigationBars["Photo 2 of 2"].waitForExistence(timeout: 3))
         app.buttons["closePhotoZoom"].tap()
         XCTAssertTrue(preview.waitForExistence(timeout: 3))
-        XCTAssertTrue(app.buttons["pageSelector"].label.contains("Page 1 of 1"))
+        XCTAssertTrue(app.buttons["pageSelector"].label.contains("Page 2 of 2"))
     }
 
     func testPageNavigationAndDeletion() {
