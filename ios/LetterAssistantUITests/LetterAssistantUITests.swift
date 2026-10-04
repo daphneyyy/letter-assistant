@@ -114,7 +114,8 @@ final class LetterAssistantUITests: XCTestCase {
         XCTAssertTrue(app.otherElements["savedEventAlert"].exists || app.staticTexts["savedEventAlert"].exists)
         let confirmation = XCTAttachment(screenshot: app.screenshot())
         confirmation.name = "Saved-calendar-confirmation"; confirmation.lifetime = .keepAlways; add(confirmation)
-        let back = app.buttons["backToResult"]
+        let back = app.buttons["backToHome"]
+        XCTAssertEqual(back.label, "返回首页")
         for _ in 0..<5 where !back.isHittable { app.swipeUp() }
         XCTAssertTrue(back.isHittable)
         back.tap()
@@ -159,9 +160,14 @@ final class LetterAssistantUITests: XCTestCase {
         app.launchArguments += ["--calendar-review-test", "--appointment", "--duration-estimate", "-AppleLanguages", "(zh-Hans)", "-AppleLocale", "zh_CN"]
         app.launch()
         app.buttons["Open test review"].tap()
+        let duration = app.buttons["durationControl"]
+        for _ in 0..<10 where !duration.isHittable { app.swipeUp() }
+        XCTAssertEqual(app.pickerWheels.count, 0)
+        XCTAssertEqual(duration.value as? String, "50 分钟")
+        duration.tap()
         let hours = app.pickerWheels.element(boundBy: 0)
         let minutes = app.pickerWheels.element(boundBy: 1)
-        for _ in 0..<10 where !hours.isHittable { app.swipeUp() }
+        XCTAssertTrue(hours.waitForExistence(timeout: 3))
         XCTAssertTrue(hours.isHittable)
         XCTAssertEqual(minutes.value as? String, "50 分钟")
         minutes.adjust(toPickerWheelValue: "0 分钟")
@@ -169,13 +175,23 @@ final class LetterAssistantUITests: XCTestCase {
         hours.adjust(toPickerWheelValue: "1 小时")
         minutes.adjust(toPickerWheelValue: "15 分钟")
         XCTAssertFalse(app.staticTexts["invalidDuration"].exists)
-        XCTAssertTrue(app.otherElements["durationEnd"].exists || app.staticTexts["结束时间"].exists)
         hours.adjust(toPickerWheelValue: "24 小时")
         XCTAssertEqual(minutes.value as? String, "0 分钟")
         hours.adjust(toPickerWheelValue: "1 小时")
         minutes.adjust(toPickerWheelValue: "15 分钟")
         let attachment = XCTAttachment(screenshot: app.screenshot())
-        attachment.name = "Inline-duration-wheels"; attachment.lifetime = .keepAlways; add(attachment)
+        attachment.name = "Duration-popover-wheels"; attachment.lifetime = .keepAlways; add(attachment)
+        app.buttons["durationDone"].tap()
+        XCTAssertEqual(app.pickerWheels.count, 0)
+        XCTAssertEqual(duration.value as? String, "1 小时 15 分钟")
+        duration.tap()
+        XCTAssertTrue(hours.waitForExistence(timeout: 3))
+        XCTAssertEqual(hours.value as? String, "1 小时")
+        XCTAssertEqual(minutes.value as? String, "15 分钟")
+        app.buttons["durationDone"].tap()
+        let end = app.descendants(matching: .any)["durationEnd"].firstMatch
+        for _ in 0..<5 where !end.exists { app.swipeUp() }
+        XCTAssertTrue(end.exists)
         let open = app.buttons["添加到日历"]
         for _ in 0..<10 where !open.isHittable { app.swipeUp() }
         XCTAssertFalse(open.isEnabled)

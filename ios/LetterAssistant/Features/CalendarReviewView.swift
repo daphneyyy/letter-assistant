@@ -11,6 +11,7 @@ import EventKit
     @State private var dateEntered = false
     @State private var durationHours: Int
     @State private var durationMinutePart: Int
+    @State private var showingDurationPicker = false
     @State private var alert: CalendarAlertChoice
     @State private var customAlertDate: Date
     @State private var zoneID: String
@@ -83,27 +84,28 @@ import EventKit
                                 .font(.callout).foregroundStyle(.secondary)
                         }
                         dateSelection
-                        VStack(alignment: .leading, spacing: 12) {
+                        HStack(spacing: 16) {
                             Text(language.text("Duration", "时长")).font(.body.weight(.medium))
-                            HStack(spacing: 16) {
-                                Picker(language.text("Hours", "小时"), selection: $durationHours) {
-                                    ForEach(0...24, id: \.self) { hours in
-                                        Text(language.text("\(hours) h", "\(hours) 小时")).tag(hours)
-                                    }
-                                }.accessibilityIdentifier("durationHours")
-                                Picker(language.text("Minutes", "分钟"), selection: $durationMinutePart) {
-                                    ForEach(0..<(durationHours == 24 ? 1 : 60), id: \.self) { minutes in
-                                        Text(language.text("\(minutes) min", "\(minutes) 分钟")).tag(minutes)
-                                    }
-                                }.accessibilityIdentifier("durationMinutes")
-                            }.pickerStyle(.wheel).frame(height: 150)
-                            Text(language.text("Choose any duration from 1 minute to 24 hours.", "可选择 1 分钟至 24 小时的任意时长。"))
-                                .font(.footnote).foregroundStyle(.secondary)
-                            if durationMinutes == nil {
-                                Text(language.text("Choose a duration of at least 1 minute.", "请选择至少 1 分钟的时长。"))
-                                    .foregroundStyle(.red).accessibilityIdentifier("invalidDuration")
+                            Spacer(minLength: 12)
+                            Button { showingDurationPicker = true } label: {
+                                Text(durationLabel)
+                                    .foregroundStyle(.primary)
+                                    .padding(.horizontal, 14).padding(.vertical, 8)
+                                    .background(Color.primary.opacity(0.06), in: Capsule())
                             }
-                        }.padding(.vertical, 8)
+                            .buttonStyle(.plain)
+                            .accessibilityLabel(language.text("Duration", "时长"))
+                            .accessibilityValue(durationLabel)
+                            .accessibilityIdentifier("durationControl")
+                            .popover(isPresented: $showingDurationPicker) {
+                                durationPicker
+                                    .presentationCompactAdaptation(.popover)
+                            }
+                        }.padding(.vertical, 4)
+                        if durationMinutes == nil {
+                            Text(language.text("Choose a duration of at least 1 minute.", "请选择至少 1 分钟的时长。"))
+                                .foregroundStyle(.red).accessibilityIdentifier("invalidDuration")
+                        }
                         if let suggested = proposal.suggestedDurationMinutes {
                             Text(language.text("AI estimate: \(suggested) minutes. This is a suggested calendar block; check and adjust it.", "AI 估计：\(suggested) 分钟。这是建议的日历时长，请核对并按需调整。"))
                                 .font(.callout).foregroundStyle(.secondary)
@@ -211,6 +213,43 @@ import EventKit
             }
         }
     }
+    private var durationLabel: String {
+        if durationHours == 0 { return language.text("\(durationMinutePart) min", "\(durationMinutePart) 分钟") }
+        if durationMinutePart == 0 { return language.text("\(durationHours) h", "\(durationHours) 小时") }
+        return language.text("\(durationHours) h \(durationMinutePart) min", "\(durationHours) 小时 \(durationMinutePart) 分钟")
+    }
+
+    private var durationPicker: some View {
+        VStack(spacing: 12) {
+            HStack {
+                Text(language.text("Duration", "时长")).font(.headline)
+                Spacer()
+                Button(language.text("Done", "完成")) { showingDurationPicker = false }
+                    .accessibilityIdentifier("durationDone")
+            }
+            HStack(spacing: 16) {
+                Picker(language.text("Hours", "小时"), selection: $durationHours) {
+                    ForEach(0...24, id: \.self) { hours in
+                        Text(language.text("\(hours) h", "\(hours) 小时")).tag(hours)
+                    }
+                }.accessibilityIdentifier("durationHours")
+                Picker(language.text("Minutes", "分钟"), selection: $durationMinutePart) {
+                    ForEach(0..<(durationHours == 24 ? 1 : 60), id: \.self) { minutes in
+                        Text(language.text("\(minutes) min", "\(minutes) 分钟")).tag(minutes)
+                    }
+                }.accessibilityIdentifier("durationMinutes")
+            }.pickerStyle(.wheel).frame(height: 150)
+            Text(language.text("Choose any duration from 1 minute to 24 hours.", "可选择 1 分钟至 24 小时的任意时长。"))
+                .font(.footnote).foregroundStyle(.secondary)
+            if durationMinutes == nil {
+                Text(language.text("Choose a duration of at least 1 minute.", "请选择至少 1 分钟的时长。"))
+                    .foregroundStyle(.red).accessibilityIdentifier("invalidDuration")
+            }
+        }.padding(16).frame(width: 300)
+            .environment(\.locale, Locale(identifier: language == .zh ? "zh_CN" : "en_US"))
+            .tint(LetterStyle.accent)
+    }
+
     private var dateSelection: some View {
         let selection = Binding(get: { selectedDate }, set: { selectedDate = $0; dateEntered = true })
         return VStack(alignment: .leading, spacing: 20) {
@@ -318,10 +357,10 @@ private struct CalendarConfirmationView: View {
                 Text(language.text("You can edit or remove this event in your iPhone Calendar app.", "你可以在 iPhone 日历 App 中修改或删除这个事项。"))
                     .foregroundStyle(ink.opacity(0.75))
                 Button(action: back) {
-                    Text(language.text("Back to result", "返回解读结果"))
+                    Text(language.text("Back to home", "返回首页"))
                         .font(.headline).frame(maxWidth: .infinity, minHeight: 60)
                         .foregroundStyle(.white).background(LetterStyle.button, in: RoundedRectangle(cornerRadius: 20))
-                }.buttonStyle(.plain).accessibilityIdentifier("backToResult")
+                }.buttonStyle(.plain).accessibilityIdentifier("backToHome")
             }.padding(24).frame(maxWidth: 680).frame(maxWidth: .infinity)
         }
         .foregroundStyle(ink).background(LetterStyle.background.ignoresSafeArea())
