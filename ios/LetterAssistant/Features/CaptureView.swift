@@ -60,9 +60,9 @@ struct CaptureView: View {
                             .padding(20).background(LetterStyle.surface, in: RoundedRectangle(cornerRadius: 8))
                     }
                     if model.result == nil && !model.message.isEmpty {
-                        Label(model.message, systemImage: model.phase == .valid ? "checkmark.circle" : "exclamationmark.circle")
+                        Label(model.message, systemImage: "exclamationmark.circle")
                             .font(.body).fixedSize(horizontal: false, vertical: true)
-                            .foregroundStyle(model.phase == .valid ? LetterStyle.accent : .primary)
+                            .foregroundStyle(.primary)
                             .padding(20).frame(maxWidth: .infinity, alignment: .leading)
                             .background(LetterStyle.surface, in: RoundedRectangle(cornerRadius: 8))
                     }

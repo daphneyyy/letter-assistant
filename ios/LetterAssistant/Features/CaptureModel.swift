@@ -176,9 +176,8 @@ struct CapturedPage: Identifiable {
     }
     private func validationMessage(_ verdict: PageValidation) -> String {
         if verdict.verdict == "uncertain" { return verdict.reason.text(language) }
-        if verdict.validationToken == "local-user-confirmed" { return verdict.reason.text(language) }
         if verdict.verdict == "valid", verdict.validationToken != nil {
-            return language.text("Photo checked", "照片已通过检查")
+            return ""
         }
         let reason = verdict.reason.text(language).trimmingCharacters(in: .whitespacesAndNewlines)
         let sentence = reason.components(separatedBy: CharacterSet(charactersIn: "。.!！?？\n")).first?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
