@@ -456,7 +456,7 @@ struct CaptureView: View {
             VStack(alignment: .leading, spacing: 12) {
                 Text(language.text("Your letter", "信件解读"))
                     .font(.subheadline.weight(.semibold)).foregroundStyle(LetterStyle.accent)
-                Text(language.text("This letter at a glance", "这封信的重点"))
+                Text(result.heading(language))
                     .font(.largeTitle.bold()).accessibilityAddTraits(.isHeader)
             }.padding(.vertical, 16)
             let summary = result.summaries.selected(language)
