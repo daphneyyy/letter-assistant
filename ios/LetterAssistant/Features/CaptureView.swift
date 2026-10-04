@@ -34,7 +34,6 @@ struct CaptureView: View {
                     }
                     if !model.pages.isEmpty && model.result == nil {
                         photoReviewCard
-                        reviewPageActions
                     }
                     if model.result != nil {
                         DisclosureGroup {
@@ -224,16 +223,19 @@ struct CaptureView: View {
     private var photoReviewCard: some View {
         VStack(spacing: 0) {
             pageNavigation.padding(12).background(LetterStyle.background)
-            if let image = model.image {
-                Button { photoZoomOpen = true } label: {
-                    Image(uiImage: image).resizable().scaledToFit()
-                        .frame(maxWidth: .infinity, maxHeight: 420)
-                        .padding(16)
-                }.buttonStyle(.plain)
-                    .accessibilityIdentifier("reviewPhotoPreview")
-                    .accessibilityLabel(language.text("Original photo of the current letter", "当前信件的原始照片"))
-                    .accessibilityHint(language.text("Open the photo to zoom in", "打开照片以放大查看"))
+            TabView(selection: Binding(get: { model.currentPageIndex }, set: { model.selectPage($0) })) {
+                ForEach(Array(model.pages.enumerated()), id: \.element.id) { index, page in
+                    Button { photoZoomOpen = true } label: {
+                        Image(uiImage: page.image).resizable().scaledToFit().padding(16)
+                    }.buttonStyle(.plain).tag(index)
+                        .accessibilityIdentifier(index == model.currentPageIndex ? "reviewPhotoPreview" : "reviewPhotoPreview-\(index)")
+                        .accessibilityLabel(language.text("Original photo, page \(index + 1)", "第 \(index + 1) 页原始照片"))
+                        .accessibilityHint(language.text("Tap to zoom. Swipe left or right to change pages.", "点击放大。左右滑动切换页面。"))
+                        .accessibilityHidden(index != model.currentPageIndex)
+                }
             }
+            .tabViewStyle(.page(indexDisplayMode: .never)).frame(height: 420)
+            .disabled(model.phase.busy || importingPhoto)
         }
         .background(LetterStyle.surface)
         .clipShape(RoundedRectangle(cornerRadius: 20))
@@ -241,49 +243,24 @@ struct CaptureView: View {
         .shadow(color: .black.opacity(0.06), radius: 4, y: 2)
     }
 
-    private var reviewPageActions: some View {
-        HStack(spacing: 12) {
-            Button { appendPage = false; model.capturePrompt(); cameraOpen = true } label: {
-                Label(language.text("Retake", "重拍"), systemImage: "camera")
-                    .font(.headline).frame(maxWidth: .infinity, minHeight: 48)
-                    .foregroundStyle(LetterStyle.accent)
-                    .background(LetterStyle.surface, in: RoundedRectangle(cornerRadius: 16))
-                    .overlay { RoundedRectangle(cornerRadius: 16).strokeBorder(LetterStyle.rule, lineWidth: 1) }
-            }.accessibilityIdentifier("retakePage")
-            Button(role: .destructive) { deletePagePrompt = true } label: {
-                Label(language.text("Delete", "删除"), systemImage: "trash")
-                    .font(.body.weight(.medium)).foregroundStyle(.red)
-                    .padding(.horizontal, 16).frame(minHeight: 48)
-                    .background(LetterStyle.surface, in: RoundedRectangle(cornerRadius: 16))
-                    .overlay { RoundedRectangle(cornerRadius: 16).strokeBorder(Color.red.opacity(0.35), lineWidth: 1) }
-            }.accessibilityIdentifier("deletePage")
-        }.buttonStyle(.plain).disabled(model.phase.busy || importingPhoto)
-    }
-
-    private func addPageLabel(title: String, subtitle: String, icon: String) -> some View {
-        HStack(spacing: 14) {
-            Image(systemName: icon).font(.title3).foregroundStyle(LetterStyle.accent)
-                .frame(width: 44, height: 44).background(LetterStyle.softMint, in: Circle())
-            VStack(alignment: .leading, spacing: 4) {
-                Text(title).font(.headline).foregroundStyle(LetterStyle.ink)
-                Text(subtitle).font(.callout).foregroundStyle(LetterStyle.supportingText)
-            }.frame(maxWidth: .infinity, alignment: .leading)
-            Image(systemName: "chevron.right").font(.callout.weight(.semibold))
-                .foregroundStyle(LetterStyle.supportingText).accessibilityHidden(true)
-        }.padding(16).frame(maxWidth: .infinity, alignment: .leading)
-            .background(LetterStyle.surface, in: RoundedRectangle(cornerRadius: 18))
-            .overlay { RoundedRectangle(cornerRadius: 18).strokeBorder(LetterStyle.rule, lineWidth: 1) }
+    private func addPageCell(_ title: String, icon: String) -> some View {
+        VStack(spacing: 10) {
+            Image(systemName: icon).font(.title2).foregroundStyle(LetterStyle.accent)
+                .frame(width: 56, height: 56).background(LetterStyle.softMint, in: Circle())
+            Text(title).font(.headline).foregroundStyle(LetterStyle.accent)
+                .multilineTextAlignment(.center).fixedSize(horizontal: false, vertical: true)
+        }.padding(12).frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(LetterStyle.surface, in: RoundedRectangle(cornerRadius: 24))
+            .overlay { RoundedRectangle(cornerRadius: 24).strokeBorder(LetterStyle.rule, lineWidth: 1) }
     }
 
     private var pageNavigation: some View {
         VStack(spacing: 12) {
             HStack(spacing: 12) {
-                Button { model.selectPage(model.currentPageIndex - 1) } label: {
-                    Image(systemName: "chevron.left").frame(width: 44, height: 44)
-                        .background(LetterStyle.supportingText.opacity(0.05), in: Circle())
-                }
-                .accessibilityLabel(language.text("Previous page", "上一页"))
-                .disabled(model.currentPageIndex == 0)
+                Button { appendPage = false; model.capturePrompt(); cameraOpen = true } label: {
+                    Text(language.text("Retake", "重拍")).font(.callout.weight(.semibold))
+                        .foregroundStyle(LetterStyle.accent).frame(minWidth: 54, minHeight: 44)
+                }.accessibilityIdentifier("retakePage")
                 Menu {
                     ForEach(Array(model.pages.enumerated()), id: \.element.id) { index, page in
                         Button { model.selectPage(index) } label: {
@@ -299,12 +276,10 @@ struct CaptureView: View {
                 }
                 .accessibilityIdentifier("pageSelector")
                 .accessibilityHint(language.text("Choose a page to view", "选择要查看的页面"))
-                Button { model.selectPage(model.currentPageIndex + 1) } label: {
-                    Image(systemName: "chevron.right").frame(width: 44, height: 44)
-                        .background(LetterStyle.supportingText.opacity(0.05), in: Circle())
-                }
-                .accessibilityLabel(language.text("Next page", "下一页"))
-                .disabled(model.currentPageIndex == model.pages.count - 1)
+                Button(role: .destructive) { deletePagePrompt = true } label: {
+                    Text(language.text("Delete", "删除")).font(.callout.weight(.semibold))
+                        .foregroundStyle(.red).frame(minWidth: 54, minHeight: 44)
+                }.accessibilityIdentifier("deletePage")
             }
             .foregroundStyle(LetterStyle.ink)
             .buttonStyle(.plain)
@@ -436,17 +411,16 @@ struct CaptureView: View {
                     .font(.callout).foregroundStyle(LetterStyle.supportingText).fixedSize()
                 Rectangle().fill(LetterStyle.rule).frame(height: 1)
             }
-            Button {
-                appendPage = true; model.capturePrompt(); cameraOpen = true
-            } label: {
-                addPageLabel(title: language.text("Take next page photo", "拍摄下一页"),
-                             subtitle: language.text("Use your camera", "使用相机"), icon: "camera")
-            }.buttonStyle(.plain).disabled(!model.canAddPage)
-                .accessibilityIdentifier("takeNextPage")
-            PhotosPicker(selection: $selectedPhoto, matching: .images, preferredItemEncoding: .compatible) {
-                addPageLabel(title: language.text("Choose from library", "从相册选择"),
-                             subtitle: language.text("Select an existing photo", "选择已有照片"), icon: "photo")
-            }.buttonStyle(.plain).disabled(!model.canAddPage).accessibilityIdentifier("choosePhoto")
+            HStack(spacing: 16) {
+                Button {
+                    appendPage = true; model.capturePrompt(); cameraOpen = true
+                } label: {
+                    addPageCell(language.text("Next photo", "拍摄下一张"), icon: "camera")
+                }.buttonStyle(.plain).accessibilityIdentifier("takeNextPage")
+                PhotosPicker(selection: $selectedPhoto, matching: .images, preferredItemEncoding: .compatible) {
+                    addPageCell(language.text("Library", "相册"), icon: "photo")
+                }.buttonStyle(.plain).accessibilityIdentifier("choosePhoto")
+            }.fixedSize(horizontal: false, vertical: true).disabled(!model.canAddPage)
             Label(language.text("Capture all pages of this letter before analyzing. AI reads your photos only when you tap Analyze.", "请在分析前拍摄这封信的所有页面。只有点击分析后，AI 才会读取照片。"), systemImage: "info.circle")
                 .font(.callout).foregroundStyle(LetterStyle.accent)
                 .fixedSize(horizontal: false, vertical: true)

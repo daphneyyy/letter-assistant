@@ -43,6 +43,12 @@ final class LetterAssistantUITests: XCTestCase {
         let selector = app.buttons["pageSelector"]
         for _ in 0..<6 where !selector.isHittable { app.swipeDown() }
         XCTAssertTrue(selector.label.contains("Page 3 of 3"))
+        XCTAssertFalse(app.buttons["Previous page"].exists)
+        XCTAssertFalse(app.buttons["Next page"].exists)
+        app.buttons["reviewPhotoPreview"].swipeRight()
+        XCTAssertTrue(selector.label.contains("Page 2 of 3"))
+        app.buttons["reviewPhotoPreview"].swipeLeft()
+        XCTAssertTrue(selector.label.contains("Page 3 of 3"))
         let screenshot = XCTAttachment(screenshot: app.screenshot())
         screenshot.name = "Compact-page-navigation"; screenshot.lifetime = .keepAlways; add(screenshot)
         selector.tap(); app.buttons["Page 1"].tap()
