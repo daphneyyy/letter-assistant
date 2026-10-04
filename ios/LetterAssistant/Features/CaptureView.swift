@@ -34,7 +34,6 @@ struct CaptureView: View {
                     }
                     if !model.pages.isEmpty && model.result == nil {
                         photoReviewCard
-                        pageNavigation
                         reviewPageActions
                     }
                     if model.result != nil {
@@ -224,15 +223,7 @@ struct CaptureView: View {
     }
     private var photoReviewCard: some View {
         VStack(spacing: 0) {
-            HStack(spacing: 10) {
-                Label(language.text("Your photo — Page \(model.currentPageIndex + 1)", "你的照片 — 第 \(model.currentPageIndex + 1) 页"), systemImage: "photo")
-                    .font(.subheadline.weight(.semibold)).foregroundStyle(LetterStyle.supportingText)
-                Spacer(minLength: 8)
-                Text("\(model.currentPageIndex + 1) \(language.text("of", "/")) \(model.pages.count)")
-                    .font(.caption.bold()).foregroundStyle(.white)
-                    .padding(.horizontal, 10).padding(.vertical, 4)
-                    .background(LetterStyle.button, in: Capsule())
-            }.padding(16).background(LetterStyle.background)
+            pageNavigation.padding(12).background(LetterStyle.background)
             if let image = model.image {
                 Button { photoZoomOpen = true } label: {
                     Image(uiImage: image).resizable().scaledToFit()
