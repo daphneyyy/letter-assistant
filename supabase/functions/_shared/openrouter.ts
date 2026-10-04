@@ -57,7 +57,10 @@ export class OpenRouterProvider implements AIProvider {
           body: JSON.stringify({
             model: this.model,
             stream: false,
-            max_tokens: 6000,
+            // OpenAI reasoning models reject the legacy max_tokens parameter.
+            ...(endpoint.origin === "https://api.openai.com"
+              ? { max_completion_tokens: 6000 }
+              : { max_tokens: 6000 }),
             ...(router ? { reasoning: { enabled: false }, provider: {
               require_parameters: true,
               allow_fallbacks: false,

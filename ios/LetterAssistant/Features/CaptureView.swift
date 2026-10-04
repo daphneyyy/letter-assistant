@@ -3,7 +3,7 @@ import PhotosUI
 import UniformTypeIdentifiers
 
 struct CaptureView: View {
-    @StateObject private var model = CaptureModel()
+    @ObservedObject var model: CaptureModel
     @State private var calendarProposal: CalendarProposal?
     @State private var pendingCalendarOutcome: CalendarSaveOutcome?
     @State private var calendarOutcome: CalendarSaveOutcome?
@@ -17,8 +17,10 @@ struct CaptureView: View {
     @State private var appendPage = false
     @State private var discardPrompt = false
     @State private var finishPrompt = false
+    @State private var languageSettingsPrompt = false
     @State private var deletePagePrompt = false
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @Environment(\.openURL) private var openURL
     var language: AppLanguage { model.language }
     var body: some View {
         NavigationStack {
@@ -82,28 +84,29 @@ struct CaptureView: View {
             .navigationTitle(language.text("Letter Assistant", "信件助手"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button {
+                        languageSettingsPrompt = true
+                    } label: {
+                        Image(systemName: "globe").font(.title3).frame(width: 44, height: 44)
+                    }
+                    .accessibilityLabel(language.text("Language settings", "语言设置"))
+                    .accessibilityHint(language.text("Choose this app's language in iPhone Settings.", "在 iPhone 系统设置中选择本 App 的语言。"))
+                    .accessibilityIdentifier("languageSettings")
+                    .disabled(model.phase.busy || importingPhoto)
+                }
                 if model.phase != .complete && (model.image != nil || model.phase != .ready) {
                     ToolbarItem(placement: .topBarLeading) {
                         Button(language.text("Start over", "重新开始")) { discardPrompt = true }.frame(minHeight: 44).disabled(importingPhoto)
                     }
                 }
-                ToolbarItem(placement: .topBarTrailing) {
-                    Menu {
-                        Picker(language.text("Language", "语言"), selection: Binding(get: { model.language }, set: { model.changeLanguage($0) })) {
-                            Text("English").tag(AppLanguage.en)
-                            Text("中文").tag(AppLanguage.zh)
-                        }
-                    } label: {
-                        Image(systemName: "globe")
-                            .font(.title3).frame(width: 44, height: 44)
-                    }
-                    .buttonStyle(.plain)
-                    .frame(width: 44, height: 44)
-                    .accessibilityLabel(language.text("Change language", "切换语言"))
-                    .accessibilityValue(language == .en ? "English" : "中文")
-                    .accessibilityIdentifier("languageMenu")
-                    .disabled(model.phase.busy || importingPhoto)
-                }
+            }
+            .alert(language.text("Open language settings?", "打开语言设置？"), isPresented: $languageSettingsPrompt) {
+                Button(language.text("Open Settings", "打开设置")) { openLanguageSettings() }
+                Button(language.text("Keep reading", "继续阅读"), role: .cancel) {}
+            } message: {
+                Text(language.text("In Settings, go to Apps → this app → Language / Preferred Language. Your choice overrides the phone's language for this app.", "在系统设置中进入「App → 本 App → 语言／首选语言」。这里的选择会覆盖手机语言，仅应用于本 App。")
+                     + (model.pages.isEmpty ? "" : "\n\n" + language.text("Changing the app language restarts the app and clears this unsaved letter. Finish reading first if you want to keep it open.", "更改 App 语言会重启 App，并清除当前尚未保存的信件。如需保留当前阅读，请先读完再切换语言。")))
             }
             .alert(language.text("Delete page \(model.currentPageIndex + 1)?", "删除第 \(model.currentPageIndex + 1) 页？"), isPresented: $deletePagePrompt) {
                 Button(language.text("Delete page", "删除此页"), role: .destructive) { model.removeCurrentPage() }
@@ -194,6 +197,10 @@ struct CaptureView: View {
             .fullScreenCover(isPresented: $cameraOpen) { CameraSheet(language: language, pageNumber: appendPage ? model.pages.count + 1 : max(1, model.currentPageIndex + 1), receive: { model.accept($0, asNextPage: appendPage) }) }
         }
     }
+    private func openLanguageSettings() {
+        guard let url = URL(string: UIApplication.openSettingsURLString) else { return }
+        openURL(url)
+    }
     private var pageNavigation: some View {
         VStack(spacing: 12) {
             HStack(spacing: 12) {
@@ -257,7 +264,7 @@ struct CaptureView: View {
                     .multilineTextAlignment(.center).frame(maxWidth: .infinity)
             }
             .padding(22).background(LetterStyle.softMint, in: RoundedRectangle(cornerRadius: 26))
-            Label(language.text("No signup needed. Your letter is sent to AI only when you tap Start analysis. Photos and results stay only in this session.", "无需注册。点击“开始分析”后才会发送文件给 AI。照片和结果仅临时使用。"), systemImage: "checkmark.shield")
+            Label(language.text("Your letter is sent to AI only when you tap Start analysis. Photos and results stay only in this session.", "点击“开始分析”后才会发送文件给 AI。照片和结果仅临时使用。"), systemImage: "checkmark.shield")
                 .font(.callout).foregroundStyle(LetterStyle.supportingText)
                 .fixedSize(horizontal: false, vertical: true)
             #if TEST_BUILD

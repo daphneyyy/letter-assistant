@@ -63,6 +63,7 @@ Deno.test("OpenRouter pins free model, zero prices, strict image JSON request an
     );
     assert(Object.keys(body.provider.max_price).length === 4);
     assert(body.reasoning.enabled === false);
+    assert(body.max_tokens === 6000 && body.max_completion_tokens === undefined);
     assert(body.messages[0].content.includes(JSON.stringify(body.response_format.json_schema.schema)));
     assert(
       body.messages[1].content[1].image_url.url ===
@@ -219,6 +220,7 @@ Deno.test("unified configuration switches endpoint model and key without router-
     assert(init.redirect === "error");
     const body = JSON.parse(init.body as string);
     assert(body.model === "vision-model" && !body.provider && !body.reasoning);
+    assert(body.max_tokens === 6000 && body.max_completion_tokens === undefined);
     assert(body.response_format.json_schema.strict);
     return Response.json(completion());
   }) as typeof fetch;
@@ -237,6 +239,22 @@ Deno.test("explicit paid OpenRouter selection removes only the free-price restri
     const body = JSON.parse(init.body as string);
     assert(body.model === "vendor/paid-model" && body.provider.max_price === undefined);
     assert(body.provider.allow_fallbacks === false);
+    return Response.json(completion());
+  }) as typeof fetch;
+  assert((await configuredProvider(k => env[k], transport).validate(image)).verdict === "valid");
+});
+
+Deno.test("OpenAI endpoint uses the supported completion token limit", async () => {
+  const env: Record<string, string> = {
+    AI_BASE_URL: "https://api.openai.com/v1", AI_MODEL: "gpt-6.1-sol",
+    AI_API_KEY: "fake-test-key", AI_FREE_ONLY: "false",
+  };
+  const transport = (async (url: unknown, init: RequestInit) => {
+    assert(url === "https://api.openai.com/v1/chat/completions");
+    const body = JSON.parse(init.body as string);
+    assert(body.model === "gpt-6.1-sol");
+    assert(body.max_completion_tokens === 6000 && body.max_tokens === undefined);
+    assert(body.provider === undefined && body.reasoning === undefined);
     return Response.json(completion());
   }) as typeof fetch;
   assert((await configuredProvider(k => env[k], transport).validate(image)).verdict === "valid");

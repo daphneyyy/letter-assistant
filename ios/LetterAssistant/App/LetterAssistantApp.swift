@@ -17,12 +17,12 @@ import SwiftUI
 /// Appears once per app launch, never when returning from a letter or the background.
 private struct LaunchWelcomeView: View {
     @State private var showingWelcome = true
-    private var language: AppLanguage {
-        Locale.preferredLanguages.first?.hasPrefix("zh") == true ? .zh : .en
-    }
+    @StateObject private var model = CaptureModel()
+    @Environment(\.scenePhase) private var scenePhase
+    private var language: AppLanguage { model.language }
     var body: some View {
         ZStack {
-            CaptureView()
+            CaptureView(model: model)
                 .accessibilityHidden(showingWelcome)
                 .allowsHitTesting(!showingWelcome)
             if showingWelcome {
@@ -55,6 +55,13 @@ private struct LaunchWelcomeView: View {
                     showingWelcome = false
                 }
             }
+        }
+        .onAppear { model.changeLanguage(.system) }
+        .onChange(of: scenePhase) { _, phase in
+            if phase == .active { model.changeLanguage(.system) }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: NSLocale.currentLocaleDidChangeNotification)) { _ in
+            model.changeLanguage(.system)
         }
     }
 }

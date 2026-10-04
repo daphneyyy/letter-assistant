@@ -2,6 +2,18 @@ import Foundation
 
 enum AppLanguage: String, CaseIterable, Identifiable {
     case en, zh
+    // Bundle reflects iOS's per-app language override as well as device preferences.
+    static var system: AppLanguage { preferred(for: Bundle.main.preferredLocalizations) }
+    static func preferred(for languages: [String]) -> AppLanguage {
+        for identifier in languages {
+            switch Locale(identifier: identifier).language.languageCode?.identifier {
+            case "zh": return .zh
+            case "en": return .en
+            default: continue
+            }
+        }
+        return .en
+    }
     var id: String { rawValue }
     var voice: String { self == .en ? "en-US" : "zh-CN" }
     func text(_ en: String, _ zh: String) -> String { self == .en ? en : zh }

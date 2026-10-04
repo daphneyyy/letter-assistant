@@ -10,7 +10,7 @@ struct CapturedPage: Identifiable {
 }
 
 @MainActor final class CaptureModel: ObservableObject {
-    @Published var language = AppLanguage.en
+    @Published private(set) var language = AppLanguage.system
     @Published private(set) var phase = CapturePhase.ready
     @Published private(set) var pages: [CapturedPage] = []
     @Published private(set) var currentPageIndex = 0
@@ -169,6 +169,7 @@ struct CapturedPage: Identifiable {
         guidance.stop()
     }
     func changeLanguage(_ selected: AppLanguage) {
+        guard language != selected else { return }
         language = selected; guidance.stop()
         if let errorCode { report(RelayError(code: errorCode)) }
         else if result == nil, let validation { message = validationMessage(validation) }

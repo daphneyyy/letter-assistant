@@ -68,7 +68,7 @@ For a physical phone, set `RELAY_HOST` to your Mac's private IPv4 address and `R
 2. Open `ios/LetterAssistant.xcodeproj` in Xcode. Select the **LetterAssistant** scheme and **Debug** configuration.
 3. In Signing & Capabilities, select **your own development team** and, if needed, a unique bundle identifier. Do not assume the repository's existing team settings work for your account.
 4. Select your connected iPhone and run the app. Allow camera/local-network access when requested.
-5. Choose English or Chinese, photograph a fictional letter, handle its photo check, and finish capture for analysis. The Mac relay must remain running.
+5. The interface uses the app language chosen in iPhone Settings, or follows the phone's language preferences when no app override is set (English or Simplified Chinese, with English as the fallback). The globe button opens the app's system Settings page; choose **Language / Preferred Language** there. Changing the system app language restarts the app and clears the unsaved letter, so finish reading first. Photograph a fictional letter, handle its photo check, and finish capture for analysis. The Mac relay must remain running.
 6. Under an action, tap **Review calendar event / 查看并添加到日历**, review the proposal, then tap **Add to calendar / 添加到日历**. Allow calendar adding permission on first use; no second editor opens.
 
 Restart the relay after changing API settings. Rebuild/reinstall the app after changing the local plist. Test builds package Debug.local.plist; Prod builds package Prod.local.plist. Both are ignored local files and must be configured before rebuilding; a successful build alone does not configure the AI connection.

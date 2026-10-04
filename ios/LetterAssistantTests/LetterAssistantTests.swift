@@ -5,6 +5,17 @@ import EventKit
 @testable import LetterAssistant
 
 final class LetterAssistantTests: XCTestCase {
+    func testPhoneLanguageSelectionUsesPreferenceOrderAndEnglishFallback() {
+        XCTAssertEqual(AppLanguage.preferred(for: ["zh-Hans-CN", "en-US"]), .zh)
+        XCTAssertEqual(AppLanguage.preferred(for: ["zh-Hant-TW"]), .zh)
+        XCTAssertEqual(AppLanguage.preferred(for: ["en-GB", "zh-Hans"]), .en)
+        XCTAssertEqual(AppLanguage.preferred(for: ["fr-FR", "zh-Hans", "en"]), .zh)
+        XCTAssertEqual(AppLanguage.preferred(for: ["fr-FR"]), .en)
+        XCTAssertEqual(AppLanguage.preferred(for: []), .en)
+    }
+    @MainActor func testCaptureStartsInPhoneLanguage() {
+        XCTAssertEqual(CaptureModel().language, AppLanguage.system)
+    }
     private var calendar: Calendar {
         var result = Calendar(identifier: .gregorian)
         result.timeZone = TimeZone(identifier: "America/Los_Angeles")!
