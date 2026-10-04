@@ -1,5 +1,6 @@
 import SwiftUI
 import PhotosUI
+import UniformTypeIdentifiers
 
 struct CaptureView: View {
     @StateObject private var model = CaptureModel()
@@ -8,12 +9,15 @@ struct CaptureView: View {
     @State private var calendarOutcome: CalendarSaveOutcome?
     @State private var calendarTestMenu = false
     @State private var cameraOpen = false
+    @State private var fileImportOpen = false
+    @State private var fileImportError: String?
     @State private var selectedPhoto: PhotosPickerItem?
     @State private var importingPhoto = false
     @State private var photoImportFailed = false
     @State private var appendPage = false
     @State private var discardPrompt = false
     @State private var finishPrompt = false
+    @State private var deletePagePrompt = false
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     var language: AppLanguage { model.language }
     var body: some View {
@@ -24,30 +28,9 @@ struct CaptureView: View {
                         explanation(result)
                     } else if model.pages.isEmpty {
                         welcome
-                    } else {
-                        Text(language.text("Capture every page", "拍摄每一页"))
-                            .font(.title2.bold()).accessibilityAddTraits(.isHeader)
-                        Text(language.text("Check each photo, then finish to read your letter.", "检查每张照片，完成拍摄后即可解读信件。"))
-                            .font(.body).foregroundStyle(.secondary)
                     }
                     if !model.pages.isEmpty && model.result == nil {
-                        Text(language.text("Page \(model.currentPageIndex + 1) of \(model.pages.count)", "第 \(model.currentPageIndex + 1) 页，共 \(model.pages.count) 页"))
-                            .font(.headline)
-                        ScrollView(.horizontal) {
-                            HStack {
-                                ForEach(Array(model.pages.enumerated()), id: \.element.id) { index, page in
-                                    Button { model.selectPage(index) } label: {
-                                        Label(language.text("Page \(index + 1)", "第 \(index + 1) 页"), systemImage: page.isValid ? "checkmark.circle" : "circle")
-                                            .font(.subheadline.weight(.semibold))
-                                            .padding(.horizontal, 14).frame(minHeight: 48)
-                                            .foregroundStyle(index == model.currentPageIndex ? Color(uiColor: .systemBackground) : LetterStyle.accent)
-                                            .background(index == model.currentPageIndex ? LetterStyle.accent : LetterStyle.surface, in: Capsule())
-                                    }.buttonStyle(.plain)
-                                        .accessibilityAddTraits(index == model.currentPageIndex ? .isSelected : [])
-                                        .disabled(model.phase.busy)
-                                }
-                            }
-                        }
+                        pageNavigation
                     }
                     if model.result != nil {
                         DisclosureGroup {
@@ -122,6 +105,12 @@ struct CaptureView: View {
                     .disabled(model.phase.busy || importingPhoto)
                 }
             }
+            .alert(language.text("Delete page \(model.currentPageIndex + 1)?", "删除第 \(model.currentPageIndex + 1) 页？"), isPresented: $deletePagePrompt) {
+                Button(language.text("Delete page", "删除此页"), role: .destructive) { model.removeCurrentPage() }
+                Button(language.text("Keep page", "保留此页"), role: .cancel) {}
+            } message: {
+                Text(language.text("The other pages will stay in their current order.", "其他页面会保留，并保持原来的顺序。"))
+            }
             .confirmationDialog(language.text("Discard this unsaved letter?", "丢弃这封尚未保存的信件？"), isPresented: $discardPrompt, titleVisibility: .visible) {
                 Button(language.text("Discard and start over", "丢弃并重新开始"), role: .destructive) { model.reset() }
                 Button(language.text("Keep letter", "保留信件"), role: .cancel) {}
@@ -156,6 +145,33 @@ struct CaptureView: View {
             .alert(language.text("Calendar", "日历"), isPresented: Binding(get: { calendarOutcome != nil }, set: { if !$0 { calendarOutcome = nil } })) {
                 Button(language.text("OK", "好")) { calendarOutcome = nil }
             } message: { Text(calendarOutcome?.message(language) ?? "") }
+            .fileImporter(isPresented: $fileImportOpen, allowedContentTypes: [.pdf, .image]) { result in
+                switch result {
+                case .success(let url):
+                    Task { @MainActor in
+                        importingPhoto = true
+                        defer { importingPhoto = false }
+                        do {
+                            let images = try LetterFileImport.images(from: url, maximumPages: 10 - model.pages.count)
+                            await model.acceptDocument(images)
+                        } catch {
+                            let code = (error as? RelayError)?.code
+                            fileImportError = code == "too_many_pages"
+                                ? language.text("A letter can contain up to 10 pages.", "每封信最多 10 页。")
+                                : (code == "file_too_large"
+                                   ? language.text("Choose a file smaller than 30 MB.", "请选择小于 30 MB 的文件。")
+                                   : language.text("Could not read this file. Choose an unlocked PDF or a photo. Existing pages are still here.", "无法读取文件。请选择未加密的 PDF 或照片。已有页面仍然保留。"))
+                        }
+                    }
+                case .failure(let error):
+                    if (error as NSError).code != NSUserCancelledError {
+                        fileImportError = language.text("Could not open this file. Please try again.", "无法打开文件，请重试。")
+                    }
+                }
+            }
+            .alert(language.text("File import", "上传文件"), isPresented: Binding(get: { fileImportError != nil }, set: { if !$0 { fileImportError = nil } })) {
+                Button(language.text("OK", "好"), role: .cancel) { fileImportError = nil }
+            } message: { Text(fileImportError ?? "") }
             .task(id: selectedPhoto) {
                 guard let item = selectedPhoto else { return }
                 let asNextPage = model.phase == .valid
@@ -178,23 +194,78 @@ struct CaptureView: View {
             .fullScreenCover(isPresented: $cameraOpen) { CameraSheet(language: language, pageNumber: appendPage ? model.pages.count + 1 : max(1, model.currentPageIndex + 1), receive: { model.accept($0, asNextPage: appendPage) }) }
         }
     }
+    private var pageNavigation: some View {
+        VStack(spacing: 12) {
+            HStack(spacing: 12) {
+                Button { model.selectPage(model.currentPageIndex - 1) } label: {
+                    Image(systemName: "chevron.left").frame(width: 44, height: 48)
+                }
+                .accessibilityLabel(language.text("Previous page", "上一页"))
+                .disabled(model.currentPageIndex == 0)
+                Menu {
+                    ForEach(Array(model.pages.enumerated()), id: \.element.id) { index, page in
+                        Button { model.selectPage(index) } label: {
+                            Label(language.text("Page \(index + 1)", "第 \(index + 1) 页"), systemImage: index == model.currentPageIndex ? "checkmark" : (page.isValid ? "checkmark.circle" : "exclamationmark.circle"))
+                        }
+                    }
+                } label: {
+                    HStack(spacing: 8) {
+                        Text(language.text("Page \(model.currentPageIndex + 1) of \(model.pages.count)", "第 \(model.currentPageIndex + 1) 页，共 \(model.pages.count) 页"))
+                            .font(.headline).multilineTextAlignment(.center)
+                        Image(systemName: "chevron.down").font(.caption.bold())
+                    }.frame(maxWidth: .infinity, minHeight: 48)
+                }
+                .accessibilityIdentifier("pageSelector")
+                .accessibilityHint(language.text("Choose a page to view", "选择要查看的页面"))
+                Button { model.selectPage(model.currentPageIndex + 1) } label: {
+                    Image(systemName: "chevron.right").frame(width: 44, height: 48)
+                }
+                .accessibilityLabel(language.text("Next page", "下一页"))
+                .disabled(model.currentPageIndex == model.pages.count - 1)
+            }
+            .foregroundStyle(LetterStyle.accent)
+            .buttonStyle(.plain)
+            .padding(8).background(LetterStyle.softMint, in: RoundedRectangle(cornerRadius: 8))
+            Button(role: .destructive) { deletePagePrompt = true } label: {
+                Label(language.text("Delete this page", "删除当前页"), systemImage: "trash")
+                    .font(.body).frame(minHeight: 44)
+            }.accessibilityIdentifier("deletePage")
+        }.disabled(model.phase.busy || importingPhoto)
+    }
+
     private var welcome: some View {
         VStack(alignment: .leading, spacing: 22) {
-            VStack(alignment: .leading, spacing: 24) {
-                VStack(alignment: .leading, spacing: 12) {
-                    Text(language.text("Medical & health insurance", "医疗与健康保险"))
-                        .font(.subheadline.weight(.semibold)).foregroundStyle(LetterStyle.accent)
-                    if !dynamicTypeSize.isAccessibilitySize {
-                        Text(language.text("Start with a photo", "从拍照开始"))
-                            .font(.largeTitle.bold()).foregroundStyle(.primary)
-                        Text(language.text("Photograph your letter to see a clear explanation.", "拍下信件，查看清晰解读。"))
-                            .font(.body).foregroundStyle(LetterStyle.supportingText)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
-                }
-                controls
-            }.padding(.vertical, 24)
-            Divider().overlay(LetterStyle.rule)
+            VStack(alignment: .leading, spacing: 16) {
+                Label(language.text("Start with your letter", "从您的信件开始"), systemImage: "viewfinder")
+                    .font(.title3.weight(.semibold)).foregroundStyle(.primary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                Button { appendPage = false; model.capturePrompt(); cameraOpen = true } label: {
+                    Label(language.text("Take a photo", "拍照"), systemImage: "camera")
+                        .font(.title3.weight(.semibold)).frame(maxWidth: .infinity, minHeight: 60)
+                        .padding(.horizontal, 12).foregroundStyle(.white)
+                        .background(LetterStyle.button, in: RoundedRectangle(cornerRadius: 18))
+                }.buttonStyle(.plain)
+                Button { fileImportOpen = true } label: {
+                    Label(language.text("Upload a file", "上传文件"), systemImage: "square.and.arrow.up")
+                        .font(.title3.weight(.semibold)).frame(maxWidth: .infinity, minHeight: 60)
+                        .padding(.horizontal, 12).foregroundStyle(LetterStyle.accent)
+                        .background(LetterStyle.surface, in: RoundedRectangle(cornerRadius: 18))
+                        .overlay { RoundedRectangle(cornerRadius: 18).strokeBorder(LetterStyle.rule, lineWidth: 1) }
+                }.buttonStyle(.plain).accessibilityIdentifier("uploadFile")
+                Text(language.text("PDFs and photos · Multiple pages supported", "支持 PDF 和照片 · 可添加多页"))
+                    .font(.callout).foregroundStyle(LetterStyle.supportingText)
+                    .multilineTextAlignment(.center).frame(maxWidth: .infinity)
+            }
+            .padding(22).background(LetterStyle.softMint, in: RoundedRectangle(cornerRadius: 26))
+            Label(language.text("No signup needed. Your letter is sent to AI only when you tap Start analysis. Photos and results stay only in this session.", "无需注册。点击“开始分析”后才会发送文件给 AI。照片和结果仅临时使用。"), systemImage: "checkmark.shield")
+                .font(.callout).foregroundStyle(LetterStyle.supportingText)
+                .fixedSize(horizontal: false, vertical: true)
+            #if TEST_BUILD
+            Button(language.text("Use test photo", "使用测试照片")) {
+                if let file = Bundle.main.url(forResource: "fictional-bill", withExtension: "jpg"),
+                   let image = UIImage(contentsOfFile: file.path) { model.accept(image) }
+            }.frame(minHeight: 44)
+            #endif
             DisclosureGroup {
                 VStack(alignment: .leading, spacing: 20) {
                     welcomeStep("1", title: language.text("Photograph your letter", "拍摄信件"), detail: language.text("One page at a time, with all edges visible.", "逐页拍摄，确保页面边缘完整可见。"))
@@ -277,16 +348,29 @@ struct CaptureView: View {
             }.buttonStyle(.plain)
             #endif
         case .valid:
-            Button {
-                appendPage = true; model.capturePrompt(); cameraOpen = true
-            } label: {
-                Label(language.text("Photograph next page", "拍下一页"), systemImage: "doc.badge.plus")
-                    .font(.headline).frame(maxWidth: .infinity, minHeight: 52)
-            }.buttonStyle(.bordered).disabled(!model.canAddPage)
-            photoLibraryButton.disabled(!model.canAddPage)
-            primary(language.text("Finish taking photos", "结束拍摄"), icon: "checkmark") { model.interpret() }
+            HStack(spacing: 12) {
+                Button {
+                    appendPage = true; model.capturePrompt(); cameraOpen = true
+                } label: {
+                    VStack(spacing: 8) {
+                        Image(systemName: "camera").font(.title3)
+                        Text(language.text("Photograph next page", "拍下一页"))
+                            .font(.headline).multilineTextAlignment(.center)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    .frame(maxWidth: .infinity, minHeight: 76, maxHeight: .infinity)
+                    .padding(.horizontal, 12).padding(.vertical, 8)
+                    .foregroundStyle(LetterStyle.accent)
+                    .background(LetterStyle.softMint, in: RoundedRectangle(cornerRadius: 8))
+                }.buttonStyle(.plain)
+                    .accessibilityLabel(language.text("Photograph next page", "拍下一页"))
+                photoLibraryButton
+            }
+            .fixedSize(horizontal: false, vertical: true)
+            .disabled(!model.canAddPage)
+            primary(language.text("Start analysis", "开始分析"), icon: "doc.text.magnifyingglass") { model.interpret() }
                 .disabled(!model.canFinishCapture)
-            Text(language.text("Finish when every page of this letter has been photographed. We’ll interpret all pages together.", "确认这封信的所有页面都已拍摄后，结束拍摄。我们会一起解读所有页面。"))
+            Text(language.text("When every page is ready, start analysis. We’ll read all pages together.", "确认这封信的所有页面都已准备好后，开始分析。我们会一起解读所有页面。"))
                 .font(.callout).foregroundStyle(.secondary)
             if model.pages.count == 10 {
                 Text(language.text("The 10-page limit has been reached.", "已达到每封信 10 页的上限。")).font(.callout)
@@ -312,16 +396,27 @@ struct CaptureView: View {
     }
     private var photoLibraryButton: some View {
         PhotosPicker(selection: $selectedPhoto, matching: .images, preferredItemEncoding: .compatible) {
-            Label(language.text(model.phase == .valid ? "Choose next photo" : "Choose a photo", model.phase == .valid ? "选择下一张照片" : "选择照片"), systemImage: "photo.badge.plus")
-                .font(.title3.weight(.semibold))
+            Group {
+                if model.phase == .valid {
+                    VStack(spacing: 8) {
+                        Image(systemName: "photo.badge.plus").font(.title3)
+                        Text(language.text("Choose next photo", "选择下一张照片"))
+                            .font(.headline)
+                    }
+                } else {
+                    Label(language.text("Choose a photo", "选择照片"), systemImage: "photo.badge.plus")
+                        .font(.title3.weight(.semibold))
+                }
+            }
                 .multilineTextAlignment(.center).fixedSize(horizontal: false, vertical: true)
-                .frame(maxWidth: .infinity, minHeight: 60)
-                .padding(.horizontal, 16).padding(.vertical, 8)
+                .frame(maxWidth: .infinity, minHeight: model.phase == .valid ? 76 : 60, maxHeight: model.phase == .valid ? .infinity : nil)
+                .padding(.horizontal, model.phase == .valid ? 12 : 16).padding(.vertical, 8)
                 .foregroundStyle(.primary)
                 .background(LetterStyle.background, in: RoundedRectangle(cornerRadius: 8))
                 .overlay { RoundedRectangle(cornerRadius: 8).strokeBorder(LetterStyle.rule, lineWidth: 1) }
         }
         .buttonStyle(.plain).accessibilityIdentifier("choosePhoto")
+        .accessibilityLabel(language.text(model.phase == .valid ? "Choose next photo" : "Choose a photo", model.phase == .valid ? "选择下一张照片" : "选择照片"))
     }
 
     func primary(_ title: String, icon: String, showsArrow: Bool = false, action: @escaping () -> Void) -> some View {

@@ -444,6 +444,76 @@ extension LetterAssistantTests {
         for _ in 0..<100 where model.phase.busy { try await Task.sleep(nanoseconds: 10_000_000) }
         XCTAssertFalse(model.phase.busy)
     }
+    @MainActor func testDeletingPagesPreservesOrderAndReturnsToStartWhenEmpty() async throws {
+        let api = StubAPI(); let model = CaptureModel(api: api, inspect: { _ in })
+        for index in 0..<3 {
+            model.accept(photo(), asNextPage: index > 0); try await waitForWork(model)
+        }
+        let originals = model.pages
+        model.selectPage(1); model.removeCurrentPage()
+        XCTAssertEqual(model.pages.map(\.id), [originals[0].id, originals[2].id])
+        XCTAssertEqual(model.currentPageIndex, 1)
+        XCTAssertEqual(model.pages[1].bytes, originals[2].bytes)
+        XCTAssertTrue(model.canFinishCapture)
+        model.interpret(); try await waitForWork(model)
+        XCTAssertEqual(api.submittedPages.map(\.id), [originals[0].id, originals[2].id])
+        model.removeCurrentPage()
+        XCTAssertEqual(model.currentPageIndex, 0)
+        XCTAssertEqual(model.pages.map(\.id), [originals[0].id])
+        model.removeCurrentPage()
+        XCTAssertEqual(model.phase, .ready)
+        XCTAssertTrue(model.pages.isEmpty)
+        XCTAssertNil(model.image)
+        XCTAssertFalse(model.canFinishCapture)
+    }
+    @MainActor func testDeletingPageFreesCapacityButIsBlockedDuringWork() async throws {
+        let model = CaptureModel(api: StubAPI(), inspect: { _ in })
+        for index in 0..<10 {
+            model.accept(photo(), asNextPage: index > 0)
+            model.removeCurrentPage()
+            XCTAssertEqual(model.pages.count, index + 1)
+            try await waitForWork(model)
+        }
+        XCTAssertFalse(model.canAddPage)
+        model.selectPage(0); model.removeCurrentPage()
+        XCTAssertEqual(model.pages.count, 9)
+        XCTAssertTrue(model.canAddPage)
+        XCTAssertEqual(model.currentPageIndex, 0)
+    }
+    @MainActor func testPDFImportRendersEveryPageAndEnforcesLimit() throws {
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString + ".pdf")
+        defer { try? FileManager.default.removeItem(at: url) }
+        let renderer = UIGraphicsPDFRenderer(bounds: CGRect(x: 0, y: 0, width: 612, height: 792))
+        let data = renderer.pdfData { context in
+            for number in 1...2 {
+                context.beginPage()
+                let text = "Medical bill page \(number)\nHarbor Example Clinic\nPlease pay USD 125.00 by November 15, 2026.\nContact the clinic if you have questions about this balance."
+                (text as NSString).draw(in: CGRect(x: 40, y: 60, width: 532, height: 500), withAttributes: [.font: UIFont.systemFont(ofSize: 24), .foregroundColor: UIColor.black])
+            }
+        }
+        try data.write(to: url)
+        let images = try LetterFileImport.images(from: url)
+        XCTAssertEqual(images.count, 2)
+        for image in images { try PageQualityService.inspect(PageQualityService.prepare(image).bytes) }
+        XCTAssertThrowsError(try LetterFileImport.images(from: url, maximumPages: 1)) {
+            XCTAssertEqual(($0 as? RelayError)?.code, "too_many_pages")
+        }
+    }
+    @MainActor func testDocumentImportPreservesEveryPageAndFailedPreparationIsAtomic() async throws {
+        let model = CaptureModel(api: StubAPI(), inspect: { _ in })
+        await model.acceptDocument([photo(), photo(color: .yellow)])
+        XCTAssertEqual(model.pages.count, 2)
+        XCTAssertTrue(model.canFinishCapture)
+        let ids = model.pages.map(\.id)
+        let tiny = UIGraphicsImageRenderer(size: CGSize(width: 10, height: 10)).image { _ in }
+        await model.acceptDocument([photo(), tiny])
+        XCTAssertEqual(model.pages.map(\.id), ids)
+        let unreadable = CaptureModel(api: StubAPI(), inspect: { _ in throw RelayError(code: "photo_unreadable") })
+        await unreadable.acceptDocument([photo(), photo()])
+        XCTAssertEqual(unreadable.pages.count, 2)
+        XCTAssertEqual(unreadable.currentPageIndex, 0)
+        XCTAssertFalse(unreadable.canFinishCapture)
+    }
     @MainActor func testRejectedPhotoCannotCallInterpretation() async throws {
         let api = StubAPI(); api.shouldReject = true
         let model = CaptureModel(api: api, inspect: { _ in throw RelayError(code: "photo_unreadable") })

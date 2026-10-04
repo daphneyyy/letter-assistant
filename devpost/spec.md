@@ -18,7 +18,7 @@ This is a source-built hackathon demo, not an App Store package or hosted servic
 | Part | Implementation |
 | --- | --- |
 | iPhone | Swift/SwiftUI, iOS 17+; Xcode supporting the target device OS |
-| Capture | UIImagePickerController native camera/retake confirmation; PhotosUI PhotosPicker for single-image imports |
+| Capture | UIImagePickerController camera; native file importer for PDF/photos; PhotosPicker for adding another photo |
 | Local checks | Vision OCR and text-edge sharpness; no online photo validation in the current app |
 | Spoken guidance | AVSpeechSynthesizer, English/Mandarin; no voice-question input |
 | Interpretation | Deno local relay and operator-selected OpenAI-compatible Chat Completions vision model |
@@ -29,7 +29,7 @@ This is a source-built hackathon demo, not an App Store package or hosted servic
 
 ### Capture and Page Validation
 
-`CaptureModel.swift` owns temporary ordered pages and result state. `CameraService.swift` uses Apple's camera. `CaptureView.swift` uses PhotosPicker to load a selected image asynchronously and passes it to the same CaptureModel acceptance flow; selected-image access does not require full photo-library permission. Show loading/error states, preserve accepted pages on failure/cancel, and allow selecting additional pages within the existing limit. `PageQualityService.swift` prepares image data and checks local readability, preserving the accepted bytes for interpretation. Up to 10 pages, 10 MiB per image. Retaking replaces one page without disturbing others. Local uncertainty can be accepted explicitly; unreadable input cannot. No cropping/page-number checks. The app makes no validation-provider call before Finish capture.
+`CaptureModel.swift` owns temporary ordered pages and result state. The home file importer accepts PDF/image files up to 30 MB; LetterFileImport in PageQualityService.swift renders PDFs locally with PDFKit, bounded to the remaining 10-page capacity and 2,400 pixels on the longest edge. Prepare all images before appending any, inspect every imported page, and select the first failed page for review without discarding the others. No document content is sent to AI before Start analysis. `CameraService.swift` uses Apple's camera. `CaptureView.swift` uses PhotosPicker to load a selected image asynchronously and passes it to the same CaptureModel acceptance flow; selected-image access does not require full photo-library permission. Show loading/error states, preserve accepted pages on failure/cancel, and allow selecting additional pages within the existing limit. `PageQualityService.swift` prepares image data and checks local readability, preserving the accepted bytes for interpretation. Up to 10 pages, 10 MiB per image. Retaking replaces one page without disturbing others. Local uncertainty can be accepted explicitly; unreadable input cannot. No cropping/page-number checks. The app makes no validation-provider call before Finish capture.
 
 ### Letter Interpretation and Grounding
 

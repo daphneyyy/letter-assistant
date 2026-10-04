@@ -1,4 +1,5 @@
 import UIKit
+import PDFKit
 import Vision
 
 struct PreparedPhoto {
@@ -79,5 +80,38 @@ enum PageQualityService {
             }
         }
         return gradientEnergy > 0 ? laplacianEnergy / gradientEnergy : 0
+    }
+}
+
+/// Render selected documents locally; only the resulting pages reach the AI request.
+enum LetterFileImport {
+    @MainActor static func images(from url: URL, maximumPages: Int = 10) throws -> [UIImage] {
+        let access = url.startAccessingSecurityScopedResource()
+        defer { if access { url.stopAccessingSecurityScopedResource() } }
+        let size = try url.resourceValues(forKeys: [.fileSizeKey]).fileSize ?? 0
+        guard size <= 30 * 1024 * 1024 else { throw RelayError(code: "file_too_large") }
+        if url.pathExtension.lowercased() != "pdf" {
+            guard let image = UIImage(contentsOfFile: url.path) else { throw RelayError(code: "invalid_file") }
+            return [image]
+        }
+        guard let document = PDFDocument(url: url), !document.isLocked, document.pageCount > 0 else {
+            throw RelayError(code: "invalid_file")
+        }
+        guard document.pageCount <= maximumPages else { throw RelayError(code: "too_many_pages") }
+        return try (0..<document.pageCount).map { index in
+            guard let page = document.page(at: index) else { throw RelayError(code: "invalid_file") }
+            let bounds = page.bounds(for: .mediaBox)
+            guard bounds.width > 0, bounds.height > 0, bounds.width.isFinite, bounds.height.isFinite else { throw RelayError(code: "invalid_file") }
+            let scale = 2400 / max(bounds.width, bounds.height)
+            let size = CGSize(width: bounds.width * scale, height: bounds.height * scale)
+            let format = UIGraphicsImageRendererFormat(); format.scale = 1; format.opaque = true
+            return UIGraphicsImageRenderer(size: size, format: format).image { context in
+                UIColor.white.setFill(); context.fill(CGRect(origin: .zero, size: size))
+                context.cgContext.translateBy(x: 0, y: size.height)
+                context.cgContext.scaleBy(x: scale, y: -scale)
+                context.cgContext.translateBy(x: -bounds.minX, y: -bounds.minY)
+                page.draw(with: .mediaBox, to: context.cgContext)
+            }
+        }
     }
 }

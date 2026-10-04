@@ -1,6 +1,39 @@
 import XCTest
 
 final class LetterAssistantUITests: XCTestCase {
+    func testPageNavigationAndDeletion() {
+        let app = XCUIApplication()
+        app.launchArguments = ["-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryL"]
+        app.launch()
+        let welcomeContinue = app.buttons["Continue"]
+        if welcomeContinue.exists && welcomeContinue.isHittable { welcomeContinue.tap() }
+        let sample = app.buttons["Use test photo"]
+        XCTAssertTrue(sample.waitForExistence(timeout: 5)); sample.tap()
+        let finish = app.buttons["Start analysis"]
+        XCTAssertTrue(finish.waitForExistence(timeout: 5))
+        for _ in 0..<2 {
+            let next = app.buttons["Add next test photo"]
+            for _ in 0..<6 where !next.isHittable { app.swipeUp() }
+            next.tap()
+            XCTAssertTrue(finish.waitForExistence(timeout: 5))
+        }
+        let selector = app.buttons["pageSelector"]
+        for _ in 0..<6 where !selector.isHittable { app.swipeDown() }
+        XCTAssertTrue(selector.label.contains("Page 3 of 3"))
+        let screenshot = XCTAttachment(screenshot: app.screenshot())
+        screenshot.name = "Compact-page-navigation"; screenshot.lifetime = .keepAlways; add(screenshot)
+        selector.tap(); app.buttons["Page 1"].tap()
+        XCTAssertTrue(selector.label.contains("Page 1 of 3"))
+        app.buttons["deletePage"].tap(); app.buttons["Keep page"].tap()
+        XCTAssertTrue(selector.label.contains("Page 1 of 3"))
+        for remaining in [2, 1] {
+            app.buttons["deletePage"].tap(); app.buttons["Delete page"].tap()
+            XCTAssertTrue(selector.label.contains("Page 1 of \(remaining)"))
+        }
+        app.buttons["deletePage"].tap(); app.buttons["Delete page"].tap()
+        XCTAssertTrue(sample.waitForExistence(timeout: 3))
+        XCTAssertFalse(selector.exists)
+    }
     func testDeadlineDateAndTimeZoneAreEditable() {
         let app = XCUIApplication()
         app.launchArguments += ["--calendar-review-test", "--known-deadline"]
@@ -154,10 +187,10 @@ final class LetterAssistantUITests: XCTestCase {
         XCTAssertFalse(app.staticTexts["一封信，清楚的下一步。"].exists)
         XCTAssertFalse(app.staticTexts["One letter. Clear next steps."].exists)
         XCTAssertTrue(app.buttons["使用测试照片"].exists)
-        let choosePhoto = app.buttons["choosePhoto"]
+        let choosePhoto = app.buttons["uploadFile"]
         XCTAssertTrue(choosePhoto.exists)
-        XCTAssertTrue(choosePhoto.label.contains("选择照片"))
-        let take = app.buttons["拍摄信件"]
+        XCTAssertTrue(choosePhoto.label.contains("上传文件"))
+        let take = app.buttons["拍照"]
         for _ in 0..<5 where !take.isHittable { app.swipeUp() }
         XCTAssertTrue(take.isHittable)
         XCTAssertGreaterThanOrEqual(take.frame.height, 44)
@@ -171,6 +204,6 @@ final class LetterAssistantUITests: XCTestCase {
         XCTAssertTrue(cancel.waitForExistence(timeout: 5))
         cancel.tap()
         XCTAssertTrue(choosePhoto.waitForExistence(timeout: 3))
-        XCTAssertFalse(app.buttons["结束拍摄"].exists)
+        XCTAssertFalse(app.buttons["开始分析"].exists)
     }
 }

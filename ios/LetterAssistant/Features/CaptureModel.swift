@@ -50,11 +50,50 @@ struct CapturedPage: Identifiable {
             report(error)
         }
     }
+    func acceptDocument(_ images: [UIImage]) async {
+        guard !phase.busy, result == nil, !images.isEmpty else { return }
+        guard pages.count + images.count <= 10 else { report(RelayError(code: "too_many_pages")); return }
+        do {
+            let additions = try images.map { image -> CapturedPage in
+                let prepared = try PageQualityService.prepare(image)
+                return CapturedPage(id: UUID(), image: prepared.image, bytes: prepared.bytes)
+            }
+            let first = pages.count
+            let version = generation
+            pages.append(contentsOf: additions)
+            var firstFailure: (Int, CapturePhase, String, String?)?
+            for index in first..<pages.count {
+                guard generation == version, !Task.isCancelled else { return }
+                currentPageIndex = index; phase = .checkFailed
+                validate()
+                await work?.value
+                guard generation == version, !Task.isCancelled else { return }
+                if !pages[index].isValid && firstFailure == nil {
+                    firstFailure = (index, phase, message, errorCode)
+                }
+            }
+            if let failure = firstFailure {
+                currentPageIndex = failure.0; phase = failure.1; message = failure.2; errorCode = failure.3
+            }
+        } catch {
+            if pages.isEmpty { phase = .retake }
+            report(error)
+        }
+    }
     func selectPage(_ index: Int) {
         guard !phase.busy, result == nil, pages.indices.contains(index) else { return }
         currentPageIndex = index; errorCode = nil
         phase = pages[index].isValid ? .valid : (validation == nil ? .checkFailed : .retake)
         message = validation.map(validationMessage) ?? ""
+    }
+    func removeCurrentPage() {
+        guard !phase.busy, result == nil, pages.indices.contains(currentPageIndex) else { return }
+        work?.cancel(); work = nil; generation = UUID()
+        pages.remove(at: currentPageIndex)
+        guidance.stop()
+        if pages.isEmpty { reset() }
+        else { selectPage(min(currentPageIndex, pages.count - 1)) }
+        announce(language.text("Page deleted. \(pages.count) page(s) remaining.", "已删除页面，剩余 \(pages.count) 页。"))
     }
     func validate() {
         guard pages.indices.contains(currentPageIndex), !phase.busy else { return }
@@ -160,6 +199,7 @@ struct CapturedPage: Identifiable {
         case "provider_auth_failed": message = language.text("The AI access key was rejected. This photo is still here. Update the API key in the local settings and restart the local service before retrying.", "AI 访问密钥无效，照片仍然保留。请在本地设置中更新 API 密钥，重启本地服务后再试。")
         case "provider_rate_limited": message = language.text("The AI service has reached its current request limit. Your photo is still here. Please wait and retry later.", "AI 服务暂时达到请求限额，照片仍然保留。请稍后重试。")
         case "photo_too_small", "photo_unreadable": message = language.text("The text is unclear. Move closer and retake this page.", "文字不清晰，请靠近一些重拍。")
+        case "too_many_pages": message = language.text("A letter can contain up to 10 pages. Choose a shorter document or delete a page first.", "每封信最多 10 页。请选择页数较少的文件，或先删除页面。")
         case "photo_too_large": message = language.text("This photo is too large to process. Please retake at a lower camera resolution.", "照片过大，无法处理。请降低相机分辨率后重拍。")
         case "validation_expired", "validation_required", "validation_mismatch", "invalid_validation_token": message = language.text("Please check this photo again before interpreting it.", "请先重新检查这张照片，再进行解读。")
         default: message = language.text("We could not complete this step. Your photo is still here. Check the connection and retry.", "未能完成此步骤，照片仍然保留。请检查连接后重试。")
