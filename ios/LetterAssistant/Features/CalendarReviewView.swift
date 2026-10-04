@@ -134,20 +134,10 @@ import EventKit
                         }
                     }.pickerStyle(.menu).accessibilityIdentifier("alertPicker")
                     if alert == .custom {
-                        HStack {
-                            Text(language.text("Alert date", "提醒日期"))
-                            Spacer(minLength: 12)
-                            DatePicker(language.text("Alert date", "提醒日期"), selection: $customAlertDate, displayedComponents: [.date])
-                                .labelsHidden().datePickerStyle(.compact)
-                                .accessibilityIdentifier("customAlertDate")
-                        }
-                        HStack {
-                            Text(language.text("Alert time", "提醒时间"))
-                            Spacer(minLength: 12)
-                            DatePicker(language.text("Alert time", "提醒时间"), selection: $customAlertDate, displayedComponents: [.hourAndMinute])
-                                .labelsHidden().datePickerStyle(.compact)
-                                .accessibilityIdentifier("customAlertTime")
-                        }
+                        calendarDateControl(language.text("Alert date", "提醒日期"), selection: $customAlertDate,
+                                            components: [.date], identifier: "customAlertDate")
+                        calendarDateControl(language.text("Alert time", "提醒时间"), selection: $customAlertDate,
+                                            components: [.hourAndMinute], identifier: "customAlertTime")
                         Text(language.text("This exact time stays fixed if you change the event date.", "修改事项日期时，此自定义提醒时间保持不变。"))
                             .font(.footnote).foregroundStyle(.secondary)
                     }
@@ -225,11 +215,25 @@ import EventKit
         }
     }
     private var dateSelection: some View {
-        DatePicker(language.text(proposal.kind == .appointment ? "Appointment" : (dateEntered ? "Calendar date" : "Choose a calendar date"), proposal.kind == .appointment ? "预约时间" : (dateEntered ? "日历日期" : "选择日历日期")),
-            selection: Binding(get: { selectedDate }, set: { selectedDate = $0; dateEntered = true }),
-            displayedComponents: proposal.kind == .appointment ? [.date, .hourAndMinute] : [.date])
-            .datePickerStyle(.compact)
-            .accessibilityIdentifier("eventDate")
+        let selection = Binding(get: { selectedDate }, set: { selectedDate = $0; dateEntered = true })
+        return VStack(alignment: .leading, spacing: 20) {
+            calendarDateControl(language.text(proposal.kind == .appointment ? "Appointment date" : "Calendar date", proposal.kind == .appointment ? "预约日期" : "日历日期"),
+                                selection: selection, components: [.date], identifier: "eventDate")
+            if proposal.kind == .appointment {
+                calendarDateControl(language.text("Start time", "开始时间"), selection: selection,
+                                    components: [.hourAndMinute], identifier: "eventTime")
+            }
+        }.padding(.vertical, 8)
+    }
+
+    private func calendarDateControl(_ title: String, selection: Binding<Date>, components: DatePickerComponents, identifier: String) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text(title).font(.body.weight(.medium))
+            DatePicker(title, selection: selection, displayedComponents: components)
+                .labelsHidden().datePickerStyle(.compact)
+                .frame(maxWidth: .infinity, alignment: .trailing)
+                .accessibilityIdentifier(identifier)
+        }.frame(maxWidth: .infinity, alignment: .leading).padding(.vertical, 4)
     }
 
     private func addToCalendar() {
