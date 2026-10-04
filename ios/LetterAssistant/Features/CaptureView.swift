@@ -411,12 +411,6 @@ struct CaptureView: View {
             }.buttonStyle(.plain)
             #endif
         case .valid:
-            HStack(spacing: 10) {
-                Rectangle().fill(LetterStyle.rule).frame(height: 1)
-                Text(language.text("Add more pages", "添加更多页面"))
-                    .font(.callout).foregroundStyle(LetterStyle.supportingText).fixedSize()
-                Rectangle().fill(LetterStyle.rule).frame(height: 1)
-            }
             HStack(spacing: 16) {
                 Button {
                     appendPage = true; model.capturePrompt(); cameraOpen = true
