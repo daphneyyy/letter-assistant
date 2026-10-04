@@ -187,7 +187,7 @@ import EventKit
                 }.listRowBackground(Color.clear)
             }
             .scrollContentBackground(.hidden)
-            .background(LetterStyle.background)
+            .background(LetterStyle.background.ignoresSafeArea())
             .listSectionSpacing(28)
             .disabled(saver.isSaving || saver.didSave)
             .interactiveDismissDisabled(saver.isSaving)
@@ -253,8 +253,7 @@ private struct CalendarConfirmationView: View {
     let kind: CalendarProposal.Kind
     let language: AppLanguage
     let back: () -> Void
-    private let background = Color(red: 0.97, green: 0.965, blue: 0.945)
-    private let ink = Color(red: 0.12, green: 0.20, blue: 0.19)
+    private let ink = LetterStyle.confirmationText
     private let accent = Color(red: 0.08, green: 0.36, blue: 0.33)
     private var locale: Locale { Locale(identifier: language == .zh ? "zh_CN" : "en_US") }
     private var dateText: String {
@@ -303,7 +302,7 @@ private struct CalendarConfirmationView: View {
                     } icon: { Image(systemName: "bell") }
                     .font(.body).foregroundStyle(accent).accessibilityIdentifier("savedEventAlert")
                 }.padding(28).frame(maxWidth: .infinity, alignment: .leading)
-                    .background(.white, in: RoundedRectangle(cornerRadius: 28))
+                    .background(LetterStyle.surface, in: RoundedRectangle(cornerRadius: 28))
                 Text(language.text("You can edit or remove this event in your iPhone Calendar app.", "你可以在 iPhone 日历 App 中修改或删除这个事项。"))
                     .foregroundStyle(ink.opacity(0.75))
                 Button(action: back) {
@@ -313,7 +312,7 @@ private struct CalendarConfirmationView: View {
                 }.buttonStyle(.plain).accessibilityIdentifier("backToResult")
             }.padding(24).frame(maxWidth: 680).frame(maxWidth: .infinity)
         }
-        .foregroundStyle(ink).background(background.ignoresSafeArea())
+        .foregroundStyle(ink).background(LetterStyle.background.ignoresSafeArea())
         .toolbar(.hidden, for: .navigationBar)
     }
 }

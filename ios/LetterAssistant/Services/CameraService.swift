@@ -56,6 +56,8 @@ struct CameraSheet: View {
                             }.buttonStyle(.bordered).frame(minHeight: 44)
                         }
                     }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .background(LetterStyle.background.ignoresSafeArea())
                     .toolbar { ToolbarItem(placement: .cancellationAction) {
                         Button(language.text("Cancel", "取消")) { dismiss() }
                     } }

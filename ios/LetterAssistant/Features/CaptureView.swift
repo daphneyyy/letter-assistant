@@ -71,14 +71,14 @@ struct CaptureView: View {
                 }.padding(24).frame(maxWidth: 680).frame(maxWidth: .infinity)
             }
             .disabled(importingPhoto)
-            .background(LetterStyle.background)
+            .background(LetterStyle.background.ignoresSafeArea())
             .tint(LetterStyle.accent)
             .safeAreaInset(edge: .bottom) {
                 if model.phase == .complete {
                     primary(language.text("Finish reading", "结束本次阅读"), icon: "checkmark") { finishPrompt = true }
                         .accessibilityHint(language.text("Return to the start screen. This letter has not been saved.", "返回开始页。本次信件尚未保存。"))
                         .padding(.horizontal, 24).padding(.vertical, 12)
-                        .background(.regularMaterial)
+                        .background(LetterStyle.background)
                 }
             }
             .navigationTitle(language.text("Letter Assistant", "信件助手"))
@@ -534,8 +534,13 @@ enum LetterStyle {
     })
     static let background = Color(uiColor: UIColor { traits in
         traits.userInterfaceStyle == .dark
-            ? UIColor(red: 0.07, green: 0.10, blue: 0.10, alpha: 1)
-            : UIColor(red: 0.96, green: 0.98, blue: 0.99, alpha: 1)
+            ? UIColor(red: 0.10, green: 0.095, blue: 0.085, alpha: 1)
+            : UIColor(red: 0.97, green: 0.965, blue: 0.945, alpha: 1)
+    })
+    static let confirmationText = Color(uiColor: UIColor { traits in
+        traits.userInterfaceStyle == .dark
+            ? UIColor(red: 0.90, green: 0.93, blue: 0.91, alpha: 1)
+            : UIColor(red: 0.12, green: 0.20, blue: 0.19, alpha: 1)
     })
     static let softMint = Color(uiColor: UIColor { traits in
         traits.userInterfaceStyle == .dark
