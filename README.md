@@ -1,6 +1,6 @@
 # Letter Assistant
 
-An iPhone hackathon demo that turns an English medical/health-insurance letter or everyday bill/fee notice into a plain-language English or Chinese explanation and a reviewed phone-calendar event.
+An iPhone hackathon demo that turns an English medical/health-insurance letter, bank/credit-card statement or everyday bill/fee notice into a plain-language English or Chinese explanation and a reviewed phone-calendar event.
 
 **Photograph → check the photo → analyze the letter → add to the iPhone calendar.**
 
@@ -8,7 +8,7 @@ No email, signup, login, database or chat history is required. Clone the source 
 
 ## What it does
 
-Supported everyday documents now include utility bills (electricity/gas/water), telephone/internet bills, membership/subscription fee or renewal notices and other household/service charges. The explanation distinguishes the actual outstanding balance from total charges, credits and payments already received; scheduled automatic debits are not manual-payment requests. Renewal/charge dates are not cancellation deadlines. Only source-stated actions and cutoffs are offered for reviewed calendar creation. Banking account statements, investment/retirement documents and non-health insurance policy documents remain unsupported. This app explains documents and creates reviewed reminders; it does not pay bills or cancel services.
+Supported everyday documents now include utility bills (electricity/gas/water), telephone/internet bills, membership/subscription fee or renewal notices and other household/service charges. The explanation distinguishes the actual outstanding balance from total charges, credits and payments already received; scheduled automatic debits are not manual-payment requests. Renewal/charge dates are not cancellation deadlines. Only source-stated actions and cutoffs are offered for reviewed calendar creation. Bank checking/savings and credit-card statements are also supported: account balances and transaction totals are not payment instructions; minimum payment and full statement balance are explained separately. Investment/retirement reports and non-health insurance policy documents remain unsupported. This app explains documents and creates reviewed reminders; it does not pay bills or cancel services.
 
 - Native iPhone camera, ordered multi-page capture and individual retakes.
 - On-device readability checks, with Retake / Use anyway for uncertain quality. These checks do not call AI or check cropping/page numbering.

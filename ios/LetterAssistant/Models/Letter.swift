@@ -55,6 +55,7 @@ struct LetterInterpretation: Codable {
     let category: String?; let needsReview: Bool
     let facts: [LetterFact]; let actions: [LetterAction]; let summaries: LetterSummaries
     func heading(_ language: AppLanguage) -> String {
+        if domain == "banking" { return language.text("This is a bank or credit-card statement", "这是一份银行或信用卡账单") }
         switch category {
         case "bills" where domain == "billing": return language.text("This is a bill or fee notice", "这是一份账单或费用通知")
         case "bills": return language.text(domain == "medical" ? "This is a medical bill" : "This is a health-insurance bill", domain == "medical" ? "这是一份医疗账单" : "这是一份健康保险账单")

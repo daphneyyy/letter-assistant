@@ -62,7 +62,7 @@ export interface Summary {
 }
 export interface Interpretation {
   schema_version: 1;
-  domain: "medical" | "insurance" | "billing" | "unsupported";
+  domain: "medical" | "insurance" | "billing" | "banking" | "unsupported";
   recipient: string | null;
   organization: string | null;
   category: typeof categories[number] | null;
@@ -119,7 +119,7 @@ export function interpretationSchemaFor(pageCount = 1) {
   };
   return object({
     schema_version: { type: "integer", enum: [1] },
-    domain: enumeration(["medical", "insurance", "billing", "unsupported"]),
+    domain: enumeration(["medical", "insurance", "billing", "banking", "unsupported"]),
     recipient: nullable,
     organization: nullable,
     category: { type: ["string", "null"], enum: [...categories, null] },

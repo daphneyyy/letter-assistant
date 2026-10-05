@@ -702,3 +702,33 @@ Deno.test("everyday billing is supported without weakening domain or deadline re
   try { validateInterpretation(renewal); } catch { rejected = true; }
   assert(rejected);
 });
+
+Deno.test("banking statements accept informational balances and linked minimum payments", () => {
+  const account = structuredClone(result);
+  account.domain = "banking";
+  assert(validateInterpretation(account).domain === "banking");
+  assert(account.actions.length === 0);
+  const card = enrollmentContract();
+  card.domain = "banking"; card.category = "bills";
+  const amount = structuredClone(coverageFact);
+  amount.id = "minimum"; amount.kind = "amount"; amount.value = "35.00"; amount.currency = "USD";
+  amount.label = {en:"Minimum payment due",zh:"最低还款额"};
+  amount.raw_text = "Minimum payment due: USD 35.00";
+  amount.source_refs = [{page:1,excerpt:amount.raw_text}];
+  const balance = structuredClone(amount);
+  balance.id = "balance"; balance.value = "1200.00"; balance.label = {en:"Statement balance",zh:"账单余额"};
+  balance.raw_text = "Statement balance: USD 1200.00";
+  balance.source_refs = [{page:1,excerpt:balance.raw_text}];
+  const due = structuredClone(coverageFact);
+  due.id = "due"; due.kind = "deadline"; due.value = "2026-11-22";
+  due.raw_text = "Pay at least USD 35.00 by November 22, 2026";
+  due.source_refs = [{page:1,excerpt:due.raw_text}];
+  card.facts = [amount,balance,due];
+  card.actions[0].requirement = "required"; card.actions[0].condition = null;
+  card.actions[0].action_kind = "payment"; card.actions[0].amount_fact_ids = ["minimum"];
+  card.actions[0].deadline_fact_id = "due";
+  for(const language of ["en","zh"] as const) card.summaries[language].fact_ids = ["minimum","balance","due"];
+  const value = validateInterpretation(card);
+  assert(value.actions[0].amount_fact_ids.length === 1 && value.actions[0].amount_fact_ids[0] === "minimum");
+  assert(value.facts.find(f => f.id === "balance")?.value === "1200.00");
+});

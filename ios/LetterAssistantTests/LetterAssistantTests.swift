@@ -364,6 +364,31 @@ final class LetterAssistantTests: XCTestCase {
         }
     }
 
+    func testBankStatementsDoNotMislabelBalancesAndCardCalendarUsesMinimumPayment() throws {
+        let summary = LetterSummary(whatThisIs: "Bank statement", whatToNote: "", whatToDo: "", when: "", factIds: [], actionIds: [])
+        let account = LetterInterpretation(schemaVersion: 1, domain: "banking", recipient: nil, organization: "Example Bank", category: nil, needsReview: true, facts: [], actions: [], summaries: LetterSummaries(en: summary, zh: summary))
+        XCTAssertEqual(account.heading(.en), "This is a bank or credit-card statement")
+        XCTAssertEqual(account.heading(.zh), "这是一份银行或信用卡账单")
+        XCTAssertNil(CalendarNoteBuilder.billContext(account, language: .en))
+        let card = LetterInterpretation(schemaVersion: 1, domain: "banking", recipient: nil, organization: "Example Card Bank", category: "bills", needsReview: false, facts: [], actions: [], summaries: account.summaries)
+        let text = BilingualText(en: "Minimum payment", zh: "最低还款额")
+        let minimum = LetterFact(id: "minimum", kind: "amount", rawText: "USD 35.00", value: "35.00", currency: "USD", status: "confirmed", origin: "letter_fact", label: text, explanation: text, sourceRefs: [])
+        let balance = LetterFact(id: "balance", kind: "amount", rawText: "USD 1200.00", value: "1200.00", currency: "USD", status: "confirmed", origin: "letter_fact", label: text, explanation: text, sourceRefs: [])
+        let due = LetterFact(id: "due", kind: "deadline", rawText: "Pay by November 22, 2026", value: "2026-11-22", currency: nil, status: "confirmed", origin: "letter_fact", label: text, explanation: text, sourceRefs: [])
+        var action = LetterAction(id: "pay", descriptionEn: "Pay minimum", descriptionZh: "支付最低还款额", actionKind: "payment", status: "confirmed", sourceRefs: [], requirement: "required", condition: nil, amountFactIds: ["minimum"], deadlineFactId: "due", appointmentFactIds: [])
+        action.calendarTitle = BilingualText(en: "Pay minimum credit-card payment", zh: "支付信用卡最低还款额")
+        action.calendarNotes = BilingualText(en: "Pay the required minimum, not the full statement balance.", zh: "支付规定的最低还款额，并非全额账单余额。")
+        for language in [AppLanguage.en, .zh] {
+            let proposal = CalendarProposal.make(action: action, facts: [minimum,balance,due], language: language, calendar: calendar, document: card)
+            XCTAssertEqual(proposal.kind, .deadline)
+            XCTAssertEqual(proposal.date, CalendarDatePolicy.parseDay("2026-11-22", calendar: calendar))
+            XCTAssertTrue(proposal.title.contains("USD 35.00"))
+            XCTAssertFalse(proposal.title.contains("1200.00"))
+            XCTAssertTrue(proposal.title.contains("Example Card Bank"))
+            XCTAssertTrue(proposal.title.contains(language == .en ? "minimum" : "最低"))
+        }
+    }
+
     func testChangingTimeZonePreservesUserSelectedDayAndClock() throws {
         let date = try XCTUnwrap(CalendarDatePolicy.parseDay("2026-11-15", calendar: calendar))
         let timed = try XCTUnwrap(CalendarDatePolicy.appointmentDate(day: date, time: "10:30", calendar: calendar))

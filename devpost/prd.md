@@ -9,7 +9,7 @@ Approved October 2, 2026, through the learner's explicit scope revision. This do
 
 ## What We're Building
 
-A no-login iPhone demo: photograph a medical or health-insurance letter or an everyday bill/fee notice, check photo readability, analyze its meaning and actions, and optionally add a reviewed item to the phone calendar. Distribute the source on GitHub so operators can clone it and use their own API key.
+A no-login iPhone demo: photograph a medical or health-insurance letter, bank/credit-card statement or an everyday bill/fee notice, check photo readability, analyze its meaning and actions, and optionally add a reviewed item to the phone calendar. Distribute the source on GitHub so operators can clone it and use their own API key.
 
 ## The Core Journey
 
@@ -36,7 +36,9 @@ Use the native camera with its retake/use-photo controls, or upload a photo or P
 
 ## Actionable Explanation
 
-October 4 document-range expansion: also interpret everyday electricity/gas/water, telephone/mobile/internet, membership/subscription and other household/service bills or fee/renewal notices. Display grounded bill type, billing organization, actual amount due and relevant date roles in both languages. Distinguish gross charges, prior balance, credits, payments already received and outstanding balance. Paid/zero-balance documents and scheduled automatic debits must not become manual-payment actions. Report autopay/renewal dates as source facts; only explicit payment or cancellation cutoffs become deadlines. Cancellation is conditional on the reader wanting to avoid renewal and on source-stated options. If an actual payment is requested without a due date, preserve that uncertainty and allow a user-selected reminder date. Preserve source-specific bill wording in calendar titles/notes, with organization and linked amount as fallback context. Medical/EOB behavior remains supported. Banking account statements, investment/retirement documents and non-health insurance policy documents remain unsupported.
+Banking follow-up: explain bank checking/savings statements and credit-card statements. Distinguish account funds, opening/closing balances, deposits/withdrawals, credits, statement balances and minimum payments. Informational account statements need not offer any action. A credit-card payment task uses only the explicitly required minimum amount when stated, while showing the full balance separately; paying the minimum is not described as settling the balance. Statement dates and transaction dates are not payment deadlines. Source-stated autopay creates no duplicate manual-payment task. Keep full account/card identifiers out of summaries/calendar copy and explain documents without inventing payment/dispute steps or financial strategy recommendations.
+
+October 4 document-range expansion: also interpret everyday electricity/gas/water, telephone/mobile/internet, membership/subscription and other household/service bills or fee/renewal notices. Display grounded bill type, billing organization, actual amount due and relevant date roles in both languages. Distinguish gross charges, prior balance, credits, payments already received and outstanding balance. Paid/zero-balance documents and scheduled automatic debits must not become manual-payment actions. Report autopay/renewal dates as source facts; only explicit payment or cancellation cutoffs become deadlines. Cancellation is conditional on the reader wanting to avoid renewal and on source-stated options. If an actual payment is requested without a due date, preserve that uncertainty and allow a user-selected reminder date. Preserve source-specific bill wording in calendar titles/notes, with organization and linked amount as fallback context. Medical/EOB behavior remains supported. Bank/checking/savings and credit-card statements are also supported. Investment/retirement reports and non-health insurance policy documents remain unsupported.
 
 Display these sections in order:
 

@@ -105,5 +105,27 @@
     "action": "payment",
     "deadline_status": "not_specified",
     "must_not_do": "Invent a deadline"
+  },
+  "fictional-bank-statement.jpg": {
+    "domain": "banking",
+    "closing_balance": "1100.00",
+    "deposits": "750.00",
+    "withdrawals": "300.00",
+    "actions": [],
+    "must_not_do": "Treat account balances or transaction totals as amounts to pay"
+  },
+  "fictional-credit-card.jpg": {
+    "domain": "banking",
+    "statement_balance": "1200.00",
+    "minimum_payment": "35.00",
+    "payment_deadline": "2026-11-22",
+    "must_not_do": "Require payment of the full statement balance or use the statement closing date as payment deadline"
+  },
+  "fictional-card-autopay.jpg": {
+    "domain": "banking",
+    "scheduled_debit": "1200.00",
+    "debit_date": "2026-11-22",
+    "actions": [],
+    "must_not_do": "Create a manual-payment action"
   }
 }

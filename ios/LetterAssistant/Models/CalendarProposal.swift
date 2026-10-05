@@ -181,8 +181,8 @@ enum CalendarDurationPolicy {
 
 enum CalendarNoteBuilder {
     static func billContext(_ document: LetterInterpretation?, language: AppLanguage) -> String? {
-        guard let document, document.category == "bills", ["medical", "insurance", "billing"].contains(document.domain) else { return nil }
-        let type = document.domain == "billing" ? language.text("Bill", "账单") : language.text(document.domain == "medical" ? "Medical bill" : "Health-insurance bill", document.domain == "medical" ? "医疗账单" : "健康保险账单")
+        guard let document, document.category == "bills", ["medical", "insurance", "billing", "banking"].contains(document.domain) else { return nil }
+        let type = document.domain == "banking" ? language.text("Bank or credit-card payment", "银行或信用卡还款") : document.domain == "billing" ? language.text("Bill", "账单") : language.text(document.domain == "medical" ? "Medical bill" : "Health-insurance bill", document.domain == "medical" ? "医疗账单" : "健康保险账单")
         let organization = document.organization?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         return type + (organization.isEmpty ? "" : " · " + organization)
     }
@@ -192,7 +192,7 @@ enum CalendarNoteBuilder {
         }
         let amounts = facts.filter { action.amountFactIds.contains($0.id) && $0.status == "confirmed" && $0.kind == "amount" }
             .compactMap { fact in fact.value.map { [fact.currency, $0].compactMap { $0 }.joined(separator: " ") } }
-        if document?.domain == "billing" {
+        if ["billing", "banking"].contains(document?.domain ?? "") {
             var heading = title(action: action, facts: facts, language: language)
             let organization = document?.organization?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
             if !organization.isEmpty && !normalized(heading).contains(normalized(organization)) { heading += " · " + organization }

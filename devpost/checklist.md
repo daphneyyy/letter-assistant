@@ -83,7 +83,7 @@ No second phone, account isolation, email delivery or saved-conversation review 
 
 ## Final Review
 
-- [ ] Try newly analyzed everyday bills on the phone, inspect bilingual balances/date roles and a saved reminder; paid/autopay cases must not request manual payment.
+- [ ] Try newly analyzed everyday and bank/credit-card statements on the phone, inspect bilingual balances/date roles and a saved reminder; account balances must not become payment requests, and paid/autopay cases must not request manual payment.
 
 - [ ] Verify the all-day fix on a newly created phone event.
 - [ ] Resolve scoped capture/analysis/calendar/setup feedback; record unresolved limitations accurately.
@@ -98,6 +98,8 @@ No second phone, account isolation, email delivery or saved-conversation review 
 No completed learning wrap-up is inferred from the scope change. Keep it proportional to the smaller demo.
 
 ## Revisions
+
+- October 4 learner-requested bank-statement expansion: added banking domain for deposit/checking/savings and credit-card statements, including informational statements with no matching category. Account balances/transactions are source facts rather than amounts due; minimum card payment stays separate from statement balance, and closing dates stay separate from payment deadlines. Updated bilingual headings/unsupported copy, calendar context, scope/PRD/spec/README and three fictional fixtures. Backend type check and 31 tests passed; iOS 45 unit tests passed. Three fresh configured-provider responses were reviewed in both languages and asserted: checking balance USD 1100 with no actions; card balance USD 1200 with required minimum USD 35 by November 22, not October 31; scheduled full-balance autopay with no actions. These fictional cases do not verify the learner’s real bank statement or physical-phone behavior; restart relay, reinstall and reanalyze for acceptance. This revision supersedes the earlier banking exclusion. Investment/retirement remain outside scope.
 
 - October 4 learner-approved expansion: everyday bills/fee and renewal notices now share the capture → bilingual analysis → reviewed calendar flow. Added billing domain, ordinary-bill headings/calendar context, broader app copy and five fictional fixtures; updated scope/PRD/spec/README. No accounts, bill payments, automatic cancellation, recurring events or archive features were added. Banking account statements, investment/retirement and non-health insurance policy documents remain outside scope.
 - Expansion verification: backend type check and 30 tests passed; iOS 44 unit tests passed, followed by a successful final simulator build after welcome-copy editing. Six fresh live responses were reviewed in both languages: electricity linked USD 84.20 (not USD 120 gross charges) to November 20; telephone autopay and paid internet receipt had no actions; membership cancellation stayed conditional with November 25 cutoff distinct from December 1 renewal; an undated internet payment retained null deadline; existing EOB behavior retained optional record keeping without a payment task. Response expectations were also asserted locally. These individual fictional cases do not establish universal bill accuracy or real-phone acceptance. Existing results require fresh analysis after restarting the relay.
