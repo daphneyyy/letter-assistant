@@ -48,6 +48,9 @@ export interface Action {
   amount_fact_ids: string[];
   deadline_fact_id: string | null;
   appointment_fact_ids: string[];
+  statement_balance_fact_id?: string | null;
+  deadline_time?: string | null;
+  deadline_timezone?: string | null;
   suggested_duration_minutes: number | null;
   calendar_notes: Bilingual;
   calendar_title: Bilingual;
@@ -158,6 +161,9 @@ export function interpretationSchemaFor(pageCount = 1) {
         appointment_fact_ids: strings,
         calendar_notes: bilingual,
         calendar_title: bilingual,
+        statement_balance_fact_id: nullable,
+        deadline_time: nullable,
+        deadline_timezone: nullable,
         suggested_duration_minutes: { type: ["integer", "null"], minimum: 1, maximum: 1440 },
       }),
     },

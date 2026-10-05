@@ -152,8 +152,10 @@ No completed learning wrap-up is inferred from the scope change. Keep it proport
 
 - Bill calendar follow-up: verify concise bilingual titles/notes with a fresh live interpretation, unique source excerpts and preserved explicit clock cutoffs. Screenshot-based deterministic regressions do not establish live provider output quality.
 
-- [x] Restore editable dates and time-zone selection for all-day deadlines/reminders; default every review to the phone zone and preserve displayed wall date/time on zone changes.
+- [x] Restore editable dates and time-zone selection for all-day deadlines/reminders; default date-only items/appointments to the phone zone and timed cutoffs to their stated source zone; preserve displayed wall date/time on zone changes.
 - [x] Carry bill type, organization and linked payment amount into calendar titles/notes, including generic or older AI responses. Preserve the original deadline when choosing another calendar date.
 - [ ] Restart the relay and analyze a fresh fictional bill; verify summary, contextual calendar heading/notes, editable date/time-zone and the saved phone event. Existing saved events remain unchanged.
 
 - [x] Use an in-page time-zone menu and compact date/time control alongside the label, including missing-date reminders; remove the separate date-entry sheet.
+
+- October 4 repayment/cutoff correction: credit-card calendar reminders use confirmed full statement balance in the title, with source-required minimum separately labeled in notes and unchanged source action semantics. Added nullable balance/time/zone metadata and compatibility for older responses. Explicit clock deadlines become timed cutoff markers in the stated zone, with early-alert guidance; date-only deadlines remain all-day. Added a fictional card fixture and regression coverage for balance selection, 20:00 Eastern → 17:00 Pacific on November 15, timezone preservation and EventKit all-day flags. Backend type check and 33 tests passed; all 47 iOS unit tests passed on the iPhone 17 Pro / iOS 26.5 simulator. One fresh Chinese fictional AI response correctly linked full balance USD 2,093.02 separately from required minimum USD 35 and returned the conditional November 15 20:00 America/New_York cutoff (30,712 ms). Physical-phone saved-event and notification acceptance remain open.

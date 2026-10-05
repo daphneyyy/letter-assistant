@@ -738,3 +738,28 @@ Deno.test("both provider transports generate only the selected language with str
     }
   }
 });
+
+Deno.test("credit-card balance and explicit deadline clock metadata preserve source roles", () => {
+  const card = enrollmentContract(); card.domain = "banking"; card.category = "bills";
+  const minimum = structuredClone(coverageFact); minimum.id = "minimum"; minimum.kind = "amount"; minimum.value = "35.00"; minimum.currency = "USD";
+  const balance = structuredClone(minimum); balance.id = "balance"; balance.value = "2093.02";
+  const due = structuredClone(coverageFact); due.id = "due"; due.kind = "deadline"; due.value = "2026-11-15";
+  card.facts = [minimum,balance,due];
+  const action = card.actions[0]; action.action_kind = "payment";
+  action.amount_fact_ids = ["minimum"]; action.statement_balance_fact_id = "balance";
+  action.deadline_fact_id = "due"; action.deadline_time = "20:00"; action.deadline_timezone = "America/New_York";
+  for (const summary of Object.values(card.summaries)) summary.fact_ids = ["minimum","balance","due"];
+  const result = validateInterpretation(card);
+  assert(result.actions[0].amount_fact_ids[0] === "minimum");
+  assert(result.actions[0].statement_balance_fact_id === "balance");
+  for (const mutation of [
+    (value: Interpretation) => value.actions[0].deadline_time = "25:00",
+    (value: Interpretation) => value.actions[0].deadline_timezone = "Eastern",
+    (value: Interpretation) => value.actions[0].statement_balance_fact_id = "due",
+    (value: Interpretation) => value.actions[0].deadline_fact_id = null,
+  ]) {
+    const copy = structuredClone(card); mutation(copy);
+    let rejected = false; try { validateInterpretation(copy); } catch { rejected = true; }
+    assert(rejected);
+  }
+});

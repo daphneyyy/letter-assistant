@@ -15,12 +15,14 @@ struct CalendarProposal: Identifiable {
     let timeZone: TimeZone
     var eventNotes: String = ""
     var originalDeadline: String? = nil
+    var hasDeadlineTime = false
+    var isTimedEvent: Bool { kind == .appointment || hasDeadlineTime }
     var hasAppointmentTime = false
     var hasSourceTimeZone = false
     var suggestedDurationMinutes: Int? = nil
     var initialDurationMinutes: Int { CalendarDurationPolicy.valid(suggestedDurationMinutes) ?? 30 }
     func initialDate(now: Date = Date(), calendar: Calendar = .current) -> Date {
-        if let date { return kind == .appointment ? date : CalendarDatePolicy.changingZone(date, from: timeZone, to: calendar.timeZone) }
+        if let date { return isTimedEvent ? date : CalendarDatePolicy.changingZone(date, from: timeZone, to: calendar.timeZone) }
         return kind == .reminder ? CalendarDatePolicy.addingDays(1, to: now, calendar: calendar) : now
     }
 
@@ -34,9 +36,10 @@ struct CalendarProposal: Identifiable {
         let fact = deadline ?? appointments.first
         let kind: Kind = deadline != nil ? .deadline : (linked.isEmpty ? .reminder : .appointment)
         var eventCalendar = calendar
-        let sourceZone = zones.count == 1 && zones[0].status == "confirmed"
+        let cutoff = deadline.map { DeadlineClockPolicy.clock(action: action, deadline: $0) }
+        let sourceZone = kind == .deadline ? cutoff?.zone : zones.count == 1 && zones[0].status == "confirmed"
             ? zones[0].value.flatMap { TimeZone(identifier: $0) } : nil
-        if kind == .appointment, let sourceZone { eventCalendar.timeZone = sourceZone }
+        if kind == .appointment || kind == .deadline, let sourceZone { eventCalendar.timeZone = sourceZone }
         var parsed = fact.flatMap { $0.status == "confirmed" ? CalendarDatePolicy.parseDay($0.value, calendar: eventCalendar) : nil }
         var hasTime = false
         if kind == .appointment {
@@ -48,18 +51,25 @@ struct CalendarProposal: Identifiable {
                 hasTime = true
             }
         }
-        let allRefs = action.sourceRefs + (kind == .appointment ? linked.flatMap(\.sourceRefs) : (fact?.sourceRefs ?? []))
+        if kind == .deadline, let day = parsed, let time = cutoff?.time {
+            if let combined = CalendarDatePolicy.appointmentDate(day: day, time: time, calendar: eventCalendar) {
+                parsed = combined; hasTime = true
+            }
+        }
+        let balanceRefs = CalendarNoteBuilder.statementBalance(action: action, facts: facts, document: document)?.sourceRefs ?? []
+        let allRefs = action.sourceRefs + balanceRefs + (kind == .appointment ? linked.flatMap(\.sourceRefs) : (fact?.sourceRefs ?? []))
         var seen = Set<String>()
         let refs = allRefs.filter { seen.insert("\($0.page):" + CalendarNoteBuilder.normalized($0.excerpt)).inserted }
         return CalendarProposal(kind: kind,
             title: CalendarNoteBuilder.contextualTitle(action: action, facts: facts, language: language, document: document),
             source: refs.map { language.text("Photo \($0.page): ", "第 \($0.page) 张照片：") + $0.excerpt }.joined(separator: "\n"),
             sourceDate: nil, condition: action.condition?.text(language),
-            requiresVerification: action.status != "confirmed" || (fact != nil && parsed == nil) || appointments.count > 1 || (kind == .appointment && !hasTime),
+            requiresVerification: action.status != "confirmed" || (fact != nil && parsed == nil) || appointments.count > 1 || (kind == .appointment && !hasTime) || (kind == .deadline && hasTime && sourceZone == nil),
             date: parsed, reviewedDay: eventCalendar.startOfDay(for: now), timeZone: eventCalendar.timeZone,
             eventNotes: CalendarNoteBuilder.contextualNotes(action: action, deadline: deadline, language: language, facts: facts, document: document),
             originalDeadline: deadline?.status == "confirmed" ? deadline?.value : nil,
-            hasAppointmentTime: hasTime, hasSourceTimeZone: kind == .appointment && sourceZone != nil,
+            hasDeadlineTime: kind == .deadline && hasTime,
+            hasAppointmentTime: kind == .appointment && hasTime, hasSourceTimeZone: sourceZone != nil,
             suggestedDurationMinutes: kind == .appointment ? CalendarDurationPolicy.valid(action.suggestedDurationMinutes) : nil)
     }
     func notes(for date: Date, calendar: Calendar, language: AppLanguage) -> String {
@@ -70,6 +80,34 @@ struct CalendarProposal: Identifiable {
         return base + "\n\n" + language.text("Original payment/action deadline: ", "信件原始付款／办理截止日期：") + originalDeadline
     }
 
+}
+
+enum DeadlineClockPolicy {
+    static func clock(action: LetterAction, deadline: LetterFact) -> (time: String?, zone: TimeZone?) {
+        if let time = action.deadlineTime {
+            return (time, action.deadlineTimezone.flatMap { TimeZone(identifier: $0) })
+        }
+        // Compatibility with earlier results: read only this action's deadline evidence.
+        let text = ([deadline.rawText] + deadline.sourceRefs.map(\.excerpt)).joined(separator: " ")
+        guard let regex = try? NSRegularExpression(pattern: #"\b(1[0-2]|0?[1-9])(?::([0-5]\d))?\s*(AM|PM)\b"#, options: .caseInsensitive),
+              let match = regex.firstMatch(in: text, range: NSRange(text.startIndex..., in: text)),
+              let hourRange = Range(match.range(at: 1), in: text),
+              let periodRange = Range(match.range(at: 3), in: text), let hour = Int(text[hourRange]) else { return (nil, nil) }
+        let matches = regex.matches(in: text, range: NSRange(text.startIndex..., in: text))
+        let clocks = Set(matches.compactMap { result -> String? in
+            guard let h = Range(result.range(at: 1), in: text), let p = Range(result.range(at: 3), in: text), let hour = Int(text[h]) else { return nil }
+            let minute = Range(result.range(at: 2), in: text).flatMap { Int(text[$0]) } ?? 0
+            return String(format: "%02d:%02d", hour % 12 + (text[p].uppercased() == "PM" ? 12 : 0), minute)
+        })
+        guard clocks.count == 1 else { return (nil, nil) }
+        let minute = Range(match.range(at: 2), in: text).flatMap { Int(text[$0]) } ?? 0
+        let time = String(format: "%02d:%02d", hour % 12 + (text[periodRange].uppercased() == "PM" ? 12 : 0), minute)
+        let lower = text.lowercased()
+        let zone = lower.contains("eastern time") ? TimeZone(identifier: "America/New_York")
+            : lower.range(of: #"\best\b"#, options: .regularExpression) != nil ? TimeZone(identifier: "Etc/GMT+5")
+            : lower.range(of: #"\bedt\b"#, options: .regularExpression) != nil ? TimeZone(identifier: "Etc/GMT+4") : nil
+        return (time, zone)
+    }
 }
 
 enum CalendarDatePolicy {
@@ -186,9 +224,27 @@ enum CalendarNoteBuilder {
         let organization = document.organization?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         return type + (organization.isEmpty ? "" : " · " + organization)
     }
+    static func statementBalance(action: LetterAction, facts: [LetterFact], document: LetterInterpretation?) -> LetterFact? {
+        guard document?.domain == "banking", action.actionKind == "payment" else { return nil }
+        let amounts = facts.filter { $0.kind == "amount" && $0.status == "confirmed" && $0.value != nil }
+        if let id = action.statementBalanceFactId { return amounts.first { $0.id == id } }
+        let context = normalized((action.calendarTitle?.en ?? "") + " " + (action.calendarTitle?.zh ?? "") + " " + (document?.summaries.en.whatThisIs ?? "") + " " + (document?.summaries.zh.whatThisIs ?? ""))
+        guard ["credit card", "credit-card", "信用卡"].contains(where: { context.contains($0) }) else { return nil }
+        let matches = amounts.filter {
+            let text = normalized($0.label.en + " " + $0.label.zh + " " + $0.rawText)
+            return ["statement balance", "new balance", "账单余额", "本期余额"].contains { text.contains($0) }
+                && !text.contains("minimum") && !text.contains("最低")
+        }
+        return matches.count == 1 ? matches[0] : nil
+    }
+    static func amountText(_ fact: LetterFact) -> String { [fact.currency, fact.value].compactMap { $0 }.joined(separator: " ") }
     static func contextualTitle(action: LetterAction, facts: [LetterFact], language: AppLanguage, document: LetterInterpretation?) -> String {
         guard action.actionKind == "payment", let context = billContext(document, language: language) else {
             return title(action: action, facts: facts, language: language)
+        }
+        if let balance = statementBalance(action: action, facts: facts, document: document) {
+            return [language.text("Credit-card repayment", "信用卡还款"), document?.organization ?? "", amountText(balance)]
+                .filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }.joined(separator: " · ")
         }
         let amounts = facts.filter { action.amountFactIds.contains($0.id) && $0.status == "confirmed" && $0.kind == "amount" }
             .compactMap { fact in fact.value.map { [fact.currency, $0].compactMap { $0 }.joined(separator: " ") } }
@@ -202,6 +258,16 @@ enum CalendarNoteBuilder {
         return language.text("Pay ", "支付：") + context + (amounts.isEmpty ? "" : " · " + amounts.joined(separator: ", "))
     }
     static func contextualNotes(action: LetterAction, deadline: LetterFact?, language: AppLanguage, facts: [LetterFact], document: LetterInterpretation?) -> String {
+        if let balance = statementBalance(action: action, facts: facts, document: document) {
+            var notes = language.text("Credit-card statement balance: ", "本期信用卡账单余额：") + amountText(balance)
+            for fact in facts where action.amountFactIds.contains(fact.id) && fact.kind == "amount" && fact.status == "confirmed" && fact.id != balance.id {
+                notes += "\n" + language.text("Source-required minimum payment: ", "信件要求的最低还款额：") + amountText(fact)
+            }
+            notes += "\n" + language.text("This reminder uses the statement balance; the source minimum is shown separately.", "此还款提醒按账单余额设置，最低还款要求单独列出。")
+            if let condition = action.condition { notes += "\n" + language.text("Condition: ", "适用条件：") + condition.text(language) }
+            if let deadline { notes += "\n" + language.text("Deadline: ", "截止要求：") + deadline.rawText }
+            return notes
+        }
         let linked = facts.filter { action.appointmentFactIds.contains($0.id) }
         var notes = make(action: action, deadline: deadline, language: language, facts: linked)
         if action.actionKind == "payment", let context = billContext(document, language: language) {

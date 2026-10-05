@@ -364,7 +364,7 @@ final class LetterAssistantTests: XCTestCase {
         }
     }
 
-    func testBankStatementsDoNotMislabelBalancesAndCardCalendarUsesMinimumPayment() throws {
+    func testBankStatementsDoNotMislabelBalancesAndCardCalendarUsesStatementBalance() throws {
         let summary = LetterSummary(whatThisIs: "Bank statement", whatToNote: "", whatToDo: "", when: "", factIds: [], actionIds: [])
         let account = LetterInterpretation(schemaVersion: 1, domain: "banking", recipient: nil, organization: "Example Bank", category: nil, needsReview: true, facts: [], actions: [], summaries: LetterSummaries(en: summary, zh: summary))
         XCTAssertEqual(account.heading(.en), "This is a bank or credit-card statement")
@@ -373,7 +373,8 @@ final class LetterAssistantTests: XCTestCase {
         let card = LetterInterpretation(schemaVersion: 1, domain: "banking", recipient: nil, organization: "Example Card Bank", category: "bills", needsReview: false, facts: [], actions: [], summaries: account.summaries)
         let text = BilingualText(en: "Minimum payment", zh: "最低还款额")
         let minimum = LetterFact(id: "minimum", kind: "amount", rawText: "USD 35.00", value: "35.00", currency: "USD", status: "confirmed", origin: "letter_fact", label: text, explanation: text, sourceRefs: [])
-        let balance = LetterFact(id: "balance", kind: "amount", rawText: "USD 1200.00", value: "1200.00", currency: "USD", status: "confirmed", origin: "letter_fact", label: text, explanation: text, sourceRefs: [])
+        let balanceText = BilingualText(en: "Statement balance", zh: "账单余额")
+        let balance = LetterFact(id: "balance", kind: "amount", rawText: "Statement balance: USD 1200.00", value: "1200.00", currency: "USD", status: "confirmed", origin: "letter_fact", label: balanceText, explanation: balanceText, sourceRefs: [])
         let due = LetterFact(id: "due", kind: "deadline", rawText: "Pay by November 22, 2026", value: "2026-11-22", currency: nil, status: "confirmed", origin: "letter_fact", label: text, explanation: text, sourceRefs: [])
         var action = LetterAction(id: "pay", descriptionEn: "Pay minimum", descriptionZh: "支付最低还款额", actionKind: "payment", status: "confirmed", sourceRefs: [], requirement: "required", condition: nil, amountFactIds: ["minimum"], deadlineFactId: "due", appointmentFactIds: [])
         action.calendarTitle = BilingualText(en: "Pay minimum credit-card payment", zh: "支付信用卡最低还款额")
@@ -382,10 +383,34 @@ final class LetterAssistantTests: XCTestCase {
             let proposal = CalendarProposal.make(action: action, facts: [minimum,balance,due], language: language, calendar: calendar, document: card)
             XCTAssertEqual(proposal.kind, .deadline)
             XCTAssertEqual(proposal.date, CalendarDatePolicy.parseDay("2026-11-22", calendar: calendar))
-            XCTAssertTrue(proposal.title.contains("USD 35.00"))
-            XCTAssertFalse(proposal.title.contains("1200.00"))
+            XCTAssertTrue(proposal.title.contains("USD 1200.00"))
+            XCTAssertFalse(proposal.title.contains("35.00"))
+            XCTAssertTrue(proposal.eventNotes.contains("35.00"))
             XCTAssertTrue(proposal.title.contains("Example Card Bank"))
-            XCTAssertTrue(proposal.title.contains(language == .en ? "minimum" : "最低"))
+            XCTAssertFalse(proposal.title.contains(language == .en ? "minimum" : "最低"))
+        }
+    }
+
+    func testExplicitEasternDeadlineBecomesTimedAndPreservesCutoffInstant() throws {
+        let text = BilingualText(en: "Deadline", zh: "截止时间")
+        let deadline = LetterFact(id: "due", kind: "deadline", rawText: "by 11/15/2026, 8:00 PM Eastern Time", value: "2026-11-15", currency: nil, status: "confirmed", origin: "letter_fact", label: text, explanation: text, sourceRefs: [SourceReference(page: 1, excerpt: "by 11/15/2026, 8:00 PM Eastern Time")])
+        var action = LetterAction(id: "call", descriptionEn: "Call before cutoff", descriptionZh: "截止前联系", actionKind: "call", status: "confirmed", sourceRefs: [], requirement: "conditional", condition: BilingualText(en: "If rejecting the change", zh: "如希望拒绝变更"), amountFactIds: [], deadlineFactId: "due", appointmentFactIds: [])
+        for explicitMetadata in [false, true] {
+            action.deadlineTime = explicitMetadata ? "20:00" : nil
+            action.deadlineTimezone = explicitMetadata ? "America/New_York" : nil
+            let proposal = CalendarProposal.make(action: action, facts: [deadline], language: .zh, calendar: calendar)
+            XCTAssertEqual(proposal.kind, .deadline)
+            XCTAssertTrue(proposal.hasDeadlineTime)
+            XCTAssertTrue(proposal.isTimedEvent)
+            XCTAssertEqual(proposal.timeZone.identifier, "America/New_York")
+            let date = try XCTUnwrap(proposal.date)
+            var eastern = calendar; eastern.timeZone = proposal.timeZone
+            XCTAssertEqual(eastern.component(.hour, from: date), 20)
+            XCTAssertEqual(proposal.initialDate(calendar: calendar), date)
+            var pacific = calendar; pacific.timeZone = try XCTUnwrap(TimeZone(identifier: "America/Los_Angeles"))
+            XCTAssertEqual(pacific.component(.hour, from: date), 17)
+            let request = CalendarEventRequest(title: proposal.title, notes: proposal.eventNotes, start: date, end: date.addingTimeInterval(60), allDay: !proposal.isTimedEvent, timeZone: proposal.timeZone)
+            XCTAssertFalse(request.makeEvent(in: EKEventStore()).isAllDay)
         }
     }
 
@@ -425,7 +450,9 @@ final class LetterAssistantTests: XCTestCase {
         let action = LetterAction(id: "act", descriptionEn: "Submit", descriptionZh: "提交", actionKind: "submit", status: "confirmed", sourceRefs: [], requirement: "conditional", condition: text, amountFactIds: [], deadlineFactId: "due", appointmentFactIds: [])
         let proposal = CalendarProposal.make(action: action, facts: [fact], language: .zh, now: CalendarDatePolicy.parseDay("2026-10-02", calendar: calendar)!, calendar: calendar)
         XCTAssertEqual(proposal.kind, .deadline)
-        XCTAssertEqual(proposal.date, CalendarDatePolicy.parseDay("2026-09-27", calendar: calendar))
+        XCTAssertEqual(proposal.date, CalendarDatePolicy.appointmentDate(day: CalendarDatePolicy.parseDay("2026-09-27", calendar: calendar)!, time: "17:00", calendar: calendar))
+        XCTAssertTrue(proposal.hasDeadlineTime)
+        XCTAssertTrue(proposal.requiresVerification)
         XCTAssertEqual(proposal.condition, "如果更换计划")
         XCTAssertTrue(proposal.source.contains("5pm"))
     }

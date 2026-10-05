@@ -43,6 +43,15 @@ export function validateInterpretation(
   value: unknown,
   pageCount = 1,
 ): Interpretation {
+  // Old interpretations lack these optional scheduling metadata fields.
+  if (value && typeof value === "object" && Array.isArray((value as any).actions)) {
+    value = structuredClone(value);
+    for (const action of (value as any).actions) {
+      if (action && typeof action === "object") for (const key of ["statement_balance_fact_id", "deadline_time", "deadline_timezone"]) {
+        if (!Object.hasOwn(action, key)) action[key] = null;
+      }
+    }
+  }
   const fail = () => {
     throw new SafeError("invalid_ai_output");
   };
@@ -107,6 +116,13 @@ export function validateInterpretation(
   const hasFact = (id: string, kind?: string) =>
     result.facts.some((f) => f.id === id && (!kind || f.kind === kind));
   for (const action of result.actions) {
+    if (action.statement_balance_fact_id != null &&
+        (result.domain !== "banking" || action.action_kind !== "payment" || !hasFact(action.statement_balance_fact_id, "amount"))) fail();
+    if (action.deadline_time != null && (!action.deadline_fact_id || !/^([01]\d|2[0-3]):[0-5]\d$/.test(action.deadline_time))) fail();
+    if (action.deadline_timezone != null) {
+      if (!action.deadline_time || !action.deadline_timezone.includes("/")) fail();
+      try { new Intl.DateTimeFormat("en", {timeZone:action.deadline_timezone}).format(); } catch { fail(); }
+    }
     if (![action.calendar_title.en, action.calendar_title.zh].every((text) => text.trim() && text.length <= 100)) fail();
     if (![action.calendar_notes.en, action.calendar_notes.zh].every((text) => text.trim() && text.length <= 1500)) fail();
     if (!action.description_en.trim() || !action.description_zh.trim()) fail();
@@ -160,6 +176,12 @@ export function validateInterpretation(
 }
 
 export function validateLocalizedInterpretation(value: unknown, pageCount: number, language: OutputLanguage): Interpretation {
+  if (value && typeof value === "object" && Array.isArray((value as any).actions)) {
+    value = structuredClone(value);
+    for (const action of (value as any).actions) if (action && typeof action === "object") {
+      for (const key of ["statement_balance_fact_id", "deadline_time", "deadline_timezone"]) if (!Object.hasOwn(action, key)) action[key] = null;
+    }
+  }
   if (!matchesSchema(value, localizedInterpretationSchemaFor(pageCount, language))) throw new SafeError("invalid_ai_output");
   const result: any = structuredClone(value);
   const text = (value: any) => ({en: value[language], zh: value[language]});

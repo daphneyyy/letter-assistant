@@ -38,6 +38,9 @@ struct LetterAction: Codable, Identifiable {
     let actionKind: String; let status: String; let sourceRefs: [SourceReference]
     let requirement: String; let condition: BilingualText?
     let amountFactIds: [String]; let deadlineFactId: String?; let appointmentFactIds: [String]
+    var statementBalanceFactId: String? = nil
+    var deadlineTime: String? = nil
+    var deadlineTimezone: String? = nil
     var suggestedDurationMinutes: Int? = nil
     var calendarNotes: BilingualText? = nil
     var calendarTitle: BilingualText? = nil

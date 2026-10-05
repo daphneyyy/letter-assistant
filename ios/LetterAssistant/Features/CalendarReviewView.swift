@@ -30,7 +30,7 @@ import EventKit
         _title = State(initialValue: proposal.title)
         _selectedDate = State(initialValue: proposal.initialDate())
         _dateEntered = State(initialValue: proposal.kind == .reminder || (proposal.date != nil && (proposal.kind != .appointment || proposal.hasAppointmentTime)))
-        _zoneID = State(initialValue: TimeZone.current.identifier)
+        _zoneID = State(initialValue: proposal.hasDeadlineTime ? proposal.timeZone.identifier : TimeZone.current.identifier)
         _reviewedDay = State(initialValue: Calendar.current.startOfDay(for: Date()))
     }
     var calendar: Calendar {
@@ -120,9 +120,15 @@ import EventKit
                         }
                     } else {
                         dateSelection
-                        Text(language.text("All-day event. Choose an alert below.", "全天事项。请在下方选择提醒时间。"))
+                        if proposal.hasDeadlineTime && !proposal.hasSourceTimeZone {
+                            Text(language.text("No clear source time zone was identified. Verify the selected zone before saving.", "未识别到明确的原文时区，请在保存前核对所选时区。"))
+                                .foregroundStyle(.secondary)
+                        }
+                        Text(proposal.hasDeadlineTime
+                            ? language.text("This time marks the deadline, not the time to start. Complete the task before it and choose an earlier alert below.", "这里标记的是截止时间，不是开始办理时间。请提前完成，并在下方选择提前提醒。")
+                            : language.text("All-day event. Choose an alert below.", "全天事项。请在下方选择提醒时间。"))
                     }
-                    if (proposal.kind == .appointment ? selectedDate < Date() : calendar.startOfDay(for: selectedDate) < calendar.startOfDay(for: Date())) {
+                    if (proposal.isTimedEvent ? selectedDate < Date() : calendar.startOfDay(for: selectedDate) < calendar.startOfDay(for: Date())) {
                         Label(language.text("Passed — this date will not be moved automatically.", "日期已过，不会自动顺延。"), systemImage: "clock.badge.exclamationmark")
                     }
                     if calendar.isDateInWeekend(selectedDate), proposal.kind == .reminder {
@@ -257,8 +263,8 @@ import EventKit
         return VStack(alignment: .leading, spacing: 20) {
             calendarDateControl(language.text(proposal.kind == .appointment ? "Appointment date" : "Calendar date", proposal.kind == .appointment ? "预约日期" : "日历日期"),
                                 selection: selection, components: [.date], identifier: "eventDate")
-            if proposal.kind == .appointment {
-                calendarDateControl(language.text("Start time", "开始时间"), selection: selection,
+            if proposal.isTimedEvent {
+                calendarDateControl(language.text(proposal.hasDeadlineTime ? "Deadline time" : "Start time", proposal.hasDeadlineTime ? "截止时间" : "开始时间"), selection: selection,
                                     components: [.hourAndMinute], identifier: "eventTime")
             }
         }.padding(.vertical, 8)
@@ -284,13 +290,13 @@ import EventKit
 
     private func addToCalendar() {
         guard canContinue, !saver.isSaving, !saver.didSave else { return }
-        let minutes = durationMinutes ?? 30
+        let minutes = proposal.hasDeadlineTime ? 1 : durationMinutes ?? 30
         let now = Date()
         if CalendarDatePolicy.reviewExpired(reviewedDay: reviewedDay, now: now, calendar: calendar) {
             reviewedDay = calendar.startOfDay(for: now); midnightNotice = true
             return
         }
-        let allDay = proposal.kind != .appointment
+        let allDay = !proposal.isTimedEvent
         let start = allDay ? calendar.startOfDay(for: selectedDate) : selectedDate
         let request = CalendarEventRequest(title: title, notes: proposal.notes(for: selectedDate, calendar: calendar, language: language), start: start,
             end: CalendarDatePolicy.end(start: start, allDay: allDay, minutes: minutes, calendar: calendar),

@@ -127,5 +127,15 @@
     "debit_date": "2026-11-22",
     "actions": [],
     "must_not_do": "Create a manual-payment action"
+  },
+  "fictional-card-cutoff.jpg": {
+    "domain": "banking",
+    "statement_balance": "2093.02",
+    "minimum_payment": "35.00",
+    "payment_deadline": "2026-10-14",
+    "conditional_call_deadline": "2026-11-15",
+    "deadline_time": "20:00",
+    "deadline_timezone": "America/New_York",
+    "must_not_do": "Treat the full balance as the source-required minimum, lose the conditional call cutoff, or set timed cutoff as an all-day event"
   }
 }
