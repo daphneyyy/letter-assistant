@@ -17,7 +17,6 @@ struct CaptureView: View {
     @State private var photoImportFailed = false
     @State private var appendPage = false
     @State private var discardPrompt = false
-    @State private var finishPrompt = false
     @State private var languageSettingsPrompt = false
     @State private var deletePagePrompt = false
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
@@ -77,14 +76,6 @@ struct CaptureView: View {
             .background(LetterStyle.background.ignoresSafeArea())
             .foregroundStyle(LetterStyle.ink)
             .tint(LetterStyle.accent)
-            .safeAreaInset(edge: .bottom) {
-                if model.phase == .complete {
-                    primary(language.text("Finish reading", "结束本次阅读"), icon: "checkmark") { finishPrompt = true }
-                        .accessibilityHint(language.text("Return to the start screen. This letter has not been saved.", "返回开始页。本次信件尚未保存。"))
-                        .padding(.horizontal, 24).padding(.vertical, 12)
-                        .background(LetterStyle.background)
-                }
-            }
             .navigationTitle(language.text("Letter Assistant", "信件助手"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -121,12 +112,6 @@ struct CaptureView: View {
             .confirmationDialog(language.text("Discard this unsaved letter?", "丢弃这封尚未保存的信件？"), isPresented: $discardPrompt, titleVisibility: .visible) {
                 Button(language.text("Discard and start over", "丢弃并重新开始"), role: .destructive) { model.reset() }
                 Button(language.text("Keep letter", "保留信件"), role: .cancel) {}
-            }
-            .alert(language.text("Finish reading?", "结束本次阅读？"), isPresented: $finishPrompt) {
-                Button(language.text("Finish and return", "结束并返回"), role: .destructive) { model.reset() }
-                Button(language.text("Keep reading", "继续阅读"), role: .cancel) {}
-            } message: {
-                Text(language.text("This explanation has not been saved. Finishing clears this letter and returns to the start screen.", "本次解读尚未保存。结束后将清除当前信件，并返回开始页。"))
             }
             .confirmationDialog(language.text("Choose a calendar test", "选择日历测试场景"), isPresented: $calendarTestMenu, titleVisibility: .visible) {
                 #if TEST_BUILD
