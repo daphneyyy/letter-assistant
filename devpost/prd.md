@@ -20,7 +20,7 @@ A no-login iPhone demo: photograph a medical or health-insurance letter, bank/cr
 5. Read the four sections and, when needed, expand facts and source excerpts.
 6. Select an extracted action, review conditions, event date/time and notification alert, then tap Add to calendar.
 7. Grant write-only Calendar permission if requested, then read the direct-save result. Not now exits without saving.
-8. Start another letter using the single Photograph another letter button; retain the discard confirmation for the unsaved current letter.
+8. End the reading with the single fixed-bottom Finish reading button; confirm that the unsaved letter will be cleared and return to the home screen. Do not show a separate Photograph another letter button on the result page.
 
 ## Screens and Layout
 
