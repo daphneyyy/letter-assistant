@@ -109,9 +109,13 @@ See `devpost/checklist.md` for current acceptance work and `devpost/build-histor
 
 These features are outside the hackathon. Their storage, authentication and synchronization design is future work, not a requirement for running this demo.
 
-## Open-source publication readiness
+## License and source publication readiness
 
-This project is licensed under the [MIT License](LICENSE).
+This project is licensed under the [PolyForm Noncommercial License 1.0.0](LICENSE). See [NOTICE](NOTICE) for the required copyright notice.
+
+The license permits noncommercial use, modification and redistribution under its terms. Commercial use is not authorized by this license; it requires separate permission from the copyright holder. The standard license also permits the specified charitable, educational, public research, public safety/health, environmental and government organizations to use the software as described in its Noncommercial Organizations section. The copyright holder retains the ability to develop and license a commercial version.
+
+This is source-available software, not open-source software under the Open Source Definition. The hackathon rules say the public repository should include an open-source license; acceptance of this noncommercial license needs organizer clarification before submission. This change does not revoke permissions for copies previously received under MIT.
 
 The intended distribution is a public GitHub repository with operator-owned API keys. Audit tracked files and Git history for credentials, local signing/configuration, private learner context and real letter images before pushing publicly. Only fictional fixtures should be published. This requirements revision does not publish the repository.
 

@@ -111,7 +111,7 @@ Local unreadability, camera denial, missing key/config, relay unreachable, provi
 
 Follow `checklist.md`: close capture/analysis acceptance, close calendar acceptance, then verify clone/setup and final demo. Maintain existing test evidence without treating older partial physical checks as complete. No account-isolation, email callback, cloud-save or two-phone acceptance work is required.
 
-The learner selected MIT on October 5, 2026; the root LICENSE contains the license text. Before GitHub publication, audit tracked content and history for secrets/private data, and try documented setup with operator-owned configuration. Do not publish as part of this scope edit. Preserve local credentials and signing while documenting how a new cloner selects their own team.
+The learner replaced MIT with PolyForm Noncommercial 1.0.0 on October 5, 2026. The root LICENSE contains the unmodified standard text and NOTICE contains the required copyright notice. Commercial use requires separate authorization, subject to the standard license's expressly permitted purposes and organizations. This is source-available rather than open-source; organizer clarification is needed for the hackathon's open-source-license wording. Previously granted MIT permissions are not revoked. Before GitHub publication, audit tracked content and history for secrets/private data, and try documented setup with operator-owned configuration. Do not publish as part of this scope edit. Preserve local credentials and signing while documenting how a new cloner selects their own team.
 
 ## Future Commercial Architecture
 

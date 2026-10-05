@@ -42,7 +42,7 @@ Latest October 2 follow-up: the UI refinements, logo removal and expanded preset
   Why now: Public reproducibility and a complete demo finish the narrowed scope.
   PRD ref: `prd.md > Data and Open-Source Experience`; `prd.md > Demonstration and Acceptance`.
   Spec ref: `spec.md > Where It Runs and How Someone Tries It`; `spec.md > External Services and Dependencies`; `spec.md > Verification and Build Sequence`.
-  Build: Maintain secret-free setup examples and accurate README, select an open-source license before publication, resolve scoped final review findings and prepare the demo. No push/publication is performed merely by editing this checklist.
+  Build: Maintain secret-free setup examples and accurate README, maintain the selected noncommercial license and clarify its acceptance under the hackathon rules before submission, resolve scoped final review findings and prepare the demo. No push/publication is performed merely by editing this checklist.
   Verify (mechanical): Check documented fresh-clone setup with separate operator-owned local configuration, correct Xcode signing and matching relay token. Verify no tracked credentials/personal letters; audit Git history before publishing. Check the complete four-step journey. Release compilation alone does not prove AI works in Release; document separate Debug/Prod configuration and accepted relay URLs.
   Learner check: Follow the README, run the end-to-end demo and report remaining confusing or broken behavior. Confirm the scoped demo is ready.
   Commit: `Prepare reproducible open-source hackathon demo`
@@ -98,6 +98,8 @@ No second phone, account isolation, email delivery or saved-conversation review 
 No completed learning wrap-up is inferred from the scope change. Keep it proportional to the smaller demo.
 
 ## Revisions
+
+- October 5 superseding license decision: learner requested no commercial use. Replaced MIT with the unmodified PolyForm Noncommercial 1.0.0 license and added the copyright Required Notice in NOTICE. Updated README/spec to describe permitted noncommercial uses, the standard organizational provisions, separate commercial authorization and source-available status. The earlier MIT decision is historical; prior MIT grants are not revoked and history was not rewritten. Hackathon acceptance is unresolved because official rules say the public repo should include an open-source license. No publication or message to organizers was performed.
 
 - October 5 license decision: learner explicitly selected MIT. Added the standard root LICENSE with 2026 copyright and the repository's configured author name, Xuewen Yang; linked it in README and updated spec publication guidance. License selection is resolved; history audit, remaining acceptance, final readiness and learning wrap-up remain open. No publication was performed.
 
