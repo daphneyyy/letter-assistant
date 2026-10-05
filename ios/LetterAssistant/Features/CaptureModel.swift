@@ -141,7 +141,7 @@ struct CapturedPage: Identifiable {
     }
     func interpret() {
         guard phase.canInterpret, canFinishCapture else { return }
-        let inputs = pages.map { LetterPageInput(id: $0.id, image: $0.bytes, token: $0.validation!.validationToken!) }
+        let inputs = pages.map { LetterPageInput(id: $0.id, image: $0.bytes) }
         phase = .interpreting; message = ""; errorCode = nil
         let version = generation
         announce(language.text("Reading the letter", "正在解读信件"))
@@ -154,7 +154,7 @@ struct CapturedPage: Identifiable {
             } catch {
                 guard generation == version, !Task.isCancelled else { return }
                 let code = (error as? RelayError)?.code ?? ""
-                if ["validation_expired", "validation_required", "validation_mismatch", "invalid_validation_token"].contains(code) {
+                if code == "local_readability_required" {
                     // Keep every original. Recheck each page rather than losing earlier pages.
                     for index in pages.indices { pages[index].validation = nil }
                     currentPageIndex = 0; phase = .checkFailed
@@ -201,7 +201,7 @@ struct CapturedPage: Identifiable {
         case "photo_too_small", "photo_unreadable": message = language.text("The text is unclear. Move closer and retake this page.", "文字不清晰，请靠近一些重拍。")
         case "too_many_pages": message = language.text("A letter can contain up to 10 pages. Choose a shorter document or delete a page first.", "每封信最多 10 页。请选择页数较少的文件，或先删除页面。")
         case "photo_too_large": message = language.text("This photo is too large to process. Please retake at a lower camera resolution.", "照片过大，无法处理。请降低相机分辨率后重拍。")
-        case "validation_expired", "validation_required", "validation_mismatch", "invalid_validation_token": message = language.text("Please check this photo again before interpreting it.", "请先重新检查这张照片，再进行解读。")
+        case "local_readability_required": message = language.text("Please check this photo again before interpreting it.", "请先重新检查这张照片，再进行解读。")
         case "busy", "rate_limited": message = language.text("The local service is busy. Wait a moment before retrying.", "本地服务正在处理请求，请稍等再重试。")
         case "invalid_ai_output", "incomplete_ai_output", "invalid_relay_response": message = language.text("The AI response was incomplete or could not be read. Your photos are still here. Retry interpretation.", "AI 返回内容不完整或格式不正确，照片仍然保留。请重试解读。")
         case "provider_unavailable": message = language.text("The AI service could not respond. Your photos are still here. Please retry later.", "AI 服务暂时未能响应，照片仍然保留。请稍后重试。")

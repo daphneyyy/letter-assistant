@@ -1,14 +1,11 @@
-import { interpretationSchemaFor, localizedInterpretationSchemaFor, type OutputLanguage, verdictSchema } from "./contracts.ts";
+import { interpretationSchemaFor, localizedInterpretationSchemaFor, type OutputLanguage } from "./contracts.ts";
 import { type AIProvider, sanitizedUsage, type UsageRecord } from "./openai.ts";
 import {
   interpretationPrompt, selectedLanguagePrompt,
-  validationImageLabel,
-  validationPrompt,
 } from "./prompts.ts";
 import {
   SafeError,
   validateInterpretation, validateLocalizedInterpretation,
-  validateVerdict,
 } from "./validation.ts";
 
 export const FREE_MODEL = "dots-studio/dots-3-note-preview:free";
@@ -80,9 +77,7 @@ export class OpenRouterProvider implements AIProvider {
                 content: [image, ...additionalImages].flatMap((page, index) => [
                   {
                     type: "text",
-                    text: name === "page_validation"
-                      ? validationImageLabel
-                      : `Page ${index + 1} of ${
+                    text: `Page ${index + 1} of ${
                         additionalImages.length + 1
                       }. Read this letter in the supplied page order.`,
                   },
@@ -150,17 +145,6 @@ export class OpenRouterProvider implements AIProvider {
     } catch {
       throw new SafeError("invalid_ai_output");
     }
-  }
-
-  async validate(image: string) {
-    return validateVerdict(
-      await this.request(
-        image,
-        validationPrompt,
-        verdictSchema,
-        "page_validation",
-      ),
-    );
   }
 
   async interpret(image: string, additionalImages: string[] = [], language?: OutputLanguage) {

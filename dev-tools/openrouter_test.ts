@@ -15,20 +15,17 @@ const payload = {
   image_base64: image,
 };
 const request = () =>
-  new Request("http://127.0.0.1:8787/validate-page", {
+  new Request("http://127.0.0.1:8787/interpret", {
     method: "POST",
     headers: {
       authorization: `Bearer ${token}`,
       "content-type": "application/json",
     },
-    body: JSON.stringify(payload),
+    body: JSON.stringify({capture_id:payload.capture_id,pages:[{page_id:payload.page_id,image_base64:image,local_readability:true}]}),
   });
-const verdict = {
-  verdict: "valid",
-  reason: { en: "Readable", zh: "清晰可读" },
-};
+const interpretation = {schema_version:1,domain:"unsupported",recipient:null,organization:null,category:null,needs_review:true,facts:[],actions:[],summaries:{en:{what_this_is:"Unsupported",what_to_note:"No interpretation",what_to_do:"No steps identified",when:"No deadline",fact_ids:[],action_ids:[]},zh:{what_this_is:"不支持",what_to_note:"未解读",what_to_do:"未识别到事项",when:"未注明截止日期",fact_ids:[],action_ids:[]}}};
 const completion = (
-  content: unknown = JSON.stringify(verdict),
+  content: unknown = JSON.stringify(interpretation),
   finish = "stop",
 ) => ({
   choices: [{ finish_reason: finish, message: { content } }],
@@ -77,7 +74,7 @@ Deno.test("OpenRouter pins free model, zero prices, strict image JSON request an
     transport,
     (usage) => usages.push(usage),
   );
-  assert((await provider.validate(image)).verdict === "valid" && calls === 1);
+  assert((await provider.interpret(image)).domain === "unsupported" && calls === 1);
   assert(
     JSON.stringify(usages) ===
       JSON.stringify([{
@@ -165,13 +162,13 @@ Deno.test("OpenRouter refusal, truncation, malformed and failures return safe er
       503,
     ],
     [
-      async () => Response.json(completion(JSON.stringify(verdict), "length")),
+      async () => Response.json(completion(JSON.stringify(interpretation), "length")),
       "incomplete_ai_output",
       422,
     ],
     [
       async () =>
-        Response.json(completion(JSON.stringify(verdict), "content_filter")),
+        Response.json(completion(JSON.stringify(interpretation), "content_filter")),
       "ai_refusal",
       422,
     ],
@@ -224,7 +221,7 @@ Deno.test("unified configuration switches endpoint model and key without router-
     assert(body.response_format.json_schema.strict);
     return Response.json(completion());
   }) as typeof fetch;
-  assert((await configuredProvider(k => env[k], transport).validate(image)).verdict === "valid");
+  assert((await configuredProvider(k => env[k], transport).interpret(image)).domain === "unsupported");
   env.AI_API_KEY = "";
   const missing = await createHandler(token, configuredProvider(k => env[k], transport))(request());
   assert((await missing.json()).error.code === "provider_not_configured" && calls === 1);
@@ -241,7 +238,7 @@ Deno.test("explicit paid OpenRouter selection removes only the free-price restri
     assert(body.provider.allow_fallbacks === false);
     return Response.json(completion());
   }) as typeof fetch;
-  assert((await configuredProvider(k => env[k], transport).validate(image)).verdict === "valid");
+  assert((await configuredProvider(k => env[k], transport).interpret(image)).domain === "unsupported");
 });
 
 Deno.test("OpenAI endpoint uses the supported completion token limit", async () => {
@@ -259,5 +256,5 @@ Deno.test("OpenAI endpoint uses the supported completion token limit", async () 
     assert(!body.messages[0].content.includes(JSON.stringify(body.response_format.json_schema.schema)));
     return Response.json(completion());
   }) as typeof fetch;
-  assert((await configuredProvider(k => env[k], transport).validate(image)).verdict === "valid");
+  assert((await configuredProvider(k => env[k], transport).interpret(image)).domain === "unsupported");
 });

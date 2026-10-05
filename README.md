@@ -128,3 +128,5 @@ Test is labeled **Letter Assistant Test** on the device. Prod is labeled **Lette
 For Prod connection settings, copy `ios/Config/Prod.example.plist` to `ios/Config/Prod.local.plist` and set your relay URL/token. Prod accepts HTTPS or the existing trusted local-network HTTP relay; Test retains its local HTTP relay. The build copies only the selected environment's configuration. Missing configuration shows an honest setup message; there is no automatic fallback to Test credentials. This separates app builds and test assets; it does not deploy a production backend.
 
 New analysis generates explanations and calendar text only in the selected app language (English or Simplified Chinese), saving the second-language generation. Source quotations keep their original language. App-specific language settings can override the phone language.
+
+The old AI photo-quality endpoint and prompts have been removed. Photo readability checks run locally on the iPhone; the relay offers only document interpretation.

@@ -73,10 +73,6 @@ function setup() {
   let calls = 0;
   let received: string[] = [];
   const provider: AIProvider = {
-    validate: async () => ({
-      verdict: "valid",
-      reason: { en: "Readable", zh: "清晰" },
-    }),
     interpret: async (image, additional = []) => {
       calls++;
       received = [image, ...additional];
@@ -84,18 +80,7 @@ function setup() {
     },
   };
   const handler = createHandler(token, provider);
-  const accept = async () => {
-    const pages = [];
-    for (let index = 0; index < images.length; index++) {
-      const page = { page_id: pageIds[index], image_base64: images[index] };
-      const response = await handler(
-        request("/validate-page", { capture_id: capture, ...page }),
-      );
-      const verdict = await response.json();
-      pages.push({ ...page, validation_token: verdict.validation_token });
-    }
-    return pages;
-  };
+  const accept = async () => images.map((image, index) => ({page_id:pageIds[index],image_base64:image,local_readability:true}));
   return {
     handler,
     accept,
@@ -104,17 +89,12 @@ function setup() {
     received: () => received,
   };
 }
-Deno.test("ordered accepted pages reach one interpretation; altered and duplicate sets fail", async () => {
+Deno.test("ordered locally checked pages reach one interpretation; duplicate IDs fail", async () => {
   const test = setup();
   const pages = await test.accept();
   const send = (value: unknown, capture_id = capture) =>
     test.handler(request("/interpret", { capture_id, pages: value }));
   assert((await send([pages[0], pages[0]])).status === 400);
-  assert(
-    (await send([pages[0], { ...pages[1], image_base64: images[0] }]))
-      .status === 409,
-  );
-  assert((await send(pages, pageIds[0])).status === 409);
   assert((await send(pages)).status === 200);
   assert(JSON.stringify(test.received()) === JSON.stringify(images));
   assert((await send([...pages].reverse())).status === 200);
@@ -156,7 +136,7 @@ Deno.test("multipage limits and invalid source indices are rejected without trun
   }
   assert(failed);
 });
-Deno.test("failed multipage interpretation retains accepted pages for an identical retry", async () => {
+Deno.test("failed multipage interpretation allows locally checked pages for an identical retry", async () => {
   const test = setup();
   const pages = await test.accept();
   test.provider.interpret = async () => {
@@ -243,17 +223,11 @@ Deno.test("retakes after a failed interpretation accept changed bytes with stabl
         : "44444444-4444-4444-8444-444444444444",
       image_base64: btoa(String.fromCharCode(255, 216, 3, 255, 217)),
     };
-    const valid = await (await test.handler(
-      request("/validate-page", { capture_id: capture, ...replacement }),
-    )).json();
-    const selected = {
-      ...replacement,
-      validation_token: valid.validation_token,
-    };
+    const selected = { ...replacement, local_readability: true };
     const single = structuredClone(interpretation);
     single.facts[0].source_refs[0].page = 1;
     test.provider.interpret = async () => single;
-    // Old accepted photos can be abandoned; the submitted set is authoritative.
+    // Old locally checked photos can be abandoned; the submitted set is authoritative.
     assert(
       (await test.handler(
         request("/interpret", { capture_id: capture, pages: [selected] }),
@@ -265,58 +239,18 @@ Deno.test("retakes after a failed interpretation accept changed bytes with stabl
           capture_id: capture,
           pages: [{
             ...selected,
-            validation_token: original[0].validation_token,
+            local_readability: false,
           }],
         }),
       )).status === 409,
     );
   }
 });
-Deno.test("photo validation uses neutral photo-quality instructions without capture-order labels", async () => {
-  for (const router of [false, true]) {
-    const transport = (async (_url: unknown, init: RequestInit) => {
-      const body = JSON.parse(init.body as string);
-      const messages = router ? body.messages : body.input;
-      const label = messages[1].content[0].text;
-      assert(
-        label ===
-          "Check only visible text readability. Do not check cropping or page edges; printed page numbers and references to other pages are irrelevant.",
-      );
-      assert(
-        !label.includes("Page 1") &&
-          messages[0].content.includes("Do not check cropping, page edges, or whether the full sheet is in frame."),
-      );
-      assert(
-        messages[0].content.includes(
-          "Do not require a recipient, amount, date",
-        ),
-      );
-      const content = JSON.stringify({
-        verdict: "valid",
-        reason: { en: "Readable", zh: "清晰" },
-      });
-      return Response.json(
-        router
-          ? { choices: [{ finish_reason: "stop", message: { content } }] }
-          : {
-            status: "completed",
-            output: [{ content: [{ type: "output_text", text: content }] }],
-          },
-      );
-    }) as typeof fetch;
-    const provider = router
-      ? new OpenRouterProvider("fake-key", undefined, transport)
-      : new OpenAIProvider("fake-key", undefined, transport);
-    assert((await provider.validate(images[1])).verdict === "valid");
-  }
-});
-
 Deno.test("local readability pages need no online validation before one interpretation", async () => {
-  let checks = 0, interpretations = 0;
+  let interpretations = 0;
   const handler = createHandler(token, {
-    validate: async () => { checks++; throw new Error("Online validation must not run"); },
     interpret: async () => { interpretations++; return structuredClone(interpretation); },
   });
   const response = await handler(request("/interpret", { capture_id: capture, pages: images.map((image, i) => ({page_id: pageIds[i], image_base64: image, local_readability: true})) }));
-  assert(response.status === 200 && checks === 0 && interpretations === 1);
+  assert(response.status === 200 && interpretations === 1);
 });

@@ -10,7 +10,6 @@ import type {
   Action,
   Fact,
   Interpretation,
-  Verdict,
 } from "../supabase/functions/_shared/contracts.ts";
 function assert(value: unknown): asserts value {
   if (!value) throw new Error("Assertion failed");
@@ -51,15 +50,7 @@ const result: Interpretation = {
   },
 };
 // Explicit isolated fake: these tests never establish a successful real AI run.
-function fake(verdict: Verdict["verdict"] = "valid"): AIProvider {
-  return {
-    validate: async () => ({
-      verdict,
-      reason: { en: "Test reason", zh: "测试原因" },
-    }),
-    interpret: async () => structuredClone(result),
-  };
-}
+function fake(): AIProvider { return { interpret: async () => structuredClone(result) }; }
 const request = (path: string, body: unknown, auth = token) =>
   new Request(`http://127.0.0.1:8787${path}`, {
     method: "POST",
@@ -67,54 +58,27 @@ const request = (path: string, body: unknown, auth = token) =>
       authorization: `Bearer ${auth}`,
       "content-type": "application/json",
     },
-    body: JSON.stringify(body),
+    body: JSON.stringify(path === "/interpret" && (body as any).image_base64 !== undefined ? {capture_id:(body as any).capture_id,pages:[{page_id:(body as any).page_id,image_base64:(body as any).image_base64,local_readability:true}]} : body),
   });
-Deno.test("same accepted bytes required; rejected, changed, expired and other-page images cannot interpret", async () => {
-  let clock = 1000;
-  const handler = createHandler(token, fake(), () => clock);
-  assert((await handler(request("/interpret", payload))).status === 409);
-  const validation = await (await handler(request("/validate-page", payload)))
-    .json();
-  const accepted = {
-    ...payload,
-    validation_token: validation.validation_token,
-  };
-  assert((await handler(request("/interpret", accepted))).status === 200);
-  assert(
-    (await handler(
-      request("/interpret", {
-        ...accepted,
-        image_base64: btoa(String.fromCharCode(255, 216, 3, 255, 217)),
-      }),
-    )).status === 409,
-  );
-  assert(
-    (await handler(
-      request("/interpret", { ...accepted, page_id: payload.capture_id }),
-    )).status === 409,
-  );
-  clock += 16 * 60 * 1000;
-  assert((await handler(request("/interpret", accepted))).status === 409);
-  for (const verdict of ["retake", "uncertain"] as const) {
-    const reject = createHandler(token, fake(verdict));
-    const response = await (await reject(request("/validate-page", payload)))
-      .json();
-    assert(response.validation_token === null);
-  }
+Deno.test("removed AI validation endpoint never invokes the provider", async () => {
+  let calls = 0;
+  const handler = createHandler(token, {interpret: async () => { calls++; return result; }});
+  assert((await handler(request("/validate-page", payload))).status === 404);
+  assert(calls === 0);
 });
 Deno.test("auth, malformed photo, body limits and safe private binding", async () => {
   const handler = createHandler(token, fake());
   assert(
-    (await handler(request("/validate-page", payload, "wrong"))).status === 401,
+    (await handler(request("/interpret", payload, "wrong"))).status === 401,
   );
   assert(
     (await handler(
-      request("/validate-page", { ...payload, image_base64: "AAAA" }),
+      request("/interpret", { ...payload, image_base64: "AAAA" }),
     )).status === 400,
   );
   assert(
     (await handler(
-      request("/validate-page", {
+      request("/interpret", {
         ...payload,
         image_base64: "A".repeat(15 * 1024 * 1024),
       }),
@@ -172,7 +136,7 @@ Deno.test("semantic validation rejects fabricated date, missing evidence, extra 
 });
 Deno.test("missing provider credential returns honest 503, provider refusals and incomplete output fail safely", async () => {
   const handler = createHandler(token, new OpenAIProvider(undefined));
-  const response = await handler(request("/validate-page", payload));
+  const response = await handler(request("/interpret", payload));
   assert(
     response.status === 503 &&
       (await response.json()).error.code === "provider_not_configured",
@@ -193,7 +157,7 @@ Deno.test("missing provider credential returns honest 503, provider refusals and
     );
     let rejected = false;
     try {
-      await provider.validate(image);
+      await provider.interpret(image);
     } catch {
       rejected = true;
     }
@@ -221,21 +185,18 @@ Deno.test("AI transport sends strict image Responses request without tools, pers
       output: [{
         content: [{
           type: "output_text",
-          text: JSON.stringify({
-            verdict: "valid",
-            reason: { en: "Readable", zh: "清晰可读" },
-          }),
+          text: JSON.stringify(result),
         }],
       }],
     });
   }) as typeof fetch;
   assert(
     (await new OpenAIProvider("fake-test-key", "explicit-test-model", transport)
-      .validate(image)).verdict === "valid",
+      .interpret(image)).domain === "medical",
   );
   assert(calls === 1);
 });
-Deno.test("failed interpretation can retry against retained acceptance without claiming persistence", async () => {
+Deno.test("failed interpretation can retry with locally checked photos without claiming persistence", async () => {
   let failures = 1;
   const provider = fake();
   provider.interpret = async () => {
@@ -243,12 +204,7 @@ Deno.test("failed interpretation can retry against retained acceptance without c
     return result;
   };
   const handler = createHandler(token, provider);
-  const validation = await (await handler(request("/validate-page", payload)))
-    .json();
-  const accepted = {
-    ...payload,
-    validation_token: validation.validation_token,
-  };
+  const accepted = payload;
   const failure = await handler(request("/interpret", accepted));
   assert(
     failure.status === 503 && (await failure.text()).includes("request_failed"),
@@ -272,7 +228,7 @@ Deno.test("usage exposes only configured model and valid counters, including ref
     (record) => usage.push(record),
   );
   try {
-    await provider.validate(image);
+    await provider.interpret(image);
   } catch { /* Expected refusal. */ }
   assert(
     JSON.stringify(usage) ===
@@ -382,7 +338,7 @@ Deno.test("provider failure responses stay safe and specific through the relay",
         transport as typeof fetch,
       ),
     );
-    const response = await handler(request("/validate-page", payload));
+    const response = await handler(request("/interpret", payload));
     assert(response.status === status);
     assert(await response.text() === JSON.stringify({ error: { code } }));
   }

@@ -79,7 +79,7 @@ October 4 billing expansion adds `billing` to the interpretation domain enum alo
 
 The current Swift models in `Models/Letter.swift` and validated schema in `_shared/contracts.ts` are authoritative for wire fields. Facts distinguish amount/document date/deadline/appointment date/time/time zone/effective/service date/period/other. Only linked deadline facts populate deadline proposals. Existing classification metadata remains an analysis detail, not a saved filing system.
 
-`POST /interpret` uses a local bearer token and `{capture_id, pages:[{page_id, image_base64, local_readability:true}]}`. This flag describes a client-side check, not server attestation. The relay retains authentication, image/page/body limits and result validation. Its legacy `/validate-page` path may remain for old clients/tests; the current iPhone does not call it. No user access token or email verification is involved.
+`POST /interpret` uses a local bearer token and `{capture_id, pages:[{page_id, image_base64, local_readability:true}]}`. This flag describes a client-side check, not server attestation. The relay retains authentication, image/page/body limits and result validation. The legacy AI `/validate-page` endpoint and provider quality-check prompts/methods have been removed; only `/interpret` can invoke AI. Each submitted page must carry the local readability decision; no server validation token is required. No user access token or email verification is involved.
 
 ## External Services and Dependencies
 

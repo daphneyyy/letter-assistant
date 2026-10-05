@@ -1,21 +1,15 @@
 import {
   type Interpretation,
   interpretationSchemaFor, localizedInterpretationSchemaFor, type OutputLanguage,
-  type Verdict,
-  verdictSchema,
 } from "./contracts.ts";
 import {
   interpretationPrompt, selectedLanguagePrompt,
-  validationImageLabel,
-  validationPrompt,
 } from "./prompts.ts";
 import {
   SafeError,
   validateInterpretation, validateLocalizedInterpretation,
-  validateVerdict,
 } from "./validation.ts";
 export interface AIProvider {
-  validate(image: string): Promise<Verdict>;
   interpret(
     image: string,
     additionalImages?: string[],
@@ -74,9 +68,7 @@ export class OpenAIProvider implements AIProvider {
             role: "user",
             content: [image, ...additionalImages].flatMap((page, index) => [{
               type: "input_text",
-              text: name === "page_validation"
-                ? validationImageLabel
-                : `Page ${index + 1} of ${
+              text: `Page ${index + 1} of ${
                   additionalImages.length + 1
                 }. Read this letter in the supplied page order.`,
             }, {
@@ -131,16 +123,6 @@ export class OpenAIProvider implements AIProvider {
     } catch {
       throw new SafeError("invalid_ai_output");
     }
-  }
-  async validate(image: string) {
-    return validateVerdict(
-      await this.request(
-        image,
-        validationPrompt,
-        verdictSchema,
-        "page_validation",
-      ),
-    );
   }
   async interpret(image: string, additionalImages: string[] = [], language?: OutputLanguage) {
     const count = additionalImages.length + 1;

@@ -71,10 +71,6 @@ export interface Interpretation {
   actions: Action[];
   summaries: { en: Summary; zh: Summary };
 }
-export interface Verdict {
-  verdict: "valid" | "retake" | "uncertain";
-  reason: { en: string; zh: string };
-}
 const str = { type: "string" };
 const nullable = { type: ["string", "null"] };
 const strings = { type: "array", items: str };
@@ -98,10 +94,6 @@ const summary = object({
   when: str,
   fact_ids: strings,
   action_ids: strings,
-});
-export const verdictSchema = object({
-  verdict: enumeration(["valid", "retake", "uncertain"]),
-  reason: object({ en: str, zh: str }),
 });
 export function interpretationSchemaFor(pageCount = 1) {
   if (!Number.isInteger(pageCount) || pageCount < 1 || pageCount > 10) {

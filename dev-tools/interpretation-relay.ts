@@ -11,13 +11,11 @@ import {
 import {
   SafeError,
   validateInterpretation,
-  validateVerdict,
 } from "../supabase/functions/_shared/validation.ts";
 const MAX_IMAGE = 10 * 1024 * 1024;
 const MAX_BODY = Math.ceil(MAX_IMAGE / 3) * 4 + 2048;
 const MAX_PAGES = 10;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const TTL = 15 * 60 * 1000;
 export function configuredProvider(
   env: (key: string) => string | undefined,
   transport: typeof fetch = fetch,
@@ -113,7 +111,7 @@ async function readPayload(
     throw new SafeError("invalid_request", 400);
   }
 }
-async function imageDigest(image: string): Promise<string> {
+async function checkImage(image: string): Promise<void> {
   if (image.length > Math.ceil(MAX_IMAGE / 3) * 4) {
     throw new SafeError("photo_too_large", 413);
   }
@@ -128,16 +126,11 @@ async function imageDigest(image: string): Promise<string> {
     throw new SafeError("invalid_photo", 400);
   }
   if (bytes.length > MAX_IMAGE) throw new SafeError("photo_too_large", 413);
-  // JPEG framing; image readability is checked by the model, not this header check.
+  // JPEG framing only; readability is checked locally by the phone.
   if (
     bytes.length < 4 || bytes[0] !== 255 || bytes[1] !== 216 ||
     bytes.at(-2) !== 255 || bytes.at(-1) !== 217
   ) throw new SafeError("invalid_photo", 400);
-  return [
-    ...new Uint8Array(
-      await crypto.subtle.digest("SHA-256", new Uint8Array(bytes)),
-    ),
-  ].map((v) => v.toString(16).padStart(2, "0")).join("");
 }
 export function createHandler(
   token: string,
@@ -147,10 +140,6 @@ export function createHandler(
   if (token.length < 32) {
     throw new Error("DEV_ACCESS_TOKEN must contain at least 32 characters.");
   }
-  const accepted = new Map<
-    string,
-    { capture: string; page: string; digest: string; expires: number }
-  >();
   let active = false;
   let calls: number[] = [];
   return async (request: Request): Promise<Response> => {
@@ -165,7 +154,7 @@ export function createHandler(
       const path = new URL(request.url).pathname;
       if (
         request.method !== "POST" ||
-        !["/validate-page", "/interpret"].includes(path)
+        path !== "/interpret"
       ) throw new SafeError("not_found", 404);
       if (active) throw new SafeError("busy", 429);
       calls = calls.filter((t) => t > now() - 60000);
@@ -175,53 +164,15 @@ export function createHandler(
       ownsSlot = true;
       const body = await readPayload(
         request,
-        path === "/interpret" ? MAX_BODY * MAX_PAGES : MAX_BODY,
+        MAX_BODY * MAX_PAGES,
       );
-      const multiple = path === "/interpret" && Object.hasOwn(body, "pages");
-      const allowed = multiple ? ["capture_id", "pages", "language"] : [
-        "capture_id",
-        "page_id",
-        "image_base64",
-        ...(path === "/interpret" ? ["validation_token", "language"] : []),
-      ];
-      if (
-        Object.keys(body).some((k) => !allowed.includes(k)) ||
-        typeof body.capture_id !== "string" || !UUID.test(body.capture_id)
-      ) throw new SafeError("invalid_request", 400);
-      if (body.language !== undefined && body.language !== "en" && body.language !== "zh") throw new SafeError("invalid_request", 400);
-      for (const [key, value] of accepted) {
-        if (value.expires <= now()) accepted.delete(key);
+      const allowed = ["capture_id", "pages", "language"];
+      if (Object.keys(body).some(k => !allowed.includes(k)) ||
+          typeof body.capture_id !== "string" || !UUID.test(body.capture_id) ||
+          (body.language !== undefined && body.language !== "en" && body.language !== "zh")) {
+        throw new SafeError("invalid_request", 400);
       }
-      if (path === "/validate-page") {
-        if (
-          typeof body.page_id !== "string" || !UUID.test(body.page_id) ||
-          typeof body.image_base64 !== "string"
-        ) throw new SafeError("invalid_request", 400);
-        const digest = await imageDigest(body.image_base64);
-        const verdict = validateVerdict(
-          await provider.validate(body.image_base64),
-        );
-        const reference = verdict.verdict === "valid"
-          ? crypto.randomUUID()
-          : null;
-        if (reference) {
-          if (accepted.size >= 100) {
-            accepted.delete(accepted.keys().next().value!);
-          }
-          accepted.set(reference, {
-            capture: body.capture_id,
-            page: body.page_id,
-            digest,
-            expires: now() + TTL,
-          });
-        }
-        return json({ ...verdict, validation_token: reference });
-      }
-      const pages = multiple ? body.pages : [{
-        page_id: body.page_id,
-        image_base64: body.image_base64,
-        validation_token: body.validation_token,
-      }];
+      const pages = body.pages;
       if (!Array.isArray(pages) || pages.length === 0) {
         throw new SafeError("invalid_request", 400);
       }
@@ -234,28 +185,20 @@ export function createHandler(
         if (
           !page || typeof page !== "object" || Array.isArray(page) ||
           Object.keys(page).some((k) =>
-            !["page_id", "image_base64", "validation_token", "local_readability"].includes(k)
+            !["page_id", "image_base64", "local_readability"].includes(k)
           ) || typeof page.page_id !== "string" || !UUID.test(page.page_id) ||
           typeof page.image_base64 !== "string" || ids.has(page.page_id)
         ) throw new SafeError("invalid_request", 400);
         ids.add(page.page_id);
-        const digest = await imageDigest(page.image_base64);
-        const record = typeof page.validation_token === "string"
-          ? accepted.get(page.validation_token)
-          : undefined;
-        // Local readability is a client quality check, not server attestation.
-        // Auth, byte/size limits and output grounding still apply to every request.
-        if (
-          page.local_readability !== true && (
-          !record || record.capture !== body.capture_id ||
-          record.page !== page.page_id || record.digest !== digest)
-        ) throw new SafeError("validation_required", 409);
+        await checkImage(page.image_base64);
+        // This flag records the user's local readability decision, not AI attestation.
+        if (page.local_readability !== true) throw new SafeError("local_readability_required", 409);
         images.push(page.image_base64);
       }
       // The submitted ordered set is the user's completeness declaration.
-      // Older validations may belong to legitimate discarded/retaken photos.
+      // Local checks may belong to legitimate discarded/retaken photos.
       // These local bytes are fixed for this request; a later request can submit
-      // freshly validated replacements without being locked to an old attempt.
+      // locally checked replacements without being locked to an old attempt.
       return json(
         validateInterpretation(
           await provider.interpret(images[0], images.slice(1), body.language === "zh" ? "zh" : "en"),

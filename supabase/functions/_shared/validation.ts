@@ -3,8 +3,6 @@ import {
   interpretationSchemaFor,
   localizedInterpretationSchemaFor,
   type OutputLanguage,
-  type Verdict,
-  verdictSchema,
 } from "./contracts.ts";
 export class SafeError extends Error {
   constructor(public code: string, public status = 422) {
@@ -40,16 +38,6 @@ export function matchesSchema(value: unknown, schema: any): boolean {
     (schema.minimum === undefined || (value as number) >= schema.minimum) &&
     (schema.maximum === undefined || (value as number) <= schema.maximum);
   return typeof value === "boolean" && types.includes("boolean");
-}
-export function validateVerdict(value: unknown): Verdict {
-  if (!matchesSchema(value, verdictSchema)) {
-    throw new SafeError("invalid_ai_output");
-  }
-  const result = value as Verdict;
-  if (!result.reason.en.trim() || !result.reason.zh.trim()) {
-    throw new SafeError("invalid_ai_output");
-  }
-  return result;
 }
 export function validateInterpretation(
   value: unknown,

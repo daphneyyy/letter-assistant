@@ -496,17 +496,10 @@ private final class StubAPI: LetterAPIClient {
     var shouldReject = false
     var shouldFail = false
     var failureCode = "provider_not_configured"
-    var validationCalls = 0
     var interpretationCalls = 0
     var requestedLanguage: AppLanguage?
     var submittedPages: [LetterPageInput] = []
     var captureIDs: [UUID] = []
-    func validate(image: Data, captureID: UUID, pageID: UUID) async throws -> PageValidation {
-        validationCalls += 1
-        captureIDs.append(captureID)
-        if shouldFail { throw RelayError(code: failureCode) }
-        return PageValidation(verdict: shouldReject ? "retake" : "valid", reason: BilingualText(en: "Photo checked", zh: "照片已检查"), validationToken: shouldReject ? nil : "test-token")
-    }
     func interpret(pages: [LetterPageInput], captureID: UUID, language: AppLanguage) async throws -> LetterInterpretation {
         requestedLanguage = language
         return try await interpret(pages: pages, captureID: captureID)
@@ -515,10 +508,7 @@ private final class StubAPI: LetterAPIClient {
         interpretationCalls += 1; submittedPages = pages
         throw RelayError(code: shouldFail ? failureCode : "provider_unavailable")
     }
-    func interpret(image: Data, captureID: UUID, pageID: UUID, token: String) async throws -> LetterInterpretation {
-        interpretationCalls += 1
-        throw RelayError(code: shouldFail ? failureCode : "provider_unavailable")
-    }
+
 }
 extension LetterAssistantTests {
     @MainActor private func photo(color: UIColor = .white) -> UIImage {
@@ -619,7 +609,6 @@ extension LetterAssistantTests {
         api.shouldFail = false
         model.validate(); try await waitForWork(model)
         XCTAssertEqual(model.phase, .valid)
-        XCTAssertEqual(api.validationCalls, 0)
         model.interpret(); try await waitForWork(model)
         XCTAssertEqual(model.phase, .interpretFailed)
         model.changeLanguage(.zh)
@@ -634,7 +623,6 @@ extension LetterAssistantTests {
         model.changeLanguage(.zh)
         model.accept(photo()); try await waitForWork(model)
         XCTAssertEqual(model.phase, .valid)
-        XCTAssertEqual(api.validationCalls, 0)
         model.interpret(); try await waitForWork(model)
         XCTAssertEqual(model.phase, .interpretFailed)
         XCTAssertTrue(model.message.contains("密钥无效"))
@@ -651,7 +639,6 @@ extension LetterAssistantTests {
         model.accept(photo(), asNextPage: true); try await waitForWork(model)
         XCTAssertEqual(model.pages.count, 2)
         XCTAssertEqual(model.pages[0].id, originalID)
-        XCTAssertEqual(api.validationCalls, 0)
         let secondID = model.pages[1].id
         model.selectPage(0)
         model.accept(photo(color: .black)); try await waitForWork(model)
@@ -713,7 +700,6 @@ extension LetterAssistantTests {
         model.usePhotoAnyway()
         XCTAssertTrue(model.canFinishCapture)
         XCTAssertEqual(model.pages[0].bytes, bytes)
-        XCTAssertEqual(api.validationCalls, 0)
         model.accept(photo()); try await waitForWork(model)
         XCTAssertFalse(model.canFinishCapture)
         XCTAssertEqual(model.validation?.verdict, "uncertain")
