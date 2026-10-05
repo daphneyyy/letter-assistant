@@ -97,6 +97,8 @@ No completed learning wrap-up is inferred from the scope change. Keep it proport
 
 ## Revisions
 
+- October 4 latency feedback: two fictional bill pages with the configured model took 28,334 ms before request deduplication and 27,932 ms after; both returned schema-valid interpretations (five facts, one action). Input tokens fell from 12,267 to 11,315 by removing the redundant schema copy from the OpenAI system message while retaining strict response_format and output validation. These single runs show no meaningful latency gain and do not evaluate the learner’s real letter. No model switch or image downsampling was made. Added actual elapsed waiting seconds and explanatory English/Chinese copy after 20 seconds, without invented completion percentages. Backend check/29 tests and iOS 43 unit tests passed. Physical-device waiting UI and broader live extraction acceptance remain open.
+
 - October 4 follow-up: restored the calendar-save confirmation label to Back to result / 返回解读结果 at the learner’s request; synchronized its accessibility identifier, existing UI assertion and PRD/spec. This is a text-only reversal; navigation and the compact duration picker are unchanged. Verified the diff and matching strings; no new simulator or phone test was run.
 
 - October 4 real-upload correction: removed unconditional fictional-letter wording from both provider transports and shared grounding. Fictional/test/sample labels now require explicit visible source evidence in both languages, including calendar notes. Backend type check and all 29 tests passed, with outgoing-request coverage for both transports. No private document was used for this verification; the uploaded real-letter result must be regenerated to assess the live correction.

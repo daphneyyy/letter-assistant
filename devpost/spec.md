@@ -33,6 +33,8 @@ This is a source-built hackathon demo, not an App Store package or hosted servic
 
 ### Letter Interpretation and Grounding
 
+For the OpenAI Chat Completions endpoint, send the JSON schema only in strict `response_format`, rather than duplicating it in the system prompt. Other compatible providers retain their existing prompt copy. Keep output validation, full ordered images and the configured model unchanged. `InterpretationProgressView` uses `TimelineView` to display elapsed seconds from presentation, with explanatory copy after 20 seconds. This is waiting feedback, not measured stage progress or a latency guarantee.
+
 `LetterAPI.swift` sends ordered pages to the local relay. `supabase/functions/_shared/` currently contains reusable provider/schema/prompt/validation modules imported by the relay: the folder name does not indicate a Supabase deployment dependency. Keep these working modules; relocation is not necessary for this scope change.
 
 The strict structured response contains bilingual summaries, contextual facts with original source references, and required/optional/conditional actions. Keep canonical values, uncertainty and date roles consistent. Four-section UI and generic medical/health-insurance interpretation remain as specified in PRD. No chat, conversation compression or database writes.

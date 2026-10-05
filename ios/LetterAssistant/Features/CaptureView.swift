@@ -52,8 +52,14 @@ struct CaptureView: View {
                         ProgressView(language.text("Loading photo…", "正在载入照片…")).font(.body)
                     }
                     if model.phase.busy {
-                        ProgressView(language.text(model.phase == .checking ? "Checking the photo…" : "Reading the letter…", model.phase == .checking ? "正在检查照片…" : "正在解读信件…"))
-                            .font(.body).frame(maxWidth: .infinity, alignment: .leading)
+                        Group {
+                            if model.phase == .interpreting {
+                                InterpretationProgressView(language: language)
+                            } else {
+                                ProgressView(language.text("Checking the photo…", "正在检查照片…"))
+                                    .font(.body)
+                            }
+                        }.frame(maxWidth: .infinity, alignment: .leading)
                             .padding(20).background(LetterStyle.surface, in: RoundedRectangle(cornerRadius: 8))
                     }
                     if model.result == nil && !model.message.isEmpty {
@@ -726,4 +732,26 @@ enum LetterStyle {
     })
     static let rule = accent.opacity(0.20)
     static let surface = Color(uiColor: .secondarySystemGroupedBackground)
+}
+
+private struct InterpretationProgressView: View {
+    let language: AppLanguage
+    @State private var startedAt = Date()
+
+    var body: some View {
+        TimelineView(.periodic(from: startedAt, by: 1)) { context in
+            let seconds = max(0, Int(context.date.timeIntervalSince(startedAt)))
+            VStack(alignment: .leading, spacing: 10) {
+                ProgressView(language.text("Reading the letter…", "正在解读信件…"))
+                    .font(.body)
+                Text(language.text("Waiting: \(seconds) seconds", "已等待 \(seconds) 秒"))
+                    .font(.callout).monospacedDigit().foregroundStyle(.secondary)
+                    .accessibilityHidden(true)
+                if seconds >= 20 {
+                    Text(language.text("Uploading photos and generating both language versions can take time, especially for multiple pages. Your explanation will appear when ready.", "上传照片和生成双语解读需要一些时间，多页信件可能更久。完成后会自动显示结果。"))
+                        .font(.callout).foregroundStyle(LetterStyle.supportingText)
+                }
+            }
+        }
+    }
 }

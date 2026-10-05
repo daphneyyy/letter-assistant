@@ -255,6 +255,8 @@ Deno.test("OpenAI endpoint uses the supported completion token limit", async () 
     assert(body.model === "gpt-6.1-sol");
     assert(body.max_completion_tokens === 6000 && body.max_tokens === undefined);
     assert(body.provider === undefined && body.reasoning === undefined);
+    assert(body.response_format.json_schema.strict === true);
+    assert(!body.messages[0].content.includes(JSON.stringify(body.response_format.json_schema.schema)));
     return Response.json(completion());
   }) as typeof fetch;
   assert((await configuredProvider(k => env[k], transport).validate(image)).verdict === "valid");

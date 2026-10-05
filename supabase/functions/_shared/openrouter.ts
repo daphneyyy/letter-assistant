@@ -69,9 +69,11 @@ export class OpenRouterProvider implements AIProvider {
             messages: [
               {
                 role: "system",
-                content: `${prompt}\nReturn only JSON matching this schema: ${
-                  JSON.stringify(schema)
-                }`,
+                // OpenAI already receives the full strict schema in response_format.
+                // Keep the prompt copy for other compatible providers.
+                content: endpoint.origin === "https://api.openai.com"
+                  ? `${prompt}\nReturn only JSON matching the response schema.`
+                  : `${prompt}\nReturn only JSON matching this schema: ${JSON.stringify(schema)}`,
               },
               {
                 role: "user",

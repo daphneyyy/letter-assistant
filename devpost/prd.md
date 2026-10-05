@@ -78,6 +78,8 @@ No user account, email, cloud archive or app-owned conversation history. Photos/
 
 ## Recovery Behavior
 
+During interpretation, show the actual elapsed waiting seconds. After 20 seconds, explain that uploading photos and generating bilingual output can take time, especially for multiple pages; results appear automatically when ready. Do not claim a completion percentage or invent upload/generation stages.
+
 | Situation | Required behavior |
 | --- | --- |
 | Camera denied/canceled | Settings or cancel path; retain existing pages |
