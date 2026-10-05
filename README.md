@@ -31,7 +31,7 @@ No Supabase or email-service setup is needed. The `supabase/functions/_shared/` 
 
 ## Clone and configure your own key
 
-Clone this GitHub repository, then open a terminal in the repository root. Create your local configuration:
+Clone the [Letter Assistant repository](https://github.com/daphneyyy/letter-assistant), then open a terminal in the repository root. Create your local configuration:
 
 ```sh
 cp .env.example .env.local
@@ -122,13 +122,13 @@ The project is developed with AI assistance in Codex using the [Devpost Learn Sk
 
 Operators must use the Apple SDKs, runtime and configured AI service/model in accordance with their respective terms. The project MIT license does not replace third-party terms or grant access to a provider account. No third-party model weights, provider credentials or Devpost Skill Pack source are bundled in the tracked application source.
 
-The first recorded application commit is October 2, 2026. Commit dates document repository history; any additional pre-existing code, templates or assets incorporated into the project must be disclosed separately by the author for submission.
+The author confirms that no code or materials were copied or adapted from prior projects, tutorials, templates or other repositories, apart from the standard tools/frameworks and Devpost Learn Skill Pack documented above.
 
 ## Open-source publication readiness
 
 This project is licensed under the [MIT License](LICENSE).
 
-The intended distribution is a public GitHub repository with operator-owned API keys. Audit tracked files and Git history for credentials, local signing/configuration, private learner context and real letter images before pushing publicly. Only fictional fixtures should be published. This requirements revision does not publish the repository.
+The [GitHub repository](https://github.com/daphneyyy/letter-assistant) is currently private and will be made public for submission. Operators supply their own API keys. Audit tracked files and Git history for credentials, local signing/configuration, private learner context and real letter images before pushing publicly. Only fictional fixtures should be published. Public access and GitHub license detection must be checked after the visibility change.
 
 
 ### Test and Prod builds
