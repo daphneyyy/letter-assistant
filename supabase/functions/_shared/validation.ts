@@ -2,6 +2,7 @@ import {
   type Interpretation,
   interpretationSchemaFor,
   localizedInterpretationSchemaFor,
+  legacyLocalizedInterpretationSchemaFor,
   type OutputLanguage,
 } from "./contracts.ts";
 export class SafeError extends Error {
@@ -176,13 +177,17 @@ export function validateInterpretation(
 }
 
 export function validateLocalizedInterpretation(value: unknown, pageCount: number, language: OutputLanguage): Interpretation {
+  if (value && typeof value === "object" && Object.hasOwn(value, "sources")) {
+    return expandCompactInterpretation(value, pageCount, language);
+  }
+  // Accept earlier single-language responses without changing the app contract.
   if (value && typeof value === "object" && Array.isArray((value as any).actions)) {
     value = structuredClone(value);
     for (const action of (value as any).actions) if (action && typeof action === "object") {
       for (const key of ["statement_balance_fact_id", "deadline_time", "deadline_timezone"]) if (!Object.hasOwn(action, key)) action[key] = null;
     }
   }
-  if (!matchesSchema(value, localizedInterpretationSchemaFor(pageCount, language))) throw new SafeError("invalid_ai_output");
+  if (!matchesSchema(value, legacyLocalizedInterpretationSchemaFor(pageCount, language))) throw new SafeError("invalid_ai_output");
   const result: any = structuredClone(value);
   const text = (value: any) => ({en: value[language], zh: value[language]});
   for (const fact of result.facts) { fact.label = text(fact.label); fact.explanation = text(fact.explanation); }
@@ -193,5 +198,37 @@ export function validateLocalizedInterpretation(value: unknown, pageCount: numbe
     action.calendar_notes = text(action.calendar_notes); action.calendar_title = text(action.calendar_title);
   }
   result.summaries = {en: result.summaries[language], zh: result.summaries[language]};
+  return validateInterpretation(result, pageCount);
+}
+
+function expandCompactInterpretation(value: unknown, pageCount: number, language: OutputLanguage): Interpretation {
+  if (!matchesSchema(value, localizedInterpretationSchemaFor(pageCount, language))) throw new SafeError("invalid_ai_output");
+  const wire: any = structuredClone(value);
+  const text = (value: string) => ({ en: value, zh: value });
+  // Only exactly identical excerpts on the same page are deduplicated. No fuzzy merging.
+  const sources = (ids: number[]) => {
+    const seen = new Set<string>();
+    return ids.map(id => {
+      if (id >= wire.sources.length) throw new SafeError("invalid_ai_output");
+      const source = wire.sources[id];
+      if (!source.excerpt.trim()) throw new SafeError("invalid_ai_output");
+      return source;
+    }).filter(source => {
+      const key = JSON.stringify([source.page, source.excerpt]);
+      if (seen.has(key)) return false;
+      seen.add(key); return true;
+    });
+  };
+  const { sources: _sources, ...result } = wire;
+  result.schema_version = 1;
+  result.facts = wire.facts.map(({ source_ids, ...fact }: any) => ({
+    ...fact, origin: "letter_fact", label: text(fact.label), explanation: text(fact.explanation), source_refs: sources(source_ids),
+  }));
+  result.actions = wire.actions.map(({ source_ids, description, ...action }: any) => ({
+    ...action, description_en: description, description_zh: description,
+    condition: action.condition === null ? null : text(action.condition),
+    calendar_title: text(action.calendar_title), calendar_notes: text(action.calendar_notes), source_refs: sources(source_ids),
+  }));
+  result.summaries = { en: wire.summaries, zh: wire.summaries };
   return validateInterpretation(result, pageCount);
 }

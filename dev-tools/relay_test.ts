@@ -5,7 +5,7 @@ import {
   sanitizedUsage,
   type UsageRecord,
 } from "../supabase/functions/_shared/openai.ts";
-import { validateInterpretation } from "../supabase/functions/_shared/validation.ts";
+import { validateInterpretation, validateLocalizedInterpretation } from "../supabase/functions/_shared/validation.ts";
 import type {
   Action,
   Fact,
@@ -706,23 +706,17 @@ Deno.test("relay forwards the selected app language and rejects other languages"
 Deno.test("both provider transports generate only the selected language with strict grounding", async () => {
   const { OpenRouterProvider } = await import("../supabase/functions/_shared/openrouter.ts");
   for (const language of ["en", "zh"] as const) {
-    const single: any = structuredClone(enrollmentContract());
-    for (const fact of single.facts) {
-      fact.label = {[language]: fact.label[language]}; fact.explanation = {[language]: fact.explanation[language]};
-    }
-    for (const action of single.actions) {
-      delete action[language === "en" ? "description_zh" : "description_en"];
-      if (action.condition) action.condition = {[language]:action.condition[language]};
-      action.calendar_notes = {[language]:action.calendar_notes[language]};
-      action.calendar_title = {[language]:action.calendar_title[language]};
-    }
-    single.summaries = {[language]:single.summaries[language]};
+    const single = compactFixture(enrollmentContract(), language);
     for (const mode of ["responses", "chat"]) {
       const transport: typeof fetch = async (_url, init) => {
         const body = JSON.parse(String(init?.body));
         const schema = mode === "responses" ? body.text.format.schema : body.response_format.json_schema.schema;
-        assert(Object.keys(schema.properties.summaries.properties).join() === language);
-        assert(Object.keys(schema.properties.facts.items.properties.label.properties).join() === language);
+        assert(schema.properties.summaries.properties.what_this_is.type === "string");
+        assert(schema.properties.facts.items.properties.label.type === "string");
+        assert(!Object.hasOwn(schema.properties, "schema_version"));
+        assert(!Object.hasOwn(schema.properties.facts.items.properties, "origin"));
+        assert(schema.properties.sources.items.properties.page.enum.join() === "1");
+        assert(schema.properties.actions.items.properties.description.type === "string");
         assert(!Object.hasOwn(schema.properties.actions.items.properties, language === "en" ? "description_zh" : "description_en"));
         return Response.json(mode === "responses"
           ? {status:"completed",output:[{content:[{type:"output_text",text:JSON.stringify(single)}]}]}
@@ -731,8 +725,8 @@ Deno.test("both provider transports generate only the selected language with str
       const provider = mode === "responses" ? new OpenAIProvider("test-key","test-model",transport)
         : new OpenRouterProvider("test-key","test-model",transport,()=>{}, {baseURL:"https://api.openai.com/v1",freeOnly:false});
       const actual = await provider.interpret(image, [], language);
-      assert(actual.summaries.en.what_this_is === single.summaries[language].what_this_is);
-      assert(actual.summaries.zh.what_this_is === single.summaries[language].what_this_is);
+      assert(actual.summaries.en.what_this_is === single.summaries.what_this_is);
+      assert(actual.summaries.zh.what_this_is === single.summaries.what_this_is);
       assert(actual.actions[0].requirement === "conditional");
       assert(actual.actions[0].deadline_fact_id === single.actions[0].deadline_fact_id);
     }
@@ -761,5 +755,99 @@ Deno.test("credit-card balance and explicit deadline clock metadata preserve sou
     const copy = structuredClone(card); mutation(copy);
     let rejected = false; try { validateInterpretation(copy); } catch { rejected = true; }
     assert(rejected);
+  }
+});
+
+// Encode test expectations only; production expansion never guesses extracted content.
+function compactFixture(input: Interpretation, language: "en" | "zh"): any {
+  const value = structuredClone(validateInterpretation(input, 2));
+  const sources: {page: number; excerpt: string}[] = [];
+  const ids = (refs: typeof sources) => refs.map(ref => {
+    let index = sources.findIndex(s => s.page === ref.page && s.excerpt === ref.excerpt);
+    if (index < 0) { index = sources.length; sources.push(ref); }
+    return index;
+  });
+  const {schema_version: _version, ...wire} = value;
+  return {
+    ...wire,
+    sources,
+    facts: value.facts.map(({origin: _origin, source_refs, ...fact}) => ({
+      ...fact, label: fact.label[language], explanation: fact.explanation[language], source_ids: ids(source_refs),
+    })),
+    actions: value.actions.map(({description_en: _en, description_zh: _zh, source_refs, ...action}) => ({
+      ...action, description: language === "en" ? _en : _zh,
+      condition: action.condition?.[language] ?? null,
+      calendar_title: action.calendar_title[language], calendar_notes: action.calendar_notes[language], source_ids: ids(source_refs),
+    })),
+    summaries: value.summaries[language],
+  };
+}
+
+Deno.test("compact wire restores fixed fields, shared evidence and every app field in either language", () => {
+  const input = enrollmentContract();
+  // Same quote on two pages must remain distinct; repeated same-page quote is stored once.
+  input.facts[0].source_refs = [{page:1,excerpt:"Deadline evidence"},{page:2,excerpt:"Deadline evidence"}];
+  input.actions[0].source_refs = [...input.facts[0].source_refs];
+  for (const language of ["en", "zh"] as const) {
+    const wire = compactFixture(input, language);
+    assert(wire.sources.length === 2);
+    assert(wire.actions[0].source_ids.join() === "0,1");
+    assert(!("schema_version" in wire) && !("origin" in wire.facts[0]));
+    const output = validateLocalizedInterpretation(wire, 2, language);
+    assert(output.schema_version === 1 && output.facts[0].origin === "letter_fact");
+    assert(JSON.stringify(output.facts[0].source_refs) === JSON.stringify(input.facts[0].source_refs));
+    assert(JSON.stringify(output.actions[0].source_refs) === JSON.stringify(input.actions[0].source_refs));
+    for (const field of ["kind","raw_text","value","currency","status"] as const) assert(output.facts[0][field] === input.facts[0][field]);
+    assert(output.facts[0].explanation.en === input.facts[0].explanation[language]);
+    assert(output.actions[0].condition?.zh === input.actions[0].condition?.[language]);
+    assert(output.actions[0].calendar_notes.en === input.actions[0].calendar_notes[language]);
+    assert(output.actions[0].deadline_fact_id === input.actions[0].deadline_fact_id);
+    assert(JSON.stringify(output.summaries.en) === JSON.stringify(input.summaries[language]));
+    const repeated = structuredClone(wire); repeated.sources.push(wire.sources[0]); repeated.actions[0].source_ids.push(2,0);
+    assert(validateLocalizedInterpretation(repeated, 2, language).actions[0].source_refs.length === 2);
+  }
+});
+
+Deno.test("compact evidence rejects dangling, negative, fractional, cross-page and empty references", () => {
+  const wire = compactFixture(enrollmentContract(), "en");
+  for (const mutate of [
+    (w: any) => w.actions[0].source_ids.push(w.sources.length),
+    (w: any) => w.facts[0].source_ids.push(-1),
+    (w: any) => w.facts[0].source_ids.push(0.5),
+    (w: any) => w.sources[0].page = 3,
+    (w: any) => w.sources[0].excerpt = " ",
+    (w: any) => w.actions[0].source_ids = [],
+  ]) {
+    const invalid = structuredClone(wire); mutate(invalid);
+    let rejected = false; try { validateLocalizedInterpretation(invalid, 2, "en"); } catch { rejected = true; }
+    assert(rejected);
+  }
+});
+
+Deno.test("compact card metadata and appointment duration survive expansion without changing their roles", () => {
+  const card = enrollmentContract(); card.domain = "banking"; card.category = "bills";
+  const balance = {...structuredClone(coverageFact),id:"balance",kind:"amount" as const,value:"2093.02",currency:"USD"};
+  const minimum = {...structuredClone(balance),id:"minimum",value:"35.00"};
+  const due = {...structuredClone(coverageFact),id:"due",kind:"deadline" as const,value:"2026-11-15"};
+  card.facts = [balance,minimum,due]; card.actions[0].action_kind = "payment";
+  Object.assign(card.actions[0], {amount_fact_ids:["minimum"],statement_balance_fact_id:"balance",deadline_fact_id:"due",deadline_time:"20:00",deadline_timezone:"America/New_York"});
+  for (const summary of Object.values(card.summaries)) summary.fact_ids = ["balance","minimum","due"];
+  const restored = validateLocalizedInterpretation(compactFixture(card,"zh"),1,"zh");
+  assert(restored.actions[0].statement_balance_fact_id === "balance");
+  assert(restored.actions[0].amount_fact_ids.join() === "minimum");
+  assert(restored.actions[0].deadline_time === "20:00" && restored.actions[0].deadline_timezone === "America/New_York");
+  const appointment = enrollmentContract();
+  appointment.facts[0].kind = "appointment_date";
+  Object.assign(appointment.actions[0], {action_kind:"schedule_appointment",appointment_fact_ids:[appointment.facts[0].id],suggested_duration_minutes:45});
+  assert(validateLocalizedInterpretation(compactFixture(appointment,"en"),1,"en").actions[0].suggested_duration_minutes === 45);
+});
+
+Deno.test("compact empty and unsupported results retain honest app behavior", () => {
+  for (const domain of ["medical","unsupported"] as const) {
+    const input = structuredClone(result); input.domain = domain;
+    if (domain === "unsupported") { input.category = null; input.needs_review = true; }
+    const output = validateLocalizedInterpretation(compactFixture(input,"zh"),1,"zh");
+    assert(output.domain === domain && !output.actions.length && !output.facts.length);
+    assert(output.schema_version === 1);
   }
 });

@@ -32,5 +32,6 @@ For appointment actions with a linked appointment date/time and no deadline, sug
 Return only JSON matching the response schema.`;
 
 export function selectedLanguagePrompt(language: "en" | "zh") {
-  return `${interpretationPrompt}\nOutput all summaries, labels, explanations, descriptions, conditions and calendar copy only in ${language === "zh" ? "Simplified Chinese" : "English"}, the selected app language. Do not generate a translation or another language. Source quotations/raw_text retain their original language.`;
+  const compactPrompt = interpretationPrompt.replaceAll("source_refs", "source_ids");
+  return `${compactPrompt}\nCompact format: sources stores each distinct {page,excerpt} quote once. Fact/action source_ids use zero-based indices; pages stay one-based. Never merge different quotes/pages. Avoid redundant wording across descriptions/explanations/notes; preserve meaning, conditions, cutoffs and standalone calendar details.\nOutput all summaries, labels, explanations, descriptions, conditions and calendar copy only in ${language === "zh" ? "Simplified Chinese" : "English"}, the selected app language. Do not generate a translation or another language. Source quotations/raw_text retain their original language.`;
 }

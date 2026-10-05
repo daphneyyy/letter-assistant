@@ -174,7 +174,7 @@ export const interpretationSchema = interpretationSchemaFor();
 
 // Generate only the selected app language; the local adapter preserves legacy clients.
 export type OutputLanguage = "en" | "zh";
-export function localizedInterpretationSchemaFor(pageCount: number, language: OutputLanguage) {
+export function legacyLocalizedInterpretationSchemaFor(pageCount: number, language: OutputLanguage) {
   const schema: any = interpretationSchemaFor(pageCount);
   const text = object({ [language]: str });
   const fact = schema.properties.facts.items.properties;
@@ -186,5 +186,35 @@ export function localizedInterpretationSchemaFor(pageCount: number, language: Ou
   action.properties.calendar_notes = text; action.properties.calendar_title = text;
   action.required = Object.keys(action.properties);
   schema.properties.summaries = object({ [language]: summary });
+  return schema;
+}
+
+// Provider-only compact wire format. The relay restores the unchanged app contract.
+export function localizedInterpretationSchemaFor(pageCount: number, _language: OutputLanguage) {
+  const schema: any = interpretationSchemaFor(pageCount);
+  const props = schema.properties;
+  const source = props.facts.items.properties.source_refs;
+  const sourceIds = { type: "array", items: { type: "integer", minimum: 0 } };
+  delete props.schema_version;
+  props.sources = source;
+  const fact = props.facts.items;
+  delete fact.properties.origin;
+  delete fact.properties.source_refs;
+  fact.properties.source_ids = sourceIds;
+  fact.properties.label = str;
+  fact.properties.explanation = str;
+  fact.required = Object.keys(fact.properties);
+  const action = props.actions.items;
+  delete action.properties.description_en;
+  delete action.properties.description_zh;
+  delete action.properties.source_refs;
+  action.properties.description = str;
+  action.properties.source_ids = sourceIds;
+  action.properties.condition = nullable;
+  action.properties.calendar_title = str;
+  action.properties.calendar_notes = str;
+  action.required = Object.keys(action.properties);
+  props.summaries = summary;
+  schema.required = Object.keys(props);
   return schema;
 }
