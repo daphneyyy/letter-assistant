@@ -12,7 +12,7 @@ Supported everyday documents now include utility bills (electricity/gas/water), 
 
 - Native iPhone camera, ordered multi-page capture and individual retakes.
 - On-device readability checks, with Retake / Use anyway for uncertain quality. These checks do not call AI or check cropping/page numbering.
-- Source-grounded bilingual explanations: what the letter says, what to pay attention to, actions/choices and relevant timing.
+- Source-grounded explanations in the selected English or Chinese app language: what the letter says, what to pay attention to, actions/choices and relevant timing.
 - Review and create all-day deadlines/reminders or timed appointments in the iPhone calendar. Tap Add to calendar to save directly to the default calendar; first use requests write-only permission.
 - Concise calendar notes with an in-app preview, separate from source excerpts and review instructions.
 - A clearly labeled no-AI calendar test entry with fictional examples.
@@ -67,7 +67,7 @@ For a physical phone, set `RELAY_HOST` to your Mac's private IPv4 address and `R
    deno task relay
    ```
 
-2. Open `ios/LetterAssistant.xcodeproj` in Xcode. Select the **LetterAssistant** scheme and **Debug** configuration.
+2. Open `ios/LetterAssistant.xcodeproj` in Xcode. Select the **LetterAssistant-Test** scheme (Debug configuration).
 3. In Signing & Capabilities, select **your own development team** and, if needed, a unique bundle identifier. Do not assume the repository's existing team settings work for your account.
 4. Select your connected iPhone and run the app. Allow camera/local-network access when requested.
 5. The interface uses the app language chosen in iPhone Settings, or follows the phone's language preferences when no app override is set (English or Simplified Chinese, with English as the fallback). The globe button opens the app's system Settings page; choose **Language / Preferred Language** there. Changing the system app language restarts the app and clears the unsaved letter, so finish reading first. Photograph a fictional letter, handle its photo check, and finish capture for analysis. The Mac relay must remain running.
@@ -81,7 +81,7 @@ This local HTTP phone-to-Mac path is for trusted-network demos with fictional le
 
 On the Debug home screen expand **Demo tools / 演示工具**, then tap **Test calendar without AI / 日历测试（无需 AI）**. Choose a deadline, a reminder without a deadline, or an appointment. No photo, key or running relay is needed. Titles are marked `[TEST]` / `【测试】`; tapping Add creates a real event.
 
-Deadlines/reminders are all-day events. All event types offer editable dates and time zones, defaulting to the phone zone. Source-zoned appointment instants are converted to the phone zone for display; changing the picker zone preserves the displayed day/clock. Moving a deadline event to another date preserves its original deadline in notes. Bill titles and notes retain bill type, organization and confirmed linked payment amount. Explicitly extracted appointment times now prefill the review; missing or ambiguous times still need entry, and the phone time zone is disclosed when none is stated. Appointment time and time zone must still be checked; Timed appointments use the AI-suggested duration when available, clearly labeled as an estimate, with a 30-minute fallback. Choose a duration preset or enter 1–1,440 custom minutes; the review shows the resulting end time. Choose an alert during review: all-day events default to 9 AM on the event date, and appointments default to 15 minutes before. Options include additional advance reminders, None, and a custom date/time. Custom alerts keep their exact date/time when the event date changes. Adjust alerts in the app before adding. Not now dismisses without saving. Permission denial offers Settings; an unavailable default calendar or a save error keeps the form available. Unknown/interrupted outcomes ask you to check Calendar before retrying to avoid duplicates. Later changes are made in Calendar.
+Date-only deadlines/reminders are all-day events. Explicit clock deadlines use timed cutoff markers in the source time zone. All event types offer editable dates and time zones, defaulting to the phone zone. Source-zoned appointment instants are converted to the phone zone for display; changing the picker zone preserves the displayed day/clock. Moving a deadline event to another date preserves its original deadline in notes. Bill titles and notes retain bill type, organization and confirmed linked payment amount. Explicitly extracted appointment times now prefill the review; missing or ambiguous times still need entry, and the phone time zone is disclosed when none is stated. Appointment time and time zone must still be checked; Timed appointments use the AI-suggested duration when available, clearly labeled as an estimate, with a 30-minute fallback. Tap the duration value and use the hour/minute wheels to choose 1–1,440 minutes; the review shows the resulting end time. Choose an alert during review: all-day events default to 9 AM on the event date, and appointments default to 15 minutes before. Options include additional advance reminders, None, and a custom date/time. Custom alerts keep their exact date/time when the event date changes. Adjust alerts in the app before adding. Not now dismisses without saving. Permission denial offers Settings; an unavailable default calendar or a save error keeps the form available. Unknown/interrupted outcomes ask you to check Calendar before retrying to avoid duplicates. Later changes are made in Calendar.
 
 ## Verification and known limits
 
@@ -89,7 +89,7 @@ Deadlines/reminders are all-day events. All event types offer editable dates and
 deno task check
 deno task test
 xcrun simctl list devices available
-xcodebuild -project ios/LetterAssistant.xcodeproj -scheme LetterAssistant -destination 'platform=iOS Simulator,name=YOUR_INSTALLED_IPHONE_SIMULATOR' -derivedDataPath /tmp/letter-assistant-build CODE_SIGNING_ALLOWED=NO test
+xcodebuild -project ios/LetterAssistant.xcodeproj -scheme LetterAssistant-Test -destination 'platform=iOS Simulator,name=YOUR_INSTALLED_IPHONE_SIMULATOR' -derivedDataPath /tmp/letter-assistant-build CODE_SIGNING_ALLOWED=NO test
 ```
 
 Replace the simulator-name placeholder with an installed device. The test suites cover capture state, image quality, contracts/provider failures, date policies, all-day EventKit construction and calendar field-validation/cancel UI. Mock-provider tests do not establish real AI accuracy.

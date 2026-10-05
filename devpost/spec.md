@@ -11,7 +11,7 @@ October 2, 2026: the learner removed email/accounts, archive and chat from hacka
 
 Clone the GitHub repository, configure an operator-owned compatible AI key/model in ignored `.env.local`, run the Deno relay on a Mac, configure the matching local relay URL/token in ignored `ios/Config/Debug.local.plist`, and install the Debug app through Xcode with the operator's own signing team. Phone and Mac use the same trusted local network. See README for exact instructions.
 
-This is a source-built hackathon demo, not an App Store package or hosted service. Current Release builds intentionally exclude local relay configuration and cannot perform this local AI flow. No account, Supabase project, email service, domain or cloud deployment is needed.
+This is a source-built hackathon demo, not an App Store package or hosted service. The Prod/Release build packages only the ignored Prod.local.plist and accepts HTTPS or trusted local HTTP relay settings. It excludes fictional fixtures and demo tools; compilation alone does not establish a working AI connection. No account, Supabase project, email service, domain or cloud deployment is needed.
 
 ## Stack
 

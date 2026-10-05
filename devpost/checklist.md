@@ -9,7 +9,7 @@ Build mode: Fast (retained). Scope revised directly by the learner on October 2,
 
 ## Current State
 
-The core implementation and no-AI calendar test entry exist, with signed builds installed on the learner's iPhone. Early hands-on review is complete. Remaining boxes describe acceptance and release readiness, not permission to build the removed features.
+The core implementation and no-AI calendar test entry exist, with signed builds installed on the learner's iPhone. Early hands-on review is complete. On October 5 the learner confirmed the requested iPhone capture/retake → explanation → saved Calendar event hands-on check passed. Specific edge-case checks below remain separate from that core-journey report. Remaining boxes describe acceptance and release readiness, not permission to build the removed features.
 
 Historical evidence: 20 unit cases passed in the calendar checkpoint (that runner later hung and was stopped), three UI tests passed in a completed separate run, then the focused EventKit all-day regression test passed. Signed Debug and unsigned Release builds have passed. Backend checks previously passed 24 tests. Those results predate the latest UI/alert refinements. Actual phone confirmation of the all-day fix and broader final acceptance remain pending. Conditional enrollment extraction has improved in individual runs but is not broadly accepted.
 
@@ -43,14 +43,14 @@ Latest October 2 follow-up: the UI refinements, logo removal and expanded preset
   PRD ref: `prd.md > Data and Open-Source Experience`; `prd.md > Demonstration and Acceptance`.
   Spec ref: `spec.md > Where It Runs and How Someone Tries It`; `spec.md > External Services and Dependencies`; `spec.md > Verification and Build Sequence`.
   Build: Maintain secret-free setup examples and accurate README, select an open-source license before publication, resolve scoped final review findings and prepare the demo. No push/publication is performed merely by editing this checklist.
-  Verify (mechanical): Check documented fresh-clone setup with separate operator-owned local configuration, correct Xcode signing and matching relay token. Verify no tracked credentials/personal letters; audit Git history before publishing. Check the complete four-step journey. Release compilation alone does not prove AI works in Release; document Debug-only relay support.
+  Verify (mechanical): Check documented fresh-clone setup with separate operator-owned local configuration, correct Xcode signing and matching relay token. Verify no tracked credentials/personal letters; audit Git history before publishing. Check the complete four-step journey. Release compilation alone does not prove AI works in Release; document separate Debug/Prod configuration and accepted relay URLs.
   Learner check: Follow the README, run the end-to-end demo and report remaining confusing or broken behavior. Confirm the scoped demo is ready.
   Commit: `Prepare reproducible open-source hackathon demo`
 
 ## Hands-on Checkpoints
 
 - [x] Early interpretation review completed; preserve accepted layout and feedback.
-- [ ] Final four-step journey and calendar results reviewed on one iPhone.
+- [x] Final four-step journey and calendar results reviewed on one iPhone — learner confirmed the requested hands-on check passed October 5, 2026; no detailed edge-case or target-user coverage is inferred.
 
 No second phone, account isolation, email delivery or saved-conversation review is required.
 
@@ -98,6 +98,12 @@ No second phone, account isolation, email delivery or saved-conversation review 
 No completed learning wrap-up is inferred from the scope change. Keep it proportional to the smaller demo.
 
 ## Revisions
+
+- October 5 setup verification: found documented Test/Prod schemes and Prod.example.plist were untracked; included these secret-free distributable files. Corrected README selected-language, Test-scheme, timed-cutoff and duration-wheel instructions, plus stale Release/Debug-only claims in spec/checklist. An isolated source snapshot with fresh placeholder configuration and a newly generated matching token passed Deno type checking and unsigned simulator Test build (BUILD SUCCEEDED); verified Debug config/fictional fixtures packaged without Prod config. Its separate loopback relay started, rejected unauthenticated requests and returned provider_not_configured with no AI key. No operator credentials were copied and no external provider was called. New-operator device signing/live AI, history audit, license choice and final readiness remain open; this is a local source-snapshot check, not a remote fresh-clone/phone-install claim.
+
+- October 5 learner feedback: explicitly confirmed the iPhone hands-on check passed after being asked to capture/retake a fictional letter, inspect the explanation and inspect a newly saved Calendar event. Recorded the core-journey checkpoint as complete. No defects or refinements were reported. This does not establish separate alert-delivery, denial/interruption, all-day-specific, language/accessibility or target-user checks, nor fresh-clone setup or final demo readiness.
+
+- October 4 `5-build` resume: retained approved scope and Fast mode, starting with unfinished capture/analysis acceptance. Backend type check and all 37 tests passed. The iPhone 17 Pro / iOS 26.5 simulator reported all 47 unit tests passed with zero failures; Xcode then stopped progressing during cleanup and its runner was terminated, so no final TEST SUCCEEDED result is claimed. The local relay was already listening. No new live-provider call, physical-phone installation, camera/calendar acceptance or learner sign-off is inferred; slice boxes remain open pending hands-on feedback. The ignored learner profile is absent from this checkout, so no personal learning preferences were invented.
 
 - October 4 result-action follow-up: learner preferred the former end-reading/home-return control. Removed Photograph another letter from the result-page action list; restored the fixed-bottom Finish reading / 结束本次阅读 button and unsaved-letter confirmation, with Chinese confirmation 结束并返回首页. There is one result-page exit action. Updated PRD; simulator build passed. Phone layout remains to be reviewed after updating the app.
 
