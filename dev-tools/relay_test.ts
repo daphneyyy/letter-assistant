@@ -679,3 +679,26 @@ Deno.test("calendar titles are concise and bilingual", () => {
     assert(rejected);
   }
 });
+
+Deno.test("everyday billing is supported without weakening domain or deadline reference validation", () => {
+  const bill = structuredClone(result);
+  bill.domain = "billing";
+  bill.category = "bills";
+  bill.needs_review = false;
+  bill.organization = "Example Electric";
+  assert(validateInterpretation(bill).domain === "billing");
+  const unknown = structuredClone(bill) as any;
+  unknown.domain = "investment";
+  let rejected = false;
+  try { validateInterpretation(unknown); } catch { rejected = true; }
+  assert(rejected);
+  // Paid/autopay statements can be in-scope without manufactured actions.
+  assert(validateInterpretation(bill).actions.length === 0);
+  const renewal = enrollmentContract();
+  renewal.domain = "billing"; renewal.category = "bills";
+  assert(validateInterpretation(renewal).actions[0].requirement === "conditional");
+  renewal.actions[0].deadline_fact_id = "coverage_start";
+  rejected = false;
+  try { validateInterpretation(renewal); } catch { rejected = true; }
+  assert(rejected);
+});

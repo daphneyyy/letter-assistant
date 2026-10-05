@@ -37,7 +37,7 @@ For the OpenAI Chat Completions endpoint, send the JSON schema only in strict `r
 
 `LetterAPI.swift` sends ordered pages to the local relay. `supabase/functions/_shared/` currently contains reusable provider/schema/prompt/validation modules imported by the relay: the folder name does not indicate a Supabase deployment dependency. Keep these working modules; relocation is not necessary for this scope change.
 
-The strict structured response contains bilingual summaries, contextual facts with original source references, and required/optional/conditional actions. Keep canonical values, uncertainty and date roles consistent. Four-section UI and generic medical/health-insurance interpretation remain as specified in PRD. No chat, conversation compression or database writes.
+The strict structured response contains bilingual summaries, contextual facts with original source references, and required/optional/conditional actions. Keep canonical values, uncertainty and date roles consistent. Four-section UI and medical/health-insurance and everyday-billing interpretation remain as specified in PRD. No chat, conversation compression or database writes.
 
 ### Calendar Handoff and Reminder Suggestions
 
@@ -72,6 +72,8 @@ The action schema adds required bilingual `calendar_notes`, validated as nonempt
 `CaptureView.swift` provides capture, interpretation, source details, language selection and calendar entry points. No authentication state, tabs, archive, chatbox, user profile, account cache or login gate.
 
 ## Data Model and Contracts
+
+October 4 billing expansion adds `billing` to the interpretation domain enum alongside `medical`, `insurance` and `unsupported`. It uses existing `bills` classification metadata and existing amount/date/action/source-reference contracts; no new persistence or service is added. Prompts distinguish outstanding balances, received payments, scheduled autopay, renewal dates and explicit cancellation/payment cutoffs. Swift bill headings and calendar fallback context handle the new domain without labeling everyday bills as medical or insurance. For billing payment actions, retain the provider's source-specific calendar title and supplement missing organization/confirmed linked amount. Historical responses remain readable. The provider must return the new domain for newly analyzed everyday bills; restart the relay after this update.
 
 The current Swift models in `Models/Letter.swift` and validated schema in `_shared/contracts.ts` are authoritative for wire fields. Facts distinguish amount/document date/deadline/appointment date/time/time zone/effective/service date/period/other. Only linked deadline facts populate deadline proposals. Existing classification metadata remains an analysis detail, not a saved filing system.
 

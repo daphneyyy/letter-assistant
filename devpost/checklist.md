@@ -83,6 +83,8 @@ No second phone, account isolation, email delivery or saved-conversation review 
 
 ## Final Review
 
+- [ ] Try newly analyzed everyday bills on the phone, inspect bilingual balances/date roles and a saved reminder; paid/autopay cases must not request manual payment.
+
 - [ ] Verify the all-day fix on a newly created phone event.
 - [ ] Resolve scoped capture/analysis/calendar/setup feedback; record unresolved limitations accurately.
 - [ ] Final review complete — learner explicitly confirms hackathon demo readiness.
@@ -96,6 +98,9 @@ No second phone, account isolation, email delivery or saved-conversation review 
 No completed learning wrap-up is inferred from the scope change. Keep it proportional to the smaller demo.
 
 ## Revisions
+
+- October 4 learner-approved expansion: everyday bills/fee and renewal notices now share the capture → bilingual analysis → reviewed calendar flow. Added billing domain, ordinary-bill headings/calendar context, broader app copy and five fictional fixtures; updated scope/PRD/spec/README. No accounts, bill payments, automatic cancellation, recurring events or archive features were added. Banking account statements, investment/retirement and non-health insurance policy documents remain outside scope.
+- Expansion verification: backend type check and 30 tests passed; iOS 44 unit tests passed, followed by a successful final simulator build after welcome-copy editing. Six fresh live responses were reviewed in both languages: electricity linked USD 84.20 (not USD 120 gross charges) to November 20; telephone autopay and paid internet receipt had no actions; membership cancellation stayed conditional with November 25 cutoff distinct from December 1 renewal; an undated internet payment retained null deadline; existing EOB behavior retained optional record keeping without a payment task. Response expectations were also asserted locally. These individual fictional cases do not establish universal bill accuracy or real-phone acceptance. Existing results require fresh analysis after restarting the relay.
 
 - October 4 latency feedback: two fictional bill pages with the configured model took 28,334 ms before request deduplication and 27,932 ms after; both returned schema-valid interpretations (five facts, one action). Input tokens fell from 12,267 to 11,315 by removing the redundant schema copy from the OpenAI system message while retaining strict response_format and output validation. These single runs show no meaningful latency gain and do not evaluate the learner’s real letter. No model switch or image downsampling was made. Added actual elapsed waiting seconds and explanatory English/Chinese copy after 20 seconds, without invented completion percentages. Backend check/29 tests and iOS 43 unit tests passed. Physical-device waiting UI and broader live extraction acceptance remain open.
 

@@ -338,6 +338,32 @@ final class LetterAssistantTests: XCTestCase {
         XCTAssertEqual(CalendarNoteBuilder.contextualTitle(action: action, facts: [], language: .en, document: nil), "Pay bill")
     }
 
+    func testEverydayBillHeadingAndCalendarPreserveProviderAndLinkedAmount() throws {
+        let summary = LetterSummary(whatThisIs: "Electricity bill", whatToNote: "", whatToDo: "Pay", when: "Due", factIds: [], actionIds: [])
+        let document = LetterInterpretation(schemaVersion: 1, domain: "billing", recipient: nil, organization: "Example Electric", category: "bills", needsReview: false, facts: [], actions: [], summaries: LetterSummaries(en: summary, zh: summary))
+        let decoded = try JSONDecoder().decode(LetterInterpretation.self, from: JSONEncoder().encode(document))
+        XCTAssertEqual(decoded.domain, "billing")
+        XCTAssertEqual(decoded.heading(.en), "This is a bill or fee notice")
+        XCTAssertEqual(decoded.heading(.zh), "这是一份账单或费用通知")
+        let text = BilingualText(en: "Amount due", zh: "应付金额")
+        let amount = LetterFact(id: "dueAmount", kind: "amount", rawText: "USD 84.20", value: "84.20", currency: "USD", status: "confirmed", origin: "letter_fact", label: text, explanation: text, sourceRefs: [])
+        var action = LetterAction(id: "pay", descriptionEn: "Pay electricity bill", descriptionZh: "支付电费账单", actionKind: "payment", status: "confirmed", sourceRefs: [], requirement: "required", condition: nil, amountFactIds: ["dueAmount"], deadlineFactId: nil, appointmentFactIds: [])
+        action.calendarTitle = BilingualText(en: "Pay electricity bill", zh: "支付电费账单")
+        action.calendarNotes = BilingualText(en: "Pay the electricity balance.", zh: "支付电费余额。")
+        for language in [AppLanguage.en, .zh] {
+            let proposal = CalendarProposal.make(action: action, facts: [amount], language: language, calendar: calendar, document: document)
+            XCTAssertEqual(proposal.kind, .reminder)
+            XCTAssertNil(proposal.date)
+            XCTAssertTrue(proposal.title.contains(language == .en ? "electricity" : "电费"))
+            XCTAssertTrue(proposal.title.contains("Example Electric"))
+            XCTAssertTrue(proposal.title.contains("USD 84.20"))
+            XCTAssertTrue(proposal.eventNotes.contains("Example Electric"))
+            XCTAssertTrue(proposal.eventNotes.contains("USD 84.20"))
+            XCTAssertFalse(proposal.title.contains("medical"))
+            XCTAssertFalse(proposal.title.contains("保险"))
+        }
+    }
+
     func testChangingTimeZonePreservesUserSelectedDayAndClock() throws {
         let date = try XCTUnwrap(CalendarDatePolicy.parseDay("2026-11-15", calendar: calendar))
         let timed = try XCTUnwrap(CalendarDatePolicy.appointmentDate(day: date, time: "10:30", calendar: calendar))

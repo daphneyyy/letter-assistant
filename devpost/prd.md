@@ -9,7 +9,7 @@ Approved October 2, 2026, through the learner's explicit scope revision. This do
 
 ## What We're Building
 
-A no-login iPhone demo: photograph a medical or health-insurance letter, check photo readability, analyze its meaning and actions, and optionally add a reviewed item to the phone calendar. Distribute the source on GitHub so operators can clone it and use their own API key.
+A no-login iPhone demo: photograph a medical or health-insurance letter or an everyday bill/fee notice, check photo readability, analyze its meaning and actions, and optionally add a reviewed item to the phone calendar. Distribute the source on GitHub so operators can clone it and use their own API key.
 
 ## The Core Journey
 
@@ -35,6 +35,8 @@ Keep the accepted simple layout: large Dynamic Type text, wrapping Chinese copy,
 Use the native camera with its retake/use-photo controls, or upload a photo or PDF using the system file picker. PDF pages are rendered locally in order and checked before analysis. Reject locked/invalid PDFs, files over 30 MB, and documents exceeding the remaining 10-page capacity. Prepare all imported pages before adding any, preserve readable and unreadable pages for review, and block analysis until every page is accepted. PhotosPicker remains available for adding another photo. Imported photos use the same local readability checks and page limits. Selecting a next photo appends a page; replacing an unreadable page preserves the other pages. Canceling selection leaves the current letter intact; loading failure offers a retry without discarding accepted pages. The picker grants access only to selected items. Preserve accepted pages and capture order when retaking another page. Check readability on-device, without AI/network calls. Almost no recognized text requires retake; uncertain blur/confidence offers Retake or Use anyway. Retaking clears prior acceptance. Do not check cropping, page edges or printed page numbering. Capture guidance asks for clear, readable text one page at a time, without requiring every page edge to be visible. Start analysis is the user's declaration that all pages are ready. Preserve the current 10-page and per-image size limits, reporting them explicitly.
 
 ## Actionable Explanation
+
+October 4 document-range expansion: also interpret everyday electricity/gas/water, telephone/mobile/internet, membership/subscription and other household/service bills or fee/renewal notices. Display grounded bill type, billing organization, actual amount due and relevant date roles in both languages. Distinguish gross charges, prior balance, credits, payments already received and outstanding balance. Paid/zero-balance documents and scheduled automatic debits must not become manual-payment actions. Report autopay/renewal dates as source facts; only explicit payment or cancellation cutoffs become deadlines. Cancellation is conditional on the reader wanting to avoid renewal and on source-stated options. If an actual payment is requested without a due date, preserve that uncertainty and allow a user-selected reminder date. Preserve source-specific bill wording in calendar titles/notes, with organization and linked amount as fallback context. Medical/EOB behavior remains supported. Banking account statements, investment/retirement documents and non-health insurance policy documents remain unsupported.
 
 Display these sections in order:
 

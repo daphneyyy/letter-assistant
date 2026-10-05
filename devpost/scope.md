@@ -7,13 +7,15 @@ status: approved
 
 Approved revision: October 2, 2026. The learner explicitly narrowed the hackathon to capture → photo checks → analysis → user-confirmed iPhone calendar creation. This replaces the previous account/archive/chat scope; those features are future commercial work, not unfinished hackathon requirements.
 
+October 4 approved expansion: the learner requested everyday billing support after naming electricity, telephone and membership fees. The expanded document range retains the same capture → analysis → reviewed calendar flow. Banking account statements, investment/retirement documents and non-health insurance policy documents remain outside the supported range. No bill payment, account connection, automatic cancellation or recurring-calendar feature is added.
+
 ## The Unique Kernel
 
-Help middle-aged and older immigrants with limited English understand a medical or health-insurance letter: what it says, what to pay attention to, what actions or choices it contains, and when. Turn an applicable action into an event the user reviews and saves in the phone calendar.
+Help middle-aged and older immigrants with limited English understand a medical or health-insurance letter or an everyday bill/fee notice: what it says, what to pay attention to, what actions or choices it contains, and when. Turn an applicable action into an event the user reviews and saves in the phone calendar.
 
 ## Who It's For
 
-People who struggle to read English medical and health-insurance letters. The interface and explanations support English and Simplified Chinese, with large readable text and spoken capture guidance. Older-adult usability is a design goal, not a validated outcome: current automated checks do not establish independent use by the target audience. Technical clone/setup is performed by an operator; the current demo is not a self-installable consumer product.
+People who struggle to read English medical and health-insurance letters or everyday bills. The interface and explanations support English and Simplified Chinese, with large readable text and spoken capture guidance. Older-adult usability is a design goal, not a validated outcome: current automated checks do not establish independent use by the target audience. Technical clone/setup is performed by an operator; the current demo is not a self-installable consumer product.
 
 ## The Core Loop
 
@@ -27,7 +29,7 @@ People who struggle to read English medical and health-insurance letters. The in
 ## The POC Boundary
 
 - Native iPhone app, local photo checks, temporary ordered multi-page capture and per-page retakes.
-- AI interpretation of medical/health-insurance letters, bilingual output and visible uncertainty.
+- AI interpretation of medical/health-insurance letters and everyday bills/fee or renewal notices, bilingual output and visible uncertainty. Everyday billing includes electricity/gas/water, telephone/internet, memberships/subscriptions and other household/service charges. Paid balances and scheduled automatic debits do not imply a manual-payment task; renewal dates do not imply a cancellation deadline.
 - Creation-only iPhone calendar handoff: deadlines, user-selected reminder dates, and user-verified appointments. The review includes user-controlled notification alerts with presets, None, and a custom date/time, saved directly after tapping Add; no second system review. These settings do not infer urgency from the letter.
 - No-AI fictional calendar examples for testing, clearly labeled as tests.
 - Open-source, clone-and-run distribution on GitHub; each operator supplies their own compatible API key and model configuration.

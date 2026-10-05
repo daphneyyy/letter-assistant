@@ -56,12 +56,13 @@ struct LetterInterpretation: Codable {
     let facts: [LetterFact]; let actions: [LetterAction]; let summaries: LetterSummaries
     func heading(_ language: AppLanguage) -> String {
         switch category {
+        case "bills" where domain == "billing": return language.text("This is a bill or fee notice", "这是一份账单或费用通知")
         case "bills": return language.text(domain == "medical" ? "This is a medical bill" : "This is a health-insurance bill", domain == "medical" ? "这是一份医疗账单" : "这是一份健康保险账单")
         case "insurance_explanations": return language.text("This is a health-insurance explanation", "这是一份健康保险说明")
         case "appointments": return language.text("This is an appointment notice", "这是一份预约通知")
         case "test_results": return language.text("This is a test result", "这是一份检查结果")
         case "medications": return language.text("This is a medication notice", "这是一份用药通知")
-        default: return language.text(domain == "medical" ? "This is a medical letter" : "This is a health-insurance letter", domain == "medical" ? "这是一份医疗信件" : "这是一份健康保险信件")
+        default: if domain == "billing" { return language.text("This is a billing notice", "这是一份费用通知") }; return language.text(domain == "medical" ? "This is a medical letter" : "This is a health-insurance letter", domain == "medical" ? "这是一份医疗信件" : "这是一份健康保险信件")
         }
     }
 }

@@ -527,7 +527,7 @@ struct CaptureView: View {
     }
     @ViewBuilder func explanation(_ result: LetterInterpretation) -> some View {
         if result.domain == "unsupported" {
-            section(language.text("Unsupported letter", "暂不支持此类信件"), text: language.text("This first version supports medical and insurance letters.", "首个版本支持医疗和保险信件。"), icon: "info.circle")
+            section(language.text("Unsupported letter", "暂不支持此类信件"), text: language.text("Supported documents include medical and health-insurance letters, everyday bills, and membership or subscription fee notices.", "支持医疗和健康保险信件、日常账单，以及会员或订阅费用通知。"), icon: "info.circle")
         } else {
             VStack(alignment: .leading, spacing: 12) {
                 Text(language.text("Your letter", "信件解读"))

@@ -66,5 +66,44 @@
     "service_date": "2026-09-20",
     "actions": [],
     "must_not_do": "Invent diagnosis, follow-up treatment, or a deadline"
+  },
+  "fictional-electricity.jpg": {
+    "domain": "billing",
+    "organization": "Example Electric",
+    "amount_due": "84.20",
+    "charges": "120.00",
+    "credit": "35.80",
+    "deadline": "2026-11-20",
+    "action": "payment",
+    "must_not_do": "Use gross charges as the amount due"
+  },
+  "fictional-telephone-autopay.jpg": {
+    "domain": "billing",
+    "amount": "65.00",
+    "automatic_debit_date": "2026-11-10",
+    "actions": [],
+    "must_not_do": "Create a manual payment action or payment deadline"
+  },
+  "fictional-membership-renewal.jpg": {
+    "domain": "billing",
+    "renewal_date": "2026-12-01",
+    "fee": "120.00",
+    "conditional_action": "Cancel only if the reader does not want to renew",
+    "cancellation_deadline": "2026-11-25",
+    "must_not_do": "Require cancellation or manual payment, or treat renewal date as cancellation deadline"
+  },
+  "fictional-paid-bill.jpg": {
+    "domain": "billing",
+    "amount_paid": "49.00",
+    "balance_due": "0.00",
+    "actions": [],
+    "must_not_do": "Request another payment or turn payment-received date into a deadline"
+  },
+  "fictional-billing-no-deadline.jpg": {
+    "domain": "billing",
+    "amount_due": "35.00",
+    "action": "payment",
+    "deadline_status": "not_specified",
+    "must_not_do": "Invent a deadline"
   }
 }

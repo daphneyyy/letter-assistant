@@ -35,7 +35,7 @@ private struct LaunchWelcomeView: View {
                             Text(language.text("One letter. Clear next steps.", "一封信，清楚的下一步。"))
                                 .font(.largeTitle.bold()).tracking(-0.6)
                                 .accessibilityAddTraits(.isHeader)
-                            Text(language.text("Understand your medical or insurance letter in plain language.", "用简单易懂的语言，读懂医疗或保险信件。"))
+                            Text(language.text("Understand your letters and everyday bills in plain language.", "用简单易懂的语言，读懂信件和日常账单。"))
                                 .font(.title3).foregroundStyle(.secondary)
                             Button(language.text("Continue", "继续")) { showingWelcome = false }
                                 .font(.headline).frame(minHeight: 48)

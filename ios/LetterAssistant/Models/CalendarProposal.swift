@@ -181,8 +181,8 @@ enum CalendarDurationPolicy {
 
 enum CalendarNoteBuilder {
     static func billContext(_ document: LetterInterpretation?, language: AppLanguage) -> String? {
-        guard let document, document.category == "bills", ["medical", "insurance"].contains(document.domain) else { return nil }
-        let type = language.text(document.domain == "medical" ? "Medical bill" : "Health-insurance bill", document.domain == "medical" ? "医疗账单" : "健康保险账单")
+        guard let document, document.category == "bills", ["medical", "insurance", "billing"].contains(document.domain) else { return nil }
+        let type = document.domain == "billing" ? language.text("Bill", "账单") : language.text(document.domain == "medical" ? "Medical bill" : "Health-insurance bill", document.domain == "medical" ? "医疗账单" : "健康保险账单")
         let organization = document.organization?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         return type + (organization.isEmpty ? "" : " · " + organization)
     }
@@ -192,6 +192,13 @@ enum CalendarNoteBuilder {
         }
         let amounts = facts.filter { action.amountFactIds.contains($0.id) && $0.status == "confirmed" && $0.kind == "amount" }
             .compactMap { fact in fact.value.map { [fact.currency, $0].compactMap { $0 }.joined(separator: " ") } }
+        if document?.domain == "billing" {
+            var heading = title(action: action, facts: facts, language: language)
+            let organization = document?.organization?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+            if !organization.isEmpty && !normalized(heading).contains(normalized(organization)) { heading += " · " + organization }
+            for amount in amounts where !normalized(heading).contains(normalized(amount)) { heading += " · " + amount }
+            return heading
+        }
         return language.text("Pay ", "支付：") + context + (amounts.isEmpty ? "" : " · " + amounts.joined(separator: ", "))
     }
     static func contextualNotes(action: LetterAction, deadline: LetterFact?, language: AppLanguage, facts: [LetterFact], document: LetterInterpretation?) -> String {
