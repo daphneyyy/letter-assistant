@@ -126,3 +126,5 @@ Choose a scheme in Xcode before Run (automated tests use `LetterAssistant-Test`)
 Test is labeled **Letter Assistant Test** on the device. Prod is labeled **Letter Assistant**. Both currently use the same bundle ID, so installing one replaces the other. The existing `LetterAssistant` scheme retains its Debug-run/Release-archive behavior.
 
 For Prod connection settings, copy `ios/Config/Prod.example.plist` to `ios/Config/Prod.local.plist` and set your relay URL/token. Prod accepts HTTPS or the existing trusted local-network HTTP relay; Test retains its local HTTP relay. The build copies only the selected environment's configuration. Missing configuration shows an honest setup message; there is no automatic fallback to Test credentials. This separates app builds and test assets; it does not deploy a production backend.
+
+New analysis generates explanations and calendar text only in the selected app language (English or Simplified Chinese), saving the second-language generation. Source quotations keep their original language. App-specific language settings can override the phone language.

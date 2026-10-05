@@ -147,7 +147,7 @@ struct CapturedPage: Identifiable {
         announce(language.text("Reading the letter", "正在解读信件"))
         work = Task {
             do {
-                let interpretation = try await api.interpret(pages: inputs, captureID: captureID)
+                let interpretation = try await api.interpret(pages: inputs, captureID: captureID, language: language)
                 guard generation == version, !Task.isCancelled else { return }
                 result = interpretation; phase = .complete
                 announce(language.text("Your explanation is ready", "解读已完成"))
@@ -202,6 +202,11 @@ struct CapturedPage: Identifiable {
         case "too_many_pages": message = language.text("A letter can contain up to 10 pages. Choose a shorter document or delete a page first.", "每封信最多 10 页。请选择页数较少的文件，或先删除页面。")
         case "photo_too_large": message = language.text("This photo is too large to process. Please retake at a lower camera resolution.", "照片过大，无法处理。请降低相机分辨率后重拍。")
         case "validation_expired", "validation_required", "validation_mismatch", "invalid_validation_token": message = language.text("Please check this photo again before interpreting it.", "请先重新检查这张照片，再进行解读。")
+        case "busy", "rate_limited": message = language.text("The local service is busy. Wait a moment before retrying.", "本地服务正在处理请求，请稍等再重试。")
+        case "invalid_ai_output", "incomplete_ai_output", "invalid_relay_response": message = language.text("The AI response was incomplete or could not be read. Your photos are still here. Retry interpretation.", "AI 返回内容不完整或格式不正确，照片仍然保留。请重试解读。")
+        case "provider_unavailable": message = language.text("The AI service could not respond. Your photos are still here. Please retry later.", "AI 服务暂时未能响应，照片仍然保留。请稍后重试。")
+        case "connection_timeout", "upload_timeout": message = language.text("The connection timed out. Your photos are still here. Check the local service and retry.", "连接超时，照片仍然保留。请检查本地服务后重试。")
+        case "connection_failed": message = language.text("Cannot connect to the local service. Check that the relay is running and the phone and Mac are on the same Wi-Fi.", "无法连接本地服务。请确认 relay 正在运行，且手机和 Mac 在同一 Wi-Fi。")
         default: message = language.text("We could not complete this step. Your photo is still here. Check the connection and retry.", "未能完成此步骤，照片仍然保留。请检查连接后重试。")
         }
         guidance.speak(message, language: language); announce(message)

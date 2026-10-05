@@ -173,3 +173,20 @@ export function interpretationSchemaFor(pageCount = 1) {
   });
 }
 export const interpretationSchema = interpretationSchemaFor();
+
+// Generate only the selected app language; the local adapter preserves legacy clients.
+export type OutputLanguage = "en" | "zh";
+export function localizedInterpretationSchemaFor(pageCount: number, language: OutputLanguage) {
+  const schema: any = interpretationSchemaFor(pageCount);
+  const text = object({ [language]: str });
+  const fact = schema.properties.facts.items.properties;
+  fact.label = text; fact.explanation = text;
+  const action = schema.properties.actions.items;
+  delete action.properties.description_en; delete action.properties.description_zh;
+  action.properties[`description_${language}`] = str;
+  action.properties.condition = { ...text, type: ["object", "null"] };
+  action.properties.calendar_notes = text; action.properties.calendar_title = text;
+  action.required = Object.keys(action.properties);
+  schema.properties.summaries = object({ [language]: summary });
+  return schema;
+}

@@ -1,13 +1,13 @@
-import { interpretationSchemaFor, verdictSchema } from "./contracts.ts";
+import { interpretationSchemaFor, localizedInterpretationSchemaFor, type OutputLanguage, verdictSchema } from "./contracts.ts";
 import { type AIProvider, sanitizedUsage, type UsageRecord } from "./openai.ts";
 import {
-  interpretationPrompt,
+  interpretationPrompt, selectedLanguagePrompt,
   validationImageLabel,
   validationPrompt,
 } from "./prompts.ts";
 import {
   SafeError,
-  validateInterpretation,
+  validateInterpretation, validateLocalizedInterpretation,
   validateVerdict,
 } from "./validation.ts";
 
@@ -163,19 +163,15 @@ export class OpenRouterProvider implements AIProvider {
     );
   }
 
-  async interpret(image: string, additionalImages: string[] = []) {
-    return validateInterpretation(
-      await this.request(
-        image,
-        interpretationPrompt +
-          `\nThe letter contains ${
-            additionalImages.length + 1
-          } ordered pages. Source indices correspond to the explicit Page labels.`,
-        interpretationSchemaFor(additionalImages.length + 1),
-        "letter_interpretation",
-        additionalImages,
-      ),
-      additionalImages.length + 1,
+  async interpret(image: string, additionalImages: string[] = [], language?: OutputLanguage) {
+    const count = additionalImages.length + 1;
+    const value = await this.request(
+      image,
+      (language ? selectedLanguagePrompt(language) : interpretationPrompt) +
+        `\nThe letter contains ${count} ordered pages. Source indices correspond to the explicit Page labels.`,
+      language ? localizedInterpretationSchemaFor(count, language) : interpretationSchemaFor(count),
+      "letter_interpretation", additionalImages,
     );
+    return language ? validateLocalizedInterpretation(value, count, language) : validateInterpretation(value, count);
   }
 }

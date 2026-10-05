@@ -732,3 +732,53 @@ Deno.test("banking statements accept informational balances and linked minimum p
   assert(value.actions[0].amount_fact_ids.length === 1 && value.actions[0].amount_fact_ids[0] === "minimum");
   assert(value.facts.find(f => f.id === "balance")?.value === "1200.00");
 });
+
+Deno.test("relay forwards the selected app language and rejects other languages", async () => {
+  const selected: string[] = [];
+  const provider = fake();
+  provider.interpret = async (_image, _others, language) => { selected.push(language!); return structuredClone(result); };
+  const handler = createHandler(token, provider);
+  const pages = [{page_id:payload.page_id,image_base64:image,local_readability:true}];
+  for (const language of ["zh", "en"]) {
+    assert((await handler(request("/interpret", {capture_id:payload.capture_id,pages,language}))).status === 200);
+  }
+  assert(selected.join(",") === "zh,en");
+  assert((await handler(request("/interpret", {capture_id:payload.capture_id,pages,language:"fr"}))).status === 400);
+  assert(selected.length === 2);
+});
+
+Deno.test("both provider transports generate only the selected language with strict grounding", async () => {
+  const { OpenRouterProvider } = await import("../supabase/functions/_shared/openrouter.ts");
+  for (const language of ["en", "zh"] as const) {
+    const single: any = structuredClone(enrollmentContract());
+    for (const fact of single.facts) {
+      fact.label = {[language]: fact.label[language]}; fact.explanation = {[language]: fact.explanation[language]};
+    }
+    for (const action of single.actions) {
+      delete action[language === "en" ? "description_zh" : "description_en"];
+      if (action.condition) action.condition = {[language]:action.condition[language]};
+      action.calendar_notes = {[language]:action.calendar_notes[language]};
+      action.calendar_title = {[language]:action.calendar_title[language]};
+    }
+    single.summaries = {[language]:single.summaries[language]};
+    for (const mode of ["responses", "chat"]) {
+      const transport: typeof fetch = async (_url, init) => {
+        const body = JSON.parse(String(init?.body));
+        const schema = mode === "responses" ? body.text.format.schema : body.response_format.json_schema.schema;
+        assert(Object.keys(schema.properties.summaries.properties).join() === language);
+        assert(Object.keys(schema.properties.facts.items.properties.label.properties).join() === language);
+        assert(!Object.hasOwn(schema.properties.actions.items.properties, language === "en" ? "description_zh" : "description_en"));
+        return Response.json(mode === "responses"
+          ? {status:"completed",output:[{content:[{type:"output_text",text:JSON.stringify(single)}]}]}
+          : {choices:[{finish_reason:"stop",message:{content:JSON.stringify(single)}}]});
+      };
+      const provider = mode === "responses" ? new OpenAIProvider("test-key","test-model",transport)
+        : new OpenRouterProvider("test-key","test-model",transport,()=>{}, {baseURL:"https://api.openai.com/v1",freeOnly:false});
+      const actual = await provider.interpret(image, [], language);
+      assert(actual.summaries.en.what_this_is === single.summaries[language].what_this_is);
+      assert(actual.summaries.zh.what_this_is === single.summaries[language].what_this_is);
+      assert(actual.actions[0].requirement === "conditional");
+      assert(actual.actions[0].deadline_fact_id === single.actions[0].deadline_fact_id);
+    }
+  }
+});

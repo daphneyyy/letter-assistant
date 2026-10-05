@@ -498,6 +498,7 @@ private final class StubAPI: LetterAPIClient {
     var failureCode = "provider_not_configured"
     var validationCalls = 0
     var interpretationCalls = 0
+    var requestedLanguage: AppLanguage?
     var submittedPages: [LetterPageInput] = []
     var captureIDs: [UUID] = []
     func validate(image: Data, captureID: UUID, pageID: UUID) async throws -> PageValidation {
@@ -505,6 +506,10 @@ private final class StubAPI: LetterAPIClient {
         captureIDs.append(captureID)
         if shouldFail { throw RelayError(code: failureCode) }
         return PageValidation(verdict: shouldReject ? "retake" : "valid", reason: BilingualText(en: "Photo checked", zh: "照片已检查"), validationToken: shouldReject ? nil : "test-token")
+    }
+    func interpret(pages: [LetterPageInput], captureID: UUID, language: AppLanguage) async throws -> LetterInterpretation {
+        requestedLanguage = language
+        return try await interpret(pages: pages, captureID: captureID)
     }
     func interpret(pages: [LetterPageInput], captureID: UUID) async throws -> LetterInterpretation {
         interpretationCalls += 1; submittedPages = pages
@@ -618,7 +623,7 @@ extension LetterAssistantTests {
         model.interpret(); try await waitForWork(model)
         XCTAssertEqual(model.phase, .interpretFailed)
         model.changeLanguage(.zh)
-        XCTAssertTrue(model.message.contains("未能完成此步骤"))
+        XCTAssertTrue(model.message.contains("AI 服务暂时未能响应"))
         XCTAssertNotEqual(model.message, "照片已检查")
         XCTAssertNotNil(model.image)
         XCTAssertNil(model.result)
@@ -661,6 +666,21 @@ extension LetterAssistantTests {
         model.interpret(); try await waitForWork(model)
         XCTAssertEqual(api.interpretationCalls, 2)
         model.reset(); XCTAssertTrue(model.pages.isEmpty)
+    }
+    @MainActor func testAnalysisUsesAppLanguageAndPreservesPhotosOnConnectionFailure() async throws {
+        let api = StubAPI(); api.shouldFail = true; api.failureCode = "connection_failed"
+        let model = CaptureModel(api: api, inspect: { _ in })
+        model.accept(photo()); try await waitForWork(model)
+        let bytes = model.pages[0].bytes
+        model.changeLanguage(.zh)
+        model.interpret(); try await waitForWork(model)
+        XCTAssertEqual(api.requestedLanguage, .zh)
+        XCTAssertTrue(model.message.contains("无法连接本地服务"))
+        XCTAssertEqual(model.pages[0].bytes, bytes)
+        model.changeLanguage(.en)
+        model.interpret(); try await waitForWork(model)
+        XCTAssertEqual(api.requestedLanguage, .en)
+        XCTAssertEqual(model.pages[0].bytes, bytes)
     }
     @MainActor func testRejectedNextPageBlocksWholeLetterWithoutDiscardingEarlierPage() async throws {
         let api = StubAPI(); let model = CaptureModel(api: api, inspect: { data in

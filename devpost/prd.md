@@ -122,3 +122,5 @@ Before claiming suitability for independent older-adult use, observe target user
 ## Future Commercial Features
 
 See `scope.md > Future Commercial Roadmap`: in-app calendar with phone synchronization, account/login, chatbox, user-facing letter classification, multilingual support beyond English/Chinese, and saved letter summaries/extracted information/question summaries/added-item summaries. Future storage and synchronization choices require their own product and technical design.
+
+October 4 language/output revision: new analysis generates only the selected app language (English or Simplified Chinese), including explanations, action descriptions, conditions and calendar titles/notes. The request sends `language`; provider structured-output schemas contain only that language. Source quotes retain their original language. A local adapter repeats the selected text into the legacy wire fields for client compatibility; it does not translate or consume generation tokens. Previously generated bilingual results are unchanged. App language follows the app-specific language preference, which can override the phone language.

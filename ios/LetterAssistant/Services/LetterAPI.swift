@@ -39,8 +39,12 @@ protocol LetterAPIClient {
     func validate(image: Data, captureID: UUID, pageID: UUID) async throws -> PageValidation
     func interpret(image: Data, captureID: UUID, pageID: UUID, token: String) async throws -> LetterInterpretation
     func interpret(pages: [LetterPageInput], captureID: UUID) async throws -> LetterInterpretation
+    func interpret(pages: [LetterPageInput], captureID: UUID, language: AppLanguage) async throws -> LetterInterpretation
 }
 extension LetterAPIClient {
+    func interpret(pages: [LetterPageInput], captureID: UUID, language: AppLanguage) async throws -> LetterInterpretation {
+        try await interpret(pages: pages, captureID: captureID)
+    }
     func interpret(pages: [LetterPageInput], captureID: UUID) async throws -> LetterInterpretation {
         guard pages.count == 1, let page = pages.first else { throw RelayError(code: "multipage_unavailable") }
         return try await interpret(image: page.image, captureID: captureID, pageID: page.id, token: page.token)
@@ -56,7 +60,10 @@ struct LetterAPI: LetterAPIClient {
         try await post("interpret", image: image, captureID: captureID, pageID: pageID, validationToken: token)
     }
     func interpret(pages: [LetterPageInput], captureID: UUID) async throws -> LetterInterpretation {
-        let payload: [String: Any] = ["capture_id": captureID.uuidString, "pages": pages.map {
+        try await interpret(pages: pages, captureID: captureID, language: .en)
+    }
+    func interpret(pages: [LetterPageInput], captureID: UUID, language: AppLanguage) async throws -> LetterInterpretation {
+        let payload: [String: Any] = ["capture_id": captureID.uuidString, "language": language.rawValue, "pages": pages.map {
             ["page_id": $0.id.uuidString, "image_base64": $0.image.base64EncodedString(), "local_readability": true] as [String: Any]
         }]
         return try await send("interpret", payload: payload)
@@ -73,7 +80,17 @@ struct LetterAPI: LetterAPIClient {
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue("Bearer \(configuration.token)", forHTTPHeaderField: "Authorization")
         request.httpBody = try JSONSerialization.data(withJSONObject: payload)
-        let (data, response) = try await URLSession.shared.data(for: request)
+        let sessionConfig = URLSessionConfiguration.ephemeral
+        sessionConfig.timeoutIntervalForRequest = 125
+        sessionConfig.timeoutIntervalForResource = 150
+        let session = URLSession(configuration: sessionConfig)
+        defer { session.finishTasksAndInvalidate() }
+        let data: Data
+        let response: URLResponse
+        do { (data, response) = try await session.data(for: request) }
+        catch let error as URLError {
+            throw RelayError(code: error.code == .timedOut ? "connection_timeout" : "connection_failed")
+        }
         guard let http = response as? HTTPURLResponse else { throw RelayError(code: "connection_failed") }
         guard (200..<300).contains(http.statusCode) else {
             let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any]
@@ -81,6 +98,7 @@ struct LetterAPI: LetterAPIClient {
             throw RelayError(code: error?["code"] as? String ?? "request_failed")
         }
         let decoder = JSONDecoder(); decoder.keyDecodingStrategy = .convertFromSnakeCase
-        return try decoder.decode(T.self, from: data)
+        do { return try decoder.decode(T.self, from: data) }
+        catch { throw RelayError(code: "invalid_relay_response") }
     }
 }

@@ -1,6 +1,8 @@
 import {
   type Interpretation,
   interpretationSchemaFor,
+  localizedInterpretationSchemaFor,
+  type OutputLanguage,
   type Verdict,
   verdictSchema,
 } from "./contracts.ts";
@@ -167,4 +169,19 @@ export function validateInterpretation(
       "提供的页面中未识别到办理事项。";
   }
   return result;
+}
+
+export function validateLocalizedInterpretation(value: unknown, pageCount: number, language: OutputLanguage): Interpretation {
+  if (!matchesSchema(value, localizedInterpretationSchemaFor(pageCount, language))) throw new SafeError("invalid_ai_output");
+  const result: any = structuredClone(value);
+  const text = (value: any) => ({en: value[language], zh: value[language]});
+  for (const fact of result.facts) { fact.label = text(fact.label); fact.explanation = text(fact.explanation); }
+  for (const action of result.actions) {
+    const description = action[`description_${language}`];
+    action.description_en = description; action.description_zh = description;
+    if (action.condition !== null) action.condition = text(action.condition);
+    action.calendar_notes = text(action.calendar_notes); action.calendar_title = text(action.calendar_title);
+  }
+  result.summaries = {en: result.summaries[language], zh: result.summaries[language]};
+  return validateInterpretation(result, pageCount);
 }

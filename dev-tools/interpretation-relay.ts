@@ -77,10 +77,12 @@ async function readPayload(
   if (!reader) throw new SafeError("invalid_request", 400);
   const chunks: Uint8Array[] = [];
   let length = 0;
-  const timer = setTimeout(() => void reader.cancel(), 15000);
+  let timedOut = false;
+  const timer = setTimeout(() => { timedOut = true; void reader.cancel(); }, 60000);
   try {
     while (true) {
       const { value, done } = await reader.read();
+      if (timedOut) throw new SafeError("upload_timeout", 408);
       if (done) break;
       length += value.length;
       if (length > maxBody) {
@@ -176,16 +178,17 @@ export function createHandler(
         path === "/interpret" ? MAX_BODY * MAX_PAGES : MAX_BODY,
       );
       const multiple = path === "/interpret" && Object.hasOwn(body, "pages");
-      const allowed = multiple ? ["capture_id", "pages"] : [
+      const allowed = multiple ? ["capture_id", "pages", "language"] : [
         "capture_id",
         "page_id",
         "image_base64",
-        ...(path === "/interpret" ? ["validation_token"] : []),
+        ...(path === "/interpret" ? ["validation_token", "language"] : []),
       ];
       if (
         Object.keys(body).some((k) => !allowed.includes(k)) ||
         typeof body.capture_id !== "string" || !UUID.test(body.capture_id)
       ) throw new SafeError("invalid_request", 400);
+      if (body.language !== undefined && body.language !== "en" && body.language !== "zh") throw new SafeError("invalid_request", 400);
       for (const [key, value] of accepted) {
         if (value.expires <= now()) accepted.delete(key);
       }
@@ -255,7 +258,7 @@ export function createHandler(
       // freshly validated replacements without being locked to an old attempt.
       return json(
         validateInterpretation(
-          await provider.interpret(images[0], images.slice(1)),
+          await provider.interpret(images[0], images.slice(1), body.language === "zh" ? "zh" : "en"),
           images.length,
         ),
       );
@@ -263,6 +266,7 @@ export function createHandler(
       const safe = error instanceof SafeError
         ? error
         : new SafeError("request_failed", 503);
+      console.warn(JSON.stringify({event: "relay_error", code: safe.code, status: safe.status}));
       return json({ error: { code: safe.code } }, safe.status);
     } finally {
       if (ownsSlot) active = false;
