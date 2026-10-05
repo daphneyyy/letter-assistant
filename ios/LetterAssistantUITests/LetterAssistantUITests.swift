@@ -5,6 +5,7 @@ final class LetterAssistantUITests: XCTestCase {
         let app = XCUIApplication()
         app.launchArguments = ["-AppleLanguages", "(en)", "-AppleLocale", "en_US", "-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryL"]
         app.launch()
+        openDemoTools(in: app)
         let sample = app.buttons["Use test photo"]
         XCTAssertTrue(sample.waitForExistence(timeout: 5)); sample.tap()
         let next = app.buttons["Add next test photo"]
@@ -39,6 +40,7 @@ final class LetterAssistantUITests: XCTestCase {
         app.launch()
         let welcomeContinue = app.buttons["Continue"]
         if welcomeContinue.exists && welcomeContinue.isHittable { welcomeContinue.tap() }
+        openDemoTools(in: app)
         let sample = app.buttons["Use test photo"]
         XCTAssertTrue(sample.waitForExistence(timeout: 5)); sample.tap()
         let finish = app.buttons["analyzeDocument"]
@@ -69,6 +71,7 @@ final class LetterAssistantUITests: XCTestCase {
             XCTAssertTrue(selector.label.contains("Page 1 of \(remaining)"))
         }
         app.buttons["deletePage"].tap(); app.buttons["Delete page"].tap()
+        openDemoTools(in: app)
         XCTAssertTrue(sample.waitForExistence(timeout: 3))
         XCTAssertFalse(selector.exists)
     }
@@ -279,6 +282,9 @@ final class LetterAssistantUITests: XCTestCase {
         app.launch()
         let welcomeContinue = app.buttons["Continue"]
         if welcomeContinue.exists && welcomeContinue.isHittable { welcomeContinue.tap() }
+        XCTAssertFalse(app.buttons["Use test photo"].exists)
+        XCTAssertFalse(app.staticTexts["Test version • fictional letters • not saved"].exists)
+        openDemoTools(in: app)
         XCTAssertTrue(app.buttons["Use test photo"].waitForExistence(timeout: 5))
         XCTAssertFalse(app.buttons["languageMenu"].exists)
         XCTAssertFalse(app.buttons["使用测试照片"].exists)
@@ -300,6 +306,7 @@ final class LetterAssistantUITests: XCTestCase {
         let app = XCUIApplication()
         app.launchArguments += ["-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
         app.launch()
+        openDemoTools(in: app)
         let sample = app.buttons["Use test photo"]
         XCTAssertTrue(sample.waitForExistence(timeout: 5))
         sample.tap()
@@ -309,4 +316,13 @@ final class LetterAssistantUITests: XCTestCase {
         app.alerts.buttons["Keep reading"].tap()
         XCTAssertTrue(app.buttons["analyzeDocument"].exists)
     }
+    private func openDemoTools(in app: XCUIApplication) {
+        let tools = app.buttons["demoTools"]
+        for _ in 0..<8 where !tools.isHittable { app.swipeUp() }
+        XCTAssertTrue(tools.waitForExistence(timeout: 5))
+        tools.tap()
+        let sample = app.buttons["Use test photo"]
+        for _ in 0..<4 where !sample.isHittable { app.swipeUp() }
+    }
+
 }

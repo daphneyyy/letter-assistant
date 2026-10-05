@@ -128,3 +128,5 @@ October 4 language/output revision: new analysis generates only the selected app
 October 4 calendar follow-up: for credit-card payment reminders, display the confirmed full statement balance in the title, keeping the source-required minimum separate in notes; this does not relabel the full balance as a required source minimum. Explicit clock deadlines use timed cutoff events in the source zone, with a visible instruction to complete the task before the cutoff. Date-only deadlines remain all-day.
 
 October 4 token optimization: provider-format compaction and shared source quotations are internal transport changes. The app retains all existing result sections, fact explanations, source review and calendar behavior; extraction still generates only the selected app language.
+
+October 4 welcome cleanup: in the test build, Use test photo appears only inside the collapsed Demo tools section alongside the calendar demo. Remove the welcome footer Test version / fictional letters / not saved; retain the existing AI-send/session privacy guidance and calendar-demo notice.

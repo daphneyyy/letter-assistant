@@ -337,12 +337,6 @@ struct CaptureView: View {
             Label(language.text("Your letter is sent to AI only when you tap Start analysis. Photos and results stay only in this session.", "点击“开始分析”后才会发送文件给 AI。照片和结果仅临时使用。"), systemImage: "checkmark.shield")
                 .font(.callout).foregroundStyle(LetterStyle.supportingText)
                 .fixedSize(horizontal: false, vertical: true)
-            #if TEST_BUILD
-            Button(language.text("Use test photo", "使用测试照片")) {
-                if let file = Bundle.main.url(forResource: "fictional-bill", withExtension: "jpg"),
-                   let image = UIImage(contentsOfFile: file.path) { model.accept(image) }
-            }.frame(minHeight: 44)
-            #endif
             DisclosureGroup {
                 VStack(alignment: .leading, spacing: 20) {
                     welcomeStep("1", title: language.text("Photograph your letter", "拍摄信件"), detail: language.text("One page at a time, with clear, readable text.", "逐页拍摄，确保文字清晰可读。"))
@@ -364,11 +358,6 @@ struct CaptureView: View {
             }
             .accessibilityIdentifier("howToUse")
             .padding(.vertical, 16).frame(maxWidth: .infinity, alignment: .leading)
-            #if TEST_BUILD
-            Label(language.text("Test version • fictional letters • not saved", "测试版 · 虚构信件 · 不保存"), systemImage: "info.circle")
-                .font(.footnote).foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
-            #endif
         }
     }
 
@@ -392,6 +381,14 @@ struct CaptureView: View {
         #if TEST_BUILD
         DisclosureGroup(language.text("Demo tools", "演示工具")) {
             VStack(alignment: .leading, spacing: 12) {
+                Button {
+                    if let file = Bundle.main.url(forResource: "fictional-bill", withExtension: "jpg"),
+                       let image = UIImage(contentsOfFile: file.path) { model.accept(image) }
+                } label: {
+                    Label(language.text("Use test photo", "使用测试照片"), systemImage: "photo")
+                        .frame(minHeight: 48)
+                }.buttonStyle(.bordered).disabled(model.phase.busy)
+                    .accessibilityIdentifier("useTestPhoto")
                 Button { calendarTestMenu = true } label: {
                     Label(language.text("Test calendar without AI", "日历测试（无需 AI）"), systemImage: "calendar.badge.plus")
                         .frame(minHeight: 48)
@@ -400,6 +397,7 @@ struct CaptureView: View {
                     .font(.footnote).foregroundStyle(.secondary)
             }.padding(.top, 12)
         }.font(.subheadline).padding(.vertical, 8)
+            .accessibilityIdentifier("demoTools")
         #endif
     }
 
@@ -414,16 +412,6 @@ struct CaptureView: View {
                 Button(language.text("Use anyway", "仍然使用")) { model.usePhotoAnyway() }
                     .font(.title3).buttonStyle(.bordered).frame(minHeight: 56)
             }
-            #if TEST_BUILD
-            Button {
-                if let path = Bundle.main.url(forResource: "fictional-bill", withExtension: "jpg"),
-                   let image = UIImage(contentsOfFile: path.path) { model.accept(image) }
-            } label: {
-                Label(language.text("Use test photo", "使用测试照片"), systemImage: "photo")
-                    .font(.subheadline.weight(.semibold)).frame(maxWidth: .infinity, minHeight: 48)
-                    .foregroundStyle(LetterStyle.accent)
-            }.buttonStyle(.plain)
-            #endif
         case .valid:
             HStack(spacing: 16) {
                 Button {
