@@ -111,7 +111,9 @@ These features are outside the hackathon. Their storage, authentication and sync
 
 ## Open-source publication readiness
 
-The intended distribution is a public GitHub repository with operator-owned API keys. An open-source license still needs to be selected and added before publication. Audit tracked files and Git history for credentials, local signing/configuration, private learner context and real letter images before pushing publicly. Only fictional fixtures should be published. This requirements revision does not publish the repository.
+This project is licensed under the [MIT License](LICENSE).
+
+The intended distribution is a public GitHub repository with operator-owned API keys. Audit tracked files and Git history for credentials, local signing/configuration, private learner context and real letter images before pushing publicly. Only fictional fixtures should be published. This requirements revision does not publish the repository.
 
 
 ### Test and Prod builds
