@@ -748,7 +748,7 @@ private struct InterpretationProgressView: View {
                     .font(.callout).monospacedDigit().foregroundStyle(.secondary)
                     .accessibilityHidden(true)
                 if seconds >= 20 {
-                    Text(language.text("Uploading photos and generating both language versions can take time, especially for multiple pages. Your explanation will appear when ready.", "上传照片和生成双语解读需要一些时间，多页信件可能更久。完成后会自动显示结果。"))
+                    Text(language.text("Uploading photos and generating an English explanation can take time, especially for multiple pages. Your explanation will appear when ready.", "上传照片和生成中文解读需要一些时间，多页信件可能更久。完成后会自动显示结果。"))
                         .font(.callout).foregroundStyle(LetterStyle.supportingText)
                 }
             }
