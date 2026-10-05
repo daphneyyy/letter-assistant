@@ -5,7 +5,7 @@ status: approved
 
 # Letter Assistant — Hackathon Build Checklist
 
-Build mode: Fast (retained). Scope revised directly by the learner on October 2, 2026: capture → local photo checks → analysis → creation in the iPhone calendar. No email, login, archive, chatbox or synchronization is required for the hackathon. New operators clone the source and supply their own API key. Previous planning/build history is preserved in `build-history.md`; its old resume instructions are not active.
+Build mode: Fast (retained). Scope revised directly by the learner on October 2, 2026: capture → local photo checks → analysis → creation in the iPhone calendar. No email, login, archive, chatbox or synchronization is required for the hackathon. New operators clone the source and supply their own API key. Previous planning/build history is available in Git history; its old resume instructions are not active.
 
 ## Current State
 
@@ -98,6 +98,8 @@ No second phone, account isolation, email delivery or saved-conversation review 
 No completed learning wrap-up is inferred from the scope change. Keep it proportional to the smaller demo.
 
 ## Revisions
+
+- October 5 repository requirements review: scope/PRD/spec are substantive, approved and tracked; MIT and Test/Prod source/config examples are tracked. Scanned 441 reachable historical blobs for matches to current local credentials and high-confidence credential/private-key patterns: no matches. No .env.local, local plist, captures or learner-profile paths occur in reachable history. This is a scoped scan, not proof of absence of every possible secret or private datum. Corrected README's deleted build-history link and stale alert/zone defaults, synchronized PRD/spec alert defaults with CalendarAlertChoice.defaultChoice, and documented actual development tools, provider dependencies and fictional fixture provenance. Author confirmation of any additional pre-existing work remains pending. Unauthenticated GitHub API access to the configured origin returned 404, so public access and GitHub license detection remain unverified; no visibility change or push was performed.
 
 - October 5 license decision: learner explicitly selected MIT. Added the standard root LICENSE with 2026 copyright and the repository's configured author name, Xuewen Yang; linked it in README and updated spec publication guidance. License selection is resolved; history audit, remaining acceptance, final readiness and learning wrap-up remain open. No publication was performed.
 

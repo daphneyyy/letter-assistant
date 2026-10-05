@@ -81,7 +81,7 @@ This local HTTP phone-to-Mac path is for trusted-network demos with fictional le
 
 On the Debug home screen expand **Demo tools / 演示工具**, then tap **Test calendar without AI / 日历测试（无需 AI）**. Choose a deadline, a reminder without a deadline, or an appointment. No photo, key or running relay is needed. Titles are marked `[TEST]` / `【测试】`; tapping Add creates a real event.
 
-Date-only deadlines/reminders are all-day events. Explicit clock deadlines use timed cutoff markers in the source time zone. All event types offer editable dates and time zones, defaulting to the phone zone. Source-zoned appointment instants are converted to the phone zone for display; changing the picker zone preserves the displayed day/clock. Moving a deadline event to another date preserves its original deadline in notes. Bill titles and notes retain bill type, organization and confirmed linked payment amount. Explicitly extracted appointment times now prefill the review; missing or ambiguous times still need entry, and the phone time zone is disclosed when none is stated. Appointment time and time zone must still be checked; Timed appointments use the AI-suggested duration when available, clearly labeled as an estimate, with a 30-minute fallback. Tap the duration value and use the hour/minute wheels to choose 1–1,440 minutes; the review shows the resulting end time. Choose an alert during review: all-day events default to 9 AM on the event date, and appointments default to 15 minutes before. Options include additional advance reminders, None, and a custom date/time. Custom alerts keep their exact date/time when the event date changes. Adjust alerts in the app before adding. Not now dismisses without saving. Permission denial offers Settings; an unavailable default calendar or a save error keeps the form available. Unknown/interrupted outcomes ask you to check Calendar before retrying to avoid duplicates. Later changes are made in Calendar.
+Date-only deadlines/reminders are all-day events. Explicit clock deadlines use timed cutoff markers in the source time zone. All event types offer editable dates and time zones. Timed cutoffs initially use their source zone; other events initially use the phone zone. Source-zoned appointment instants are converted to the phone zone for display; changing the picker zone preserves the displayed day/clock. Moving a deadline event to another date preserves its original deadline in notes. Bill titles and notes retain bill type, organization and confirmed linked payment amount. Explicitly extracted appointment times now prefill the review; missing or ambiguous times still need entry, and the phone time zone is disclosed when none is stated. Appointment time and time zone must still be checked; Timed appointments use the AI-suggested duration when available, clearly labeled as an estimate, with a 30-minute fallback. Tap the duration value and use the hour/minute wheels to choose 1–1,440 minutes; the review shows the resulting end time. Choose an alert during review: date-only deadlines default to 9 AM the day before, undated personal reminders default to 9 AM on the chosen day, and appointments default to 1 day before. Options include additional advance reminders, None, and a custom date/time. Custom alerts keep their exact date/time when the event date changes. Adjust alerts in the app before adding. Not now dismisses without saving. Permission denial offers Settings; an unavailable default calendar or a save error keeps the form available. Unknown/interrupted outcomes ask you to check Calendar before retrying to avoid duplicates. Later changes are made in Calendar.
 
 ## Verification and known limits
 
@@ -96,7 +96,7 @@ Replace the simulator-name placeholder with an installed device. The test suites
 
 Recorded development evidence includes successful backend checks, iOS unit/UI tests and signed phone builds. The all-day time-zone bug has a passing regression test and an installed fix; the learner's real-phone retry is still pending. Conditional enrollment extraction remains a known reliability concern despite successful individual runs. Provider quotas may block real analysis. Photos/results are not persisted, urgency-based reminder recommendations are not implemented, and the demo does not include chat or synchronization.
 
-See `devpost/checklist.md` for current acceptance work and `devpost/build-history.md` for historical evidence. The build is not claimed fully accepted merely because it compiles.
+See [devpost/checklist.md](devpost/checklist.md) for current acceptance work and recorded development evidence. Earlier source changes are available in Git history. The build is not claimed fully accepted merely because it compiles.
 
 ## Future commercial direction
 
@@ -108,6 +108,21 @@ See `devpost/checklist.md` for current acceptance work and `devpost/build-histor
 - Saved letter summaries, extracted information, summaries of the user's questions, and summaries of calendar items added.
 
 These features are outside the hackathon. Their storage, authentication and synchronization design is future work, not a requirement for running this demo.
+
+## Development tools and third-party integrations
+
+The project is developed with AI assistance in Codex using the [Devpost Learn Skill Pack](https://github.com/challengepost/learn-ai-basics). The generated planning documents are [scope.md](devpost/scope.md), [prd.md](devpost/prd.md), and [spec.md](devpost/spec.md); implementation and verification records are in [checklist.md](devpost/checklist.md).
+
+| Tool or integration | Role in this project |
+| --- | --- |
+| Xcode and Apple SDK frameworks | SwiftUI/UIKit interface, camera/photo selection, Vision readability checks, PDFKit import, speech guidance and EventKit calendar creation |
+| Deno | Runs the local TypeScript relay and its tests; runtime imports are repository-local modules |
+| Operator-configured AI provider and vision model | Interprets images using the operator's own API account/key; the example configuration uses OpenRouter, and compatible endpoints are supported |
+| Fictional letter fixtures | Generated by the repository's `fixtures/generate.swift`; test documents use fictional people and organizations |
+
+Operators must use the Apple SDKs, runtime and configured AI service/model in accordance with their respective terms. The project MIT license does not replace third-party terms or grant access to a provider account. No third-party model weights, provider credentials or Devpost Skill Pack source are bundled in the tracked application source.
+
+The first recorded application commit is October 2, 2026. Commit dates document repository history; any additional pre-existing code, templates or assets incorporated into the project must be disclosed separately by the author for submission.
 
 ## Open-source publication readiness
 
