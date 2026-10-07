@@ -18,22 +18,22 @@ People who struggle to read English medical and health-insurance letters, bank/c
 ## The Core Loop
 
 1. Open the app in English or Simplified Chinese, using the app-specific iPhone language setting or the phone preference. No registration or login.
-2. Photograph one or more pages using the iPhone camera.
+2. Photograph pages using the iPhone camera, select existing photos, or import a PDF; review the pages in order.
 3. Check readability locally; retake unreadable images, or explicitly accept uncertain quality.
-4. Finish capture to analyze the ordered pages using the operator's own AI API key.
+4. Tap Analyze document / 分析文档 to analyze the ordered pages using the operator's own AI API key.
 5. Read the explanation and source-backed facts, actions and relevant dates.
 6. Review an action and its calendar date, then tap Add to save directly to the default iPhone calendar (write-only permission), or dismiss without adding.
 
 ## The POC Boundary
 
-- Native iPhone app, local photo checks, temporary ordered multi-page capture and per-page retakes.
+- Native iPhone app, local photo checks, temporary ordered multi-page capture, photo-library/PDF import and per-page retakes.
 - AI interpretation of medical/health-insurance letters, bank/credit-card statements and everyday bills/fee or renewal notices, output in the selected English or Simplified Chinese app language and visible uncertainty. Everyday billing includes electricity/gas/water, telephone/internet, memberships/subscriptions and other household/service charges. Paid balances and scheduled automatic debits do not imply a manual-payment task; renewal dates do not imply a cancellation deadline.
 - Editable event dates and time zones, source-grounded bill titles/notes, and original deadlines retained in notes when scheduling on another date. Explicit clock cutoffs use timed markers in the source zone; date-only deadlines remain all-day.
-- Creation-only iPhone calendar handoff: deadlines, user-selected reminder dates, and user-verified appointments. The review includes user-controlled notification alerts with presets, None, and a custom date/time, saved directly after tapping Add; no second system review. These settings do not infer urgency from the letter.
-- No-AI fictional calendar examples for testing, clearly labeled as tests.
+- Creation-only iPhone calendar handoff: deadlines, editable personal reminders initially set to tomorrow, and user-reviewed appointments. The review includes user-controlled notification alerts with presets, None, and a custom date/time, saved directly after tapping Add; no second system review. These settings do not infer urgency from the letter.
+- Test/Debug-only no-AI fictional calendar examples, clearly labeled as tests; saving them creates real calendar events.
 - Payment execution, automatic cancellation and recurring event creation are outside scope.
 - Open-source, clone-and-run distribution on GitHub; each operator supplies their own compatible API key and model configuration.
-- Current run mode: Mac-hosted local relay plus an iPhone Debug build installed with Xcode. No hosted shared service is promised.
+- Current demo setup: Mac-hosted local relay plus an iPhone Test/Debug build installed with Xcode. A separate Prod/Release scheme uses its own local configuration and excludes demo tools/fixtures. No hosted shared service is promised.
 - Photos and analysis stay in the active session; finishing/restarting does not provide an archive. Saved calendar events remain in the phone calendar.
 
 ## Explicitly Cut from the Hackathon
@@ -42,7 +42,7 @@ Email and all other account registration/login/recovery; cloud databases/storage
 
 ## What "Working" Looks Like
 
-An operator clones the repository, supplies their own API settings, runs the local relay and installs the app. They photograph a fictional letter, handle a photo-check result, obtain real analysis, review an action and save it as a correctly dated event in the iPhone calendar. Canceling does not claim success. An all-day event is actually marked all-day. No login, archive or chat demonstration is required.
+An operator clones the repository, supplies their own API settings, runs the local relay and installs the app. They photograph a fictional letter, handle a photo-check result, obtain real analysis, review an action and save it as a correctly dated event in the iPhone calendar. Canceling does not claim success. Date-only deadlines and personal reminders are actually marked all-day; explicit clock cutoffs use timed markers. No login, archive or chat demonstration is required.
 
 ## Future Commercial Roadmap
 

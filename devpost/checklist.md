@@ -21,7 +21,7 @@ Build mode: Fast. The approved scope is capture → local photo checks → analy
 ## Slices
 
 - [ ] **1. Close capture, local photo checks and real analysis acceptance**
-  Becomes usable: Photograph one or multiple pages, handle readability/retakes and read a grounded interpretation in the selected English or Chinese app language without logging in.
+  Becomes usable: Photograph or import one or multiple pages, handle readability/retakes and read a grounded interpretation in the selected English or Chinese app language without logging in.
   Why now: Core implementation exists; complete the remaining real-use evidence before declaring the demo ready.
   PRD ref: `prd.md > Page Capture and Validation`; `prd.md > Actionable Explanation`; `prd.md > Recovery Behavior`.
   Spec ref: `spec.md > Capture and Page Validation`; `spec.md > Letter Interpretation and Grounding`; `spec.md > Look and Feel`.
@@ -31,7 +31,7 @@ Build mode: Fast. The approved scope is capture → local photo checks → analy
   Commit: `Complete hackathon capture and analysis acceptance`
 
 - [ ] **2. Close creation-only phone calendar acceptance**
-  Becomes usable: Review an action and save a correct all-day deadline/reminder or timed appointment in the phone calendar.
+  Becomes usable: Review an action and save a correct date-only all-day deadline/reminder, timed cutoff marker or timed appointment in the phone calendar.
   Why now: Handoff and the all-day fix exist; verify the actual saved event and recovery outcomes.
   PRD ref: `prd.md > External Calendar Handoff`.
   Spec ref: `spec.md > Calendar Handoff and Reminder Suggestions`.
@@ -66,14 +66,14 @@ No second phone, account isolation, email delivery or saved-conversation review 
 ## Duration Follow-up
 
 - [x] Remove duplicate appointment time-zone display while retaining the editable picker.
-- [x] Add a separate AI-suggested duration setting for timed events, bounded to 1–1,440 minutes, with a 30-minute fallback.
-- [x] Replace +/− with presets/custom minutes and a visible end time; block invalid input without additional confirmation switches.
+- [x] Add a separate AI-suggested duration setting for timed appointments, bounded to 1–1,440 minutes, with a 30-minute fallback.
+- [x] Replace +/− with a compact duration capsule opening hour/minute wheels and a visible end time; block invalid input without additional confirmation switches.
 - [ ] Re-analyze fictional appointment letters with the restarted relay and verify duration suggestions are reasonable, clearly labeled, and absent from all-day actions.
-- [ ] Verify preset/custom duration and end time on a newly saved physical-phone event, including a duration crossing midnight.
+- [ ] Verify hour/minute wheel selection (including 1 and 1,440 minutes) and end time on a newly saved physical-phone event, including a duration crossing midnight.
 
 ## UI and Older-Adult Usability Follow-up
 
-- [x] Remove date/time-verification and overall-confirmation switches; allow valid prefilled events to open Calendar directly and require entry only for missing date/time. The app’s Add button performs direct creation; no second review.
+- [x] Remove date/time-verification and overall-confirmation switches; allow valid prefilled events to save directly to Calendar and require entry only for missing date/time. The app’s Add button performs direct creation; no second review.
 
 - [x] Implement the requested home/result styling, remove the decorative envelope logo and group calendar examples under Demo tools.
 - [x] Add in-app notification presets, None and custom date/time; save alarms with the event without requiring confirmation switches.
@@ -86,7 +86,7 @@ No second phone, account isolation, email delivery or saved-conversation review 
 
 ## Final Review
 
-- [ ] Try newly analyzed everyday and bank/credit-card statements on the phone, inspect bilingual balances/date roles and a saved reminder; account balances must not become payment requests, and paid/autopay cases must not request manual payment.
+- [ ] Try newly analyzed everyday and bank/credit-card statements on the phone, inspect balances/date roles in each selected app language and a saved reminder; account balances must not become payment requests, and paid/autopay cases must not request manual payment.
 
 - [ ] Verify the all-day fix on a newly created phone event.
 - [ ] Resolve scoped capture/analysis/calendar/setup feedback; record unresolved limitations accurately.
@@ -110,10 +110,10 @@ No completed learning wrap-up is inferred from the scope change. Keep it proport
 - [ ] Verify fresh live-provider notes for appointments, conditional actions and deadlines in both languages; check grounding and concise event wording.
 - [ ] Check the note on a newly saved phone event; existing events retain their old notes.
 
-- Bill calendar follow-up: verify concise bilingual titles/notes with a fresh live interpretation, unique source excerpts and preserved explicit clock cutoffs. Screenshot-based deterministic regressions do not establish live provider output quality.
+- Bill calendar follow-up: verify concise titles/notes in each selected app language with a fresh live interpretation, unique source excerpts and preserved explicit clock cutoffs. Screenshot-based deterministic regressions do not establish live provider output quality.
 
 - [x] Restore editable dates and time-zone selection for all-day deadlines/reminders; default date-only items/appointments to the phone zone and timed cutoffs to their stated source zone; preserve displayed wall date/time on zone changes.
 - [x] Carry bill type, organization and linked payment amount into calendar titles/notes, including generic or older AI responses. Preserve the original deadline when choosing another calendar date.
 - [ ] Restart the relay and analyze a fresh fictional bill; verify summary, contextual calendar heading/notes, editable date/time-zone and the saved phone event. Existing saved events remain unchanged.
 
-- [x] Use an in-page time-zone menu and compact date/time control alongside the label, including missing-date reminders; remove the separate date-entry sheet.
+- [x] Use an in-page time-zone menu and compact date/time control on separate labeled rows, including editable personal reminders; remove the separate date-entry sheet.
