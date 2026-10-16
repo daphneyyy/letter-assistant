@@ -7,6 +7,10 @@ status: approved
 
 Build mode: Fast. The approved scope is capture → local photo checks → analysis → creation in the iPhone calendar. No account, email, archive, chatbox or synchronization is required. Operators supply their own API key.
 
+## Audience and Language Boundary
+
+The product helps anyone who wants to understand supported letters and identify actions and dates; the audience is not limited by English proficiency, age or immigration status. Current source documents are English, with explanations and calendar text generated in the selected English or Simplified Chinese app language. Additional languages are planned for future versions and require separate implementation and acceptance checks; this positioning update does not mark them as completed.
+
 ## Current State
 
 - Capture, analysis and calendar creation are implemented. The learner confirmed the iPhone capture/retake → explanation → saved Calendar event hands-on check passed. Detailed edge-case and target-user checks below remain open.
@@ -54,6 +58,7 @@ Build mode: Fast. The approved scope is capture → local photo checks → analy
 
 - [x] Early interpretation review completed; preserve accepted layout and feedback.
 - [x] Final four-step journey and calendar results reviewed on one iPhone — learner confirmed the requested hands-on check passed; no detailed edge-case or target-user coverage is inferred.
+- [x] Learner confirmed the requested fresh fictional-bill iPhone check passed: capture/import → fresh analysis; source-matching amount, payment requirement and deadline; reviewed event date and alert; newly saved Calendar event date, all-day/timed setting, alert and notes. This confirmation covers that bill flow; it does not establish both-language coverage, appointment duration/zone edge cases, actual notification delivery or fresh-operator setup.
 
 No second phone, account isolation, email delivery or saved-conversation review is required.
 
@@ -71,7 +76,7 @@ No second phone, account isolation, email delivery or saved-conversation review 
 - [ ] Re-analyze fictional appointment letters with the restarted relay and verify duration suggestions are reasonable, clearly labeled, and absent from all-day actions.
 - [ ] Verify hour/minute wheel selection (including 1 and 1,440 minutes) and end time on a newly saved physical-phone event, including a duration crossing midnight.
 
-## UI and Older-Adult Usability Follow-up
+## UI, Usability and Accessibility Follow-up
 
 - [x] Remove date/time-verification and overall-confirmation switches; allow valid prefilled events to save directly to Calendar and require entry only for missing date/time. The app’s Add button performs direct creation; no second review.
 
@@ -82,7 +87,7 @@ No second phone, account isolation, email delivery or saved-conversation review 
 - [ ] Verify contrast, actual touch targets, Chinese wrapping and VoiceOver across the current screens.
 - [ ] Check the Calendar permission dialog and whether users understand that Add saves immediately to their default calendar.
 - [ ] On a phone, save new all-day and appointment events with presets, custom alerts and None; verify alarm times, notification delivery, date changes and time-zone behavior. Preserve previously saved events.
-- [ ] Before making an independent-use suitability claim, observe target older adults completing the fictional-letter flow without step-by-step coaching; record assistance and confusion about conditions, event dates, notification times and unsaved letters. This evidence is separate from learner demo approval.
+- [ ] Before making an independent-use suitability claim, observe representative users completing the fictional-letter flow without step-by-step coaching, including fluent English readers and users who prefer Chinese explanations, with varied ages, document familiarity and accessibility needs; record assistance and confusion about conditions, event dates, notification times and unsaved letters. This evidence is separate from learner demo approval.
 
 ## Final Review
 
@@ -108,7 +113,7 @@ No completed learning wrap-up is inferred from the scope change. Keep it proport
 
 - [x] Separate generated selected-language calendar notes from source/review copy and preview the exact note before Add. Preserve conditions, optionality, deadline cutoffs and uncertainty.
 - [ ] Verify fresh live-provider notes for appointments, conditional actions and deadlines in both languages; check grounding and concise event wording.
-- [ ] Check the note on a newly saved phone event; existing events retain their old notes.
+- [x] Check the note on a newly saved phone event; existing events retain their old notes. Learner confirmed the newly saved fictional-bill event note matched the review on 2026-10-08; other action types and both-language live output remain pending above.
 
 - Bill calendar follow-up: verify concise titles/notes in each selected app language with a fresh live interpretation, unique source excerpts and preserved explicit clock cutoffs. Screenshot-based deterministic regressions do not establish live provider output quality.
 

@@ -1,6 +1,8 @@
 # Letter Assistant
 
-An iPhone hackathon demo that turns an English medical/health-insurance letter, bank/credit-card statement or everyday bill/fee notice into a plain-language English or Chinese explanation and a reviewed phone-calendar event.
+An iPhone hackathon demo that helps people understand letters, identify relevant actions and dates, and optionally save a reviewed event to their phone calendar. It is for anyone who wants clearer guidance through complex or unfamiliar paperwork, regardless of English proficiency, age or background.
+
+The current demo accepts English medical/health-insurance letters, bank/credit-card statements and everyday bills/fee notices. Users can choose English or Simplified Chinese explanations and calendar text through the app language setting. Support for additional languages is planned for future versions; it is not implemented in this demo.
 
 **Photograph → check the photo → analyze the letter → add to the iPhone calendar.**
 
@@ -104,7 +106,7 @@ See [devpost/checklist.md](devpost/checklist.md) for current acceptance work and
 - An account/login system.
 - A chatbox for letter-related questions.
 - Letter classification for organizing and browsing letters by type.
-- Multilingual support beyond the hackathon’s English and Chinese; supported languages and coverage to be defined.
+- Expand language choices beyond the current English and Simplified Chinese explanations. Additional languages and their source-document, interface, explanation and speech coverage will be defined and verified in future versions.
 - Saved letter summaries, extracted information, summaries of the user's questions, and summaries of calendar items added.
 
 These features are outside the hackathon. Their storage, authentication and synchronization design is future work, not a requirement for running this demo.

@@ -9,11 +9,15 @@ The approved hackathon scope is capture → local photo checks → analysis → 
 
 ## The Unique Kernel
 
-Help middle-aged and older immigrants with limited English understand a medical or health-insurance letter, bank/credit-card statement or an everyday bill/fee notice: what it says, what to pay attention to, what actions or choices it contains, and when. Turn an applicable action into an event the user reviews and saves in the phone calendar.
+Help people turn complex or unfamiliar letters into clear understanding and next steps: what the document means, which amounts and conditions matter, whether action is needed, and when. The need can arise from unfamiliar terminology, confusing document structure, multiple amounts or dates, or a language preference—not only limited English proficiency. Turn an applicable action into an event the user reviews and saves in the phone calendar.
 
 ## Who It's For
 
-People who struggle to read English medical and health-insurance letters, bank/credit-card statements or everyday bills. The interface and explanations support English and Simplified Chinese, with large readable text and spoken capture guidance. Older-adult usability is a design goal, not a validated outcome: current automated checks do not establish independent use by the target audience. Technical clone/setup is performed by an operator; the current demo is not a self-installable consumer product.
+Anyone who wants help understanding supported letters and managing their next steps, including fluent English readers dealing with unfamiliar medical, financial or billing terms and people who prefer an explanation in Chinese. Age, immigration status and English proficiency do not define eligibility or the product audience.
+
+The current demo accepts English source documents and offers the interface, explanations and calendar text in English or Simplified Chinese, selected through the app language setting. It generates the selected language for each analysis rather than both languages simultaneously. Future versions can expand to additional languages; source-document, interface, explanation and speech coverage will need separate definition and verification.
+
+Large readable text and spoken capture guidance support accessibility across the audience. Independent-use usability has not been established across representative users; automated checks do not prove it. Technical clone/setup is performed by an operator; the current demo is not a self-installable consumer product.
 
 ## The Core Loop
 

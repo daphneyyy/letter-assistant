@@ -11,6 +11,12 @@ This approved document defines the hackathon proof of concept. Login, archive an
 
 A no-login iPhone demo: photograph or import a medical or health-insurance letter, bank/credit-card statement or an everyday bill/fee notice, check photo readability, analyze its meaning and actions, and optionally add a reviewed item to the phone calendar. Distribute the source on GitHub so operators can clone it and use their own API key.
 
+## Audience and Language Support
+
+The product is for anyone who wants to understand supported letters and decide what to do next. Unfamiliar terminology, multiple amounts or dates, and conditional instructions can be difficult even when the reader is fluent in English. People who prefer Chinese explanations are also part of the audience; limited English proficiency, age and immigration status are not prerequisites.
+
+Current source-document support is English. Users choose English or Simplified Chinese through the app language setting; explanations, action descriptions and calendar text are generated in that selected language, not simultaneously in both. Additional languages are planned for future versions, with source-document, interface, explanation and speech coverage to be defined and verified separately.
+
 ## The Core Journey
 
 1. Open the app in English or Simplified Chinese using the app-specific iPhone language setting or phone preference; the globe button opens Settings to change it.
@@ -121,9 +127,9 @@ The learner has confirmed the core iPhone capture/retake → explanation → sav
 - [ ] API credentials and local config are excluded from tracked files and publication history; only fictional fixtures are included.
 - [ ] Learner confirms final hackathon demo readiness after the remaining acceptance work. No login, saved chat, archive or second-phone test is a hackathon requirement.
 
-## Older-Adult Usability Review — Open Work
+## Usability and Accessibility Review — Open Work
 
-The prototype has accessibility foundations, but independent use by older adults has not been established. Automated large-text and calendar-flow checks are supporting evidence only.
+The prototype has accessibility foundations, but independent use across the intended audience has not been established. Usability review should include people with different document familiarity, language preferences, ages and accessibility needs. Automated large-text and calendar-flow checks are supporting evidence only.
 
 Proposed next refinements, not implemented or accepted by this documentation update:
 
@@ -131,7 +137,7 @@ Proposed next refinements, not implemented or accepted by this documentation upd
 - Show a few common alert choices first and place the full set under More options; preserve the requested flexibility and custom time.
 - Explain direct saving and the permission dialog in plain language; verify English/Chinese device-language combinations.
 
-Before claiming suitability for independent older-adult use, observe target users using fictional letters without step-by-step coaching. Record whether they can capture/retake, explain the action and any condition, distinguish the event date from notification time, save/cancel, and understand that the letter itself is not archived. Record assistance, errors and confusion, not merely task completion. This is separate from the learner's technical demo acceptance.
+Before claiming suitability for independent use, observe representative users using fictional letters without step-by-step coaching, including fluent English readers and users who prefer Chinese explanations. Record whether they can capture/retake, explain the action and any condition, distinguish the event date from notification time, save/cancel, and understand that the letter itself is not archived. Record assistance, errors and confusion, not merely task completion. This is separate from the learner's technical demo acceptance.
 
 ## Future Commercial Features
 

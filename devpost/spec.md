@@ -7,6 +7,12 @@ status: approved
 
 The delivery architecture is a native iPhone capture → local readability checks → analysis → calendar flow with a Mac-hosted relay. Accounts, cloud archives and chat are outside this hackathon.
 
+## Product Audience and Language Boundary
+
+The capture → explanation → reviewed calendar flow serves anyone who needs clearer understanding of supported letters and their next steps. It is not limited to people with low English proficiency, older adults or immigrants.
+
+The current implementation accepts English source documents and generates explanations, actions and calendar text in the selected English or Simplified Chinese app language. It does not generate both languages for each request. Additional languages are a future expansion: input recognition, provider output contracts, localization, speech and acceptance checks need their own implementation and verification. This documentation update does not add language support to the code.
+
 ## Where It Runs and How Someone Tries It
 
 Clone [https://github.com/daphneyyy/letter-assistant](https://github.com/daphneyyy/letter-assistant), configure an operator-owned compatible AI key/model in ignored `.env.local`, run the Deno relay on a Mac, configure the matching local relay URL/token in ignored `ios/Config/Debug.local.plist`, and install the Debug app through Xcode with the operator's own signing team. Phone and Mac use the same trusted local network. See README for exact instructions.
@@ -115,7 +121,7 @@ The selected-language provider response uses plain text fields, one summaries ob
 
 Retain accepted four-section explanations, concise contextual wording, expanded source detail on demand, large Dynamic Type, Chinese wrapping, 44-point controls, basic VoiceOver and quiet successful photo checks. The interface uses a warm off-white light background and adaptive dark styling with teal/mint accents. Home has separate camera, photo-library and PDF actions and a collapsed three-step introduction. Captured pages use horizontal swiping, a page-count jump menu and a full-screen zoom viewer; original photos on results are expandable. The decorative envelope logo has been removed.
 
-Older-adult usability remains unverified. The current calendar form still exposes the complete preset list and detailed review fields; a concise action/date/notification summary and common-options-first design are proposed follow-ups, not existing components. Home-screen capture guidance asks for clear, readable text one page at a time, consistent with the no-cropping requirement. Test VoiceOver, contrast, long Chinese labels and the system-permission language transition on actual devices.
+Independent-use usability across representative users remains unverified; review should cover different document familiarity, language preferences, ages and accessibility needs. The current calendar form still exposes the complete preset list and detailed review fields; a concise action/date/notification summary and common-options-first design are proposed follow-ups, not existing components. Home-screen capture guidance asks for clear, readable text one page at a time, consistent with the no-cropping requirement. Test VoiceOver, contrast, long Chinese labels and the system-permission language transition on actual devices.
 
 ## Important Failure Modes
 
