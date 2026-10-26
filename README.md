@@ -166,22 +166,38 @@ The author confirms that no code or materials were copied or adapted from prior 
 
 This project is licensed under the [MIT License](LICENSE).
 
-The [GitHub repository](https://github.com/daphneyyy/letter-assistant) is currently private and will be made public for submission. Operators supply their own API keys. Audit tracked files and Git history for credentials, local signing/configuration, private learner context and real letter images before pushing publicly. Public access and GitHub license detection must be checked after the visibility change.
+The [GitHub repository](https://github.com/daphneyyy/letter-assistant) is public as verified through GitHub metadata on 2026-10-26. Operators supply their own API keys. Audit tracked files and Git history for credentials, local signing/configuration, private learner context and real letter images before pushing publicly. GitHub detects MIT; independent signed-out access remains to be checked. See devpost/shipping.md for current publication status.
 
 
 ### Test and Prod builds
 
-Choose a scheme in Xcode before Run (automated tests use `LetterAssistant-Test`):
+Choose a scheme in Xcode before clicking **Run**. Automated tests use `LetterAssistant-Test`.
 
 | Scheme | Configuration | AI connection |
-| --- | --- | --- | --- |
-| `LetterAssistant-Test` | Debug, `TEST_BUILD` | Ignored `ios/Config/Debug.local.plist` |
-| `LetterAssistant-Prod` | Release | Ignored `ios/Config/Prod.local.plist` |
+| --- | --- | --- |
+| `LetterAssistant-Test` | Debug with `TEST_BUILD` | `ios/Config/Debug.local.plist` |
+| `LetterAssistant-Prod` | Release | `ios/Config/Prod.local.plist` |
 
-Test is labeled **Letter Assistant Test** on the device. Prod is labeled **Letter Assistant**. Both currently use the same bundle ID, so installing one replaces the other. The existing `LetterAssistant` scheme retains its Debug-run/Release-archive behavior.
+Both connection files are local settings excluded from Git.
 
-For Prod connection settings, copy `ios/Config/Prod.example.plist` to `ios/Config/Prod.local.plist` and set your relay URL/token. Prod accepts HTTPS or the existing trusted local-network HTTP relay; Test retains its local HTTP relay. The build copies only the selected environment's configuration. Missing configuration shows an honest setup message; there is no automatic fallback to Test credentials. These settings select the app connection configuration; they do not deploy a backend.
+On the device:
 
-New analysis generates explanations and calendar text only in the selected app language (English or Simplified Chinese), saving the second-language generation. Source quotations keep their original language. App-specific language settings can override the phone language.
+- Test appears as **Letter Assistant Test**.
+- Prod appears as **Letter Assistant**.
+- Both use the same bundle ID, so installing one replaces the other.
 
-The old AI photo-quality endpoint and prompts have been removed. Photo readability checks run locally on the iPhone; the relay offers only document interpretation.
+The original `LetterAssistant` scheme still uses Debug for Run and Release for Archive.
+
+#### Set up the Prod connection
+
+1. Copy `ios/Config/Prod.example.plist` to `ios/Config/Prod.local.plist`.
+2. Set the relay URL and token in the new file.
+3. Select `LetterAssistant-Prod` in Xcode and run the app.
+
+Prod accepts HTTPS or the existing trusted local-network HTTP relay. Test uses its local HTTP relay. Each build copies only its selected connection file. If the file is missing, the app displays a setup message; Prod does not fall back to Test credentials. These settings configure the app's connection to a relay; they do not deploy a backend.
+
+#### Language and photo checks
+
+New analyses generate explanations and calendar text in the selected app language: English or Simplified Chinese. They skip generation in the other language. Source quotations keep their original language. The app's language setting can override the phone language.
+
+Photo readability checks run locally on the iPhone. The relay handles document interpretation only; the old AI photo-quality endpoint and prompts have been removed.
