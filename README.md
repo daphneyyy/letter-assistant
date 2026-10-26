@@ -150,7 +150,7 @@ See [devpost/checklist.md](devpost/checklist.md) for current acceptance work and
 
 ## Development tools and third-party integrations
 
-The project is developed with AI assistance in Codex using the [Devpost Learn Skill Pack](https://github.com/challengepost/learn-ai-basics). The generated planning documents are [scope.md](devpost/scope.md), [prd.md](devpost/prd.md), and [spec.md](devpost/spec.md); implementation and verification records are in [checklist.md](devpost/checklist.md).
+The project is developed with AI assistance in Codex using the [Devpost Learn Skill Pack](https://github.com/challengepost/learn-ai-basics). The generated planning documents are [scope.md](devpost/scope.md), [prd.md](devpost/prd.md), and [spec.md](devpost/spec.md); implementation and verification records are in [checklist.md](devpost/checklist.md). The offline [app map](devpost/app-map.html) traces capture, analysis and calendar creation; [shipping.md](devpost/shipping.md) records publication prerequisites and submission status.
 
 | Tool or integration | Role in this project |
 | --- | --- |

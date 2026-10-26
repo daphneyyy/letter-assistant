@@ -15,7 +15,7 @@ The current implementation accepts English source documents and generates explan
 
 ## Where It Runs and How Someone Tries It
 
-Clone [https://github.com/daphneyyy/letter-assistant](https://github.com/daphneyyy/letter-assistant), configure an operator-owned compatible AI key/model in ignored `.env.local`, run the Deno relay on a Mac, configure the matching local relay URL/token in ignored `ios/Config/Debug.local.plist`, and install the Debug app through Xcode with the operator's own signing team. Phone and Mac use the same trusted local network. See README for exact instructions.
+Clone [https://github.com/daphneyyy/letter-assistant](https://github.com/daphneyyy/letter-assistant), configure an operator-owned compatible AI key/model in ignored `.env.local`, run the Deno relay on a Mac, configure the matching local relay URL/token in ignored `ios/Config/Debug.local.plist`, and install the Debug app through Xcode with the operator's own signing team. Phone and Mac use the same trusted local network. See README for exact instructions. Current repository/video links, publication checks and Devpost status are recorded in [shipping.md](shipping.md); the source walkthrough is [app-map.html](app-map.html).
 
 This is a source-built hackathon demo, not an App Store package or hosted service. The Prod/Release build packages only the ignored Prod.local.plist and accepts HTTPS or trusted local HTTP relay settings. It excludes fictional fixtures and demo tools; compilation alone does not establish a working AI connection. No account, Supabase project, email service, domain or cloud deployment is needed.
 

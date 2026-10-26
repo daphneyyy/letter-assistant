@@ -23,3 +23,8 @@
 /agent/
 /skills-lock.json
 /.ship-deck-build/
+
+# Local recordings (share via the required video platform)
+/demo.mp4
+/presentation.mp4
+/presentation2.mp4

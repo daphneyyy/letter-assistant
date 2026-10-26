@@ -14,43 +14,47 @@ The product helps anyone who wants to understand supported letters and identify 
 ## Current State
 
 - Capture, analysis and calendar creation are implemented. The learner confirmed the iPhone capture/retake → explanation → saved Calendar event hands-on check passed. Detailed edge-case and target-user checks below remain open.
-- Backend type checking and 37 tests passed. The latest iPhone simulator unit suite reported 47 passing tests with zero failures, but Xcode stalled during cleanup and the runner was stopped; no final TEST SUCCEEDED result is claimed for that run. Focused UI tests have separate passing evidence, not a complete latest combined run.
+- Backend type checking and 38 tests passed on 2026-10-26 (current working tree, including the no-action language-isolation fix subsequently committed as 2c7de69). The latest iPhone simulator unit suite reported 47 passing tests with zero failures, but Xcode stalled during cleanup and the runner was stopped; no final TEST SUCCEEDED result is claimed for that run. Focused UI tests have separate passing evidence, not a complete latest combined run.
 - An isolated source snapshot passed type checking, an unsigned Test simulator build, selected-config/fixture packaging, loopback relay startup, token authentication and the missing-provider response. It used fresh placeholder configuration, not existing credentials; it does not establish a new operator's phone signing or live AI setup.
 - Individual live fictional-letter cases cover billing, banking, conditional actions, EOB, no-action/no-deadline cases and selected-language output. These samples do not establish universal accuracy; conditional enrollment extraction remains a reliability concern.
 - A scan of 441 reachable historical blobs found no current local credential matches or common credential/private-key patterns. Private configuration, captures and learner-profile paths were absent from reachable history. This scoped scan does not prove absence of every possible sensitive item; review intended additions before publication.
 - MIT is selected and tracked. The author confirmed no code or materials were copied or adapted from prior projects, tutorials, templates or other repositories, apart from the separately documented standard tools/frameworks and Skill Pack.
 - Repository: [letter-assistant](https://github.com/daphneyyy/letter-assistant). It is currently private; the learner plans to make it public for submission. Public access and GitHub license detection will be checked then.
-- Final readiness, remaining acceptance and the learning wrap-up/app map are unfinished. Existing checkbox states are preserved.
+- The learner explicitly confirmed the core phone journey and demo readiness on 2026-10-26 and requested no repeated completed checks. Final review and static code recap are complete; app-map.html is available. Detailed follow-up boxes below remain unverified limitations, not completed tests or submission blockers for this demonstrated PoC.
+
+## Acceptance Boundary — 2026-10-26
+
+The learner confirmed the demo is ready and requested shipping. Close the three slices against the demonstrated core bill journey, existing automated/setup evidence, and documented limitations. Expanded appointment, bilingual live-provider, accessibility, notification-delivery and fresh-operator signing matrices remain unchecked below. This is an explicit PoC acceptance revision, not a claim those tests ran. No new features or product behavior are changed.
 
 ## Slices
 
-- [ ] **1. Close capture, local photo checks and real analysis acceptance**
+- [x] **1. Close capture, local photo checks and real analysis acceptance**
   Becomes usable: Photograph or import one or multiple pages, handle readability/retakes and read a grounded interpretation in the selected English or Chinese app language without logging in.
   Why now: Core implementation exists; complete the remaining real-use evidence before declaring the demo ready.
   PRD ref: `prd.md > Page Capture and Validation`; `prd.md > Actionable Explanation`; `prd.md > Recovery Behavior`.
   Spec ref: `spec.md > Capture and Page Validation`; `spec.md > Letter Interpretation and Grounding`; `spec.md > Look and Feel`.
   Build: Preserve the native camera, local-only check, Use anyway for uncertain quality, page order, four-section explanation and retries. Fix only relevant acceptance failures; no account/archive work.
-  Verify (mechanical): Run checks appropriate to actual fixes. Compare real fictional provider output against expected source facts, including conditional actions, EOB/no-action/no-deadline cases and both languages. Record any provider quota blocker honestly. Verify physical capture/retake and basic accessibility without inferring coverage from a general approval.
+  Verify (mechanical): 2026-10-26: `deno task check` and all 38 backend tests passed; existing live fictional-letter evidence retained. Expanded checks below are deferred limitations under Acceptance Boundary. Original extended verification plan: Run checks appropriate to actual fixes. Compare real fictional provider output against expected source facts, including conditional actions, EOB/no-action/no-deadline cases and both languages. Record any provider quota blocker honestly. Verify physical capture/retake and basic accessibility without inferring coverage from a general approval.
   Learner check: Capture a fictional letter, retake an unreadable page, try an uncertain image and inspect the explanation/source details. Confirm English/Chinese readability and guidance.
   Commit: `Complete hackathon capture and analysis acceptance`
 
-- [ ] **2. Close creation-only phone calendar acceptance**
+- [x] **2. Close creation-only phone calendar acceptance**
   Becomes usable: Review an action and save a correct date-only all-day deadline/reminder, timed cutoff marker or timed appointment in the phone calendar.
   Why now: Handoff and the all-day fix exist; verify the actual saved event and recovery outcomes.
   PRD ref: `prd.md > External Calendar Handoff`.
   Spec ref: `spec.md > Calendar Handoff and Reminder Suggestions`.
   Build: Preserve the requested alert presets, None and custom date/time, alongside manual reminder-date selection, verified appointment time/zone, conditions, source notes, direct EventKit saving with write-only permission, explicit success/error state and interrupted-result handling. Automatic urgency-based recommendations are not required. No calendar-reading, in-app calendar or sync work.
-  Verify (mechanical): Use existing date-policy/EventKit tests and UI evidence; run targeted tests for subsequent fixes. On the iPhone check newly saved all-day events, appointment date/time/duration/zone, notes, preset/custom/None alerts and notification delivery, permission denial/Not now, unavailable calendar and interrupted result. Do not silently alter previously saved events.
+  Verify (mechanical): Existing date-policy/EventKit/UI evidence and confirmed physical-phone bill event retained; no new iOS test run claimed. Extended cases are deferred under Acceptance Boundary. Original extended verification plan: Use existing date-policy/EventKit tests and UI evidence; run targeted tests for subsequent fixes. On the iPhone check newly saved all-day events, appointment date/time/duration/zone, notes, preset/custom/None alerts and notification delivery, permission denial/Not now, unavailable calendar and interrupted result. Do not silently alter previously saved events.
   Learner check: Use the no-AI test entry for all three cases, then create an event from a real fictional-letter interpretation. Inspect it in Calendar and cancel another creation.
   Commit: `Complete hackathon phone calendar acceptance`
 
-- [ ] **3. Verify clone-and-run setup and finish the hackathon demo**
+- [x] **3. Verify clone-and-run setup and finish the hackathon demo**
   Becomes usable: A new operator can clone the code, configure their own provider, run the relay and install the iPhone demo without an account/email service.
   Why now: Public reproducibility and a complete demo finish the narrowed scope.
   PRD ref: `prd.md > Data and Open-Source Experience`; `prd.md > Demonstration and Acceptance`.
   Spec ref: `spec.md > Where It Runs and How Someone Tries It`; `spec.md > External Services and Dependencies`; `spec.md > Verification and Build Sequence`.
   Build: Maintain secret-free setup examples and accurate README, retain the selected MIT license, resolve scoped final review findings and prepare the demo. No push/publication is performed merely by editing this checklist.
-  Verify (mechanical): Check documented fresh-clone setup with separate operator-owned local configuration, correct Xcode signing and matching relay token. Verify no tracked credentials/personal letters; audit Git history before publishing. Check the complete four-step journey. Release compilation alone does not prove AI works in Release; document separate Debug/Prod configuration and accepted relay URLs.
+  Verify (mechanical): Retain prior isolated-source build/setup verification; README and secret-free examples reviewed. Reachable-history audit: 449 blobs, no current-local-credential or common key-pattern matches, no private configuration/profile paths. Current simulator unavailable (CoreSimulator connection failed); no fresh iOS run claimed. New operator signing/live AI remains a setup limitation. Original extended verification plan: Check documented fresh-clone setup with separate operator-owned local configuration, correct Xcode signing and matching relay token. Verify no tracked credentials/personal letters; audit Git history before publishing. Check the complete four-step journey. Release compilation alone does not prove AI works in Release; document separate Debug/Prod configuration and accepted relay URLs.
   Learner check: Follow the README, run the end-to-end demo and report remaining confusing or broken behavior. Confirm the scoped demo is ready.
   Commit: `Prepare reproducible open-source hackathon demo`
 
@@ -91,21 +95,31 @@ No second phone, account isolation, email delivery or saved-conversation review 
 
 ## Final Review
 
-- [ ] Try newly analyzed everyday and bank/credit-card statements on the phone, inspect balances/date roles in each selected app language and a saved reminder; account balances must not become payment requests, and paid/autopay cases must not request manual payment.
+- [x] Core physical-phone capture/import → fresh AI analysis → calendar creation accepted from the learner's saved bill-flow report and explicit 2026-10-26 confirmation, including date, alert and notes. No repeated phone test performed by the agent.
+- [x] All-day fix has saved-phone bill evidence in Hands-on Checkpoints; retain this evidence without claiming every appointment/time-zone edge case.
+- [x] Scoped feedback resolved; remaining limits recorded below. No new fixes requested in the final sign-off.
+- [x] Final review complete — learner explicitly confirmed hackathon demo readiness on 2026-10-26. Agent assesses the demonstrated PoC ready for presentation based on that report, code review and passing backend checks; public submission prerequisites remain separate.
 
-- [ ] Verify the all-day fix on a newly created phone event.
-- [ ] Resolve scoped capture/analysis/calendar/setup feedback; record unresolved limitations accurately.
-- [ ] Final review complete — learner explicitly confirms hackathon demo readiness.
+### Known limits and deferred validation
+
+- Conditional enrollment and general AI extraction can be inaccurate; confirm dates, amounts, conditions and notes against the source.
+- Full new-live-provider coverage in both languages, appointment linkage/duration/cross-midnight cases, notification delivery, denial/interruption recovery and representative-user accessibility checks are not established. Follow-up boxes remain open intentionally.
+- Fresh everyday/bank/credit-card phone matrix in both languages is deferred; prior individual examples and deterministic checks do not establish universal correctness or independent-use suitability.
+- New-operator signing and live AI setup are not established by the earlier isolated-source build. Mac relay, compatible provider/key and trusted local network are required; provider quotas/availability can interrupt analysis.
+- Photos/results are temporary, no archive/sync/accounts; English input with selected English or Simplified Chinese output only.
+- This session could not connect to CoreSimulator. Earlier 47-unit-test output lacked a final TEST SUCCEEDED marker; do not upgrade it to a full successful iOS run.
 
 ## Code Tour and App Map
 
-- [ ] Learning activity complete — concise capture → analysis → calendar walkthrough or equivalent prior practice.
-- [ ] Optional transfer reflection offered/declined/completed; private reflections stay in ignored learner profile.
-- [ ] `devpost/app-map.html` generated from actual code, checked and shown.
-
-No completed learning wrap-up is inferred from the scope change. Keep it proportional to the smaller demo.
+- [x] Learning activity complete as a concise static source recap, not an interactive exercise: CaptureModel.accept/validate/interpret → LetterAPI.interpret and relay /interpret → CalendarProposal.make and CalendarReviewView.addToCalendar/SystemCalendarWriter.save. Paths and symbols checked against current code.
+- [x] Optional transfer reflection offered in the app map; no response recorded, no quiz or further sign-off required. No optional code edit performed.
+- [x] `devpost/app-map.html` generated from actual code, checked offline for links/anchors and queued to open in the Codex file panel. It labels the route as a reference and records its source snapshot.
 
 ## Revisions
+
+- 2026-10-26: Close demonstrated PoC acceptance using existing evidence plus the learner's explicit readiness confirmation. Expanded unperformed checks remain open and are now explicitly recorded as limitations. Do not infer completion from general approval.
+- 2026-10-26: Added the missing ignored learner profile using only known evidence and a static source-based app map. No claim of new learner mastery or interactive practice.
+- 2026-10-26: Existing language-summary aliasing fix and its regression test passed the 38-test backend suite; preserved without code changes and saved separately as commit 2c7de69. The source map now references that commit.
 
 - Planning documents consolidate the approved billing/banking, selected-language, calendar-cutoff, alert and Test/Prod decisions into their relevant sections. Detailed edit history is available in Git. Current evidence and outstanding acceptance remain separate.
 
