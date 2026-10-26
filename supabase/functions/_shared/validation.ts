@@ -197,7 +197,8 @@ export function validateLocalizedInterpretation(value: unknown, pageCount: numbe
     if (action.condition !== null) action.condition = text(action.condition);
     action.calendar_notes = text(action.calendar_notes); action.calendar_title = text(action.calendar_title);
   }
-  result.summaries = {en: result.summaries[language], zh: result.summaries[language]};
+  // Validation writes language-specific no-action copy. Never alias the summaries.
+  result.summaries = {en: structuredClone(result.summaries[language]), zh: structuredClone(result.summaries[language])};
   return validateInterpretation(result, pageCount);
 }
 
@@ -229,6 +230,6 @@ function expandCompactInterpretation(value: unknown, pageCount: number, language
     condition: action.condition === null ? null : text(action.condition),
     calendar_title: text(action.calendar_title), calendar_notes: text(action.calendar_notes), source_refs: sources(source_ids),
   }));
-  result.summaries = { en: wire.summaries, zh: wire.summaries };
+  result.summaries = { en: structuredClone(wire.summaries), zh: structuredClone(wire.summaries) };
   return validateInterpretation(result, pageCount);
 }

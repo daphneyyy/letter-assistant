@@ -808,6 +808,38 @@ Deno.test("compact wire restores fixed fields, shared evidence and every app fie
   }
 });
 
+Deno.test("no-action summaries keep English and Chinese independent through adapters and relay validation", async () => {
+  const input = enrollmentContract();
+  input.facts = []; input.actions = [];
+  for (const summary of Object.values(input.summaries)) {
+    summary.fact_ids = []; summary.action_ids = [];
+  }
+  const expected = {
+    en: "No action steps were identified in the supplied pages.",
+    zh: "提供的页面中未识别到办理事项。",
+  };
+  for (const language of ["en", "zh"] as const) {
+    const legacy = structuredClone(validateInterpretation(input));
+    const legacyWire = {...legacy, summaries: {[language]: legacy.summaries[language]}};
+    for (const wire of [compactFixture(input, language), legacyWire]) {
+      const output = validateLocalizedInterpretation(wire, 1, language);
+      assert(output.summaries.en !== output.summaries.zh);
+      assert(output.summaries.en.what_to_do === expected.en);
+      assert(output.summaries.zh.what_to_do === expected.zh);
+      const provider: AIProvider = {interpret: async () => output};
+      const response = await createHandler(token, provider)(request("/interpret", {
+        capture_id: payload.capture_id, language,
+        pages: [{page_id: payload.page_id, image_base64: image, local_readability: true}],
+      }));
+      assert(response.status === 200);
+      const body = await response.json();
+      assert(body.summaries.en.what_to_do === expected.en);
+      assert(body.summaries.zh.what_to_do === expected.zh);
+      assert(body.summaries[language].what_this_is === legacy.summaries[language].what_this_is);
+    }
+  }
+});
+
 Deno.test("compact evidence rejects dangling, negative, fractional, cross-page and empty references", () => {
   const wire = compactFixture(enrollmentContract(), "en");
   for (const mutate of [
