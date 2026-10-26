@@ -23,9 +23,13 @@ updated: 2026-10-26
 
 Official requirements fetched on 2026-10-26: https://learn-ai-basics.devpost.com/rules and the event submission-requirements API. Requirements call for a 1–3 minute working demo, publicly visible on YouTube or Vimeo, with English material or an English translation. No live deployment is required.
 
-Local metadata: demo.mp4 = 168.852 seconds (2:49), presentation.mp4 = 401.518 seconds (6:42), presentation2.mp4 = 223.774 seconds (3:44). The learner confirmed the shortened presentation is ready; its current local duration still exceeds three minutes. No new recording requested. Use the compliant demo recording or trim the chosen presentation. Content/language and public access must be confirmed against the final uploaded video; local metadata alone does not establish those.
+Earlier local recordings (superseded by the uploaded final video): demo.mp4 = 168.852 seconds (2:49), presentation.mp4 = 401.518 seconds (6:42), presentation2.mp4 = 223.774 seconds (3:44). The final upload supersedes these earlier local durations.
 
-- [ ] Record final publicly accessible YouTube/Vimeo URL and verify its duration, English content/translation and end-to-end result.
+- [x] Final video URL recorded: https://www.youtube.com/watch?v=KLHI5uZSpZ0
+- [x] Signed-out YouTube page opens with player controls; title is “Letter Assistant - Hackathon Submission” and displayed duration is 2:55, within the 1–3 minute range. This establishes link access and displayed duration, not a full content/language review.
+- [x] Creator confirmed the presentation includes the demo and the final recording is ready. No repeat recording or phone check requested.
+- [ ] Independently review full uploaded footage/English narration or translation; not claimed from metadata or title alone.
+
 
 ## Public repository
 
@@ -39,9 +43,9 @@ Expected license URL after publication: https://github.com/daphneyyy/letter-assi
 ## Devpost
 
 Project showcase: https://devpost.com/software/letter-assistant
-Project ID: 1510654; latest saved version: 2. Project fields are saved and showcase state is published; hackathon submitted_at is null. Saving fields is not a competition submission.
+Project ID: 1510654; latest saved version: 3. Project fields are saved and showcase state is published; hackathon submitted_at is null. Saving fields is not a competition submission.
 
-- [ ] Attach final public video URL.
+- [x] Attached final video URL through Devpost project editor; readback confirmed video_url matches. Hackathon submitted_at remains null.
 - [ ] Creator supplies individual/team choice, country, resources actually used, AI-cost impact, confidence rating, value selections, and age/eligibility confirmations. Optional feedback/value text remains their choice.
 - [ ] Complete required technology-requirement answer using the factual project record; the connector project editor does not expose event survey fields.
 - [ ] Review final fields and explicitly authorize official submission after rules/eligibility confirmation.
