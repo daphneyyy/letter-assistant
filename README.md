@@ -8,9 +8,9 @@ The current demo accepts English medical/health-insurance letters, bank/credit-c
 
 No email, signup, login, database or chat history is required. Clone the source and use your own AI API key. The current demo runs as a Debug app installed with Xcode, with a local relay running on your Mac; it is not an App Store release or hosted service.
 
-## Instructions for judges
+## Getting started
 
-This is a source-built iPhone prototype. Full AI evaluation requires a Mac, Xcode, an iPhone and your own provider account. There is no shared API key. Calendar-only evaluation can run without an AI key or relay after building the Test app.
+This is a source-built iPhone prototype. Using AI interpretation requires a Mac, Xcode, an iPhone and your own provider account. There is no shared API key. The calendar demo can run without an AI key or relay after building the Test app.
 
 ### Start with a free OpenRouter model
 
@@ -45,15 +45,15 @@ Edit these four settings in `.env.local` and restart the relay:
 
 For a paid OpenRouter model, keep `AI_BASE_URL=https://openrouter.ai/api/v1`, enter its model ID and your OpenRouter key, and set `AI_FREE_ONLY=false`. For another provider, replace the base URL, model and key together. The relay appends `/chat/completions`, uses `Authorization: Bearer ...`, sends inline JPEG images and requires `response_format` with strict `json_schema`. It does not accept a full endpoint URL, HTTP provider URLs, URL credentials/query parameters, arbitrary authentication headers, or a different native API protocol. Those integrations require a transport adapter. OpenRouter-specific routing fields are omitted for other providers.
 
-Switching the provider/model/key requires no Swift changes or app rebuild. Only changing the phone-to-relay URL/token requires updating the local plist and rebuilding. The provider key stays on the Mac. Legacy `OPENROUTER_*` and `OPENAI_*` settings are retained for earlier development setups; judges should use the unified `AI_*` settings above, which take precedence and never borrow a legacy provider key.
+Switching the provider/model/key requires no Swift changes or app rebuild. Only changing the phone-to-relay URL/token requires updating the local plist and rebuilding. The provider key stays on the Mac. Legacy `OPENROUTER_*` and `OPENAI_*` settings are retained for earlier development setups; new setups should use the unified `AI_*` settings above, which take precedence and never borrow a legacy provider key.
 
-### Suggested evaluation journey
+### Try the app
 
 1. In the Test app, choose an existing image using the photo import control (or photograph the fixture from another screen). Start with [fictional-electricity.jpg](fixtures/letters/fictional-electricity.jpg), check readability, then tap **Analyze document**.
 2. Compare the explanation with the source: charges **$120.00**, credit **$35.80**, actual amount due **$84.20**, payment deadline **November 20, 2026**. The full reference set is [fixtures/expected.json](fixtures/expected.json).
 3. Review the payment calendar proposal, its date and alert, then add it and inspect the event in iPhone Calendar. This creates a real event in your calendar; remove it afterward if desired.
-4. Try [fictional-paid-bill.jpg](fixtures/letters/fictional-paid-bill.jpg) or [fictional-card-autopay.jpg](fixtures/letters/fictional-card-autopay.jpg): an already paid balance or scheduled debit must not become a request to pay manually. Add a second page to test page order, and switch the app language in iPhone Settings to evaluate English/Chinese output in a new analysis.
-5. If no compatible model is available, use **Demo tools → Test calendar without AI** to evaluate calendar review and saving. This checks the calendar flow only; it does not demonstrate letter interpretation.
+4. Try [fictional-paid-bill.jpg](fixtures/letters/fictional-paid-bill.jpg) or [fictional-card-autopay.jpg](fixtures/letters/fictional-card-autopay.jpg): an already paid balance or scheduled debit must not become a request to pay manually. Add a second page to test page order, and switch the app language in iPhone Settings to try English/Chinese output in a new analysis.
+5. If no compatible model is available, use **Demo tools → Test calendar without AI** to try calendar review and saving. This checks the calendar flow only; it does not demonstrate letter interpretation.
 
 If setup fails, check the relay's safe error code: `provider_auth_failed` means check the selected provider key; `provider_rate_limited` means check quotas/wait; `free_model_required` means check the model ID/free-mode setting; `invalid_provider_configuration` means check the base URL/model; `invalid_ai_output` or `incomplete_ai_output` means the response failed this app's contract. `provider_unavailable` can include an unsupported endpoint/model or unavailable provider. For connection failures, check matching relay tokens, Mac/phone Wi-Fi, private IP and the running relay.
 
