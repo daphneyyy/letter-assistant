@@ -8,6 +8,55 @@ The current demo accepts English medical/health-insurance letters, bank/credit-c
 
 No email, signup, login, database or chat history is required. Clone the source and use your own AI API key. The current demo runs as a Debug app installed with Xcode, with a local relay running on your Mac; it is not an App Store release or hosted service.
 
+## Instructions for judges
+
+This is a source-built iPhone prototype. Full AI evaluation requires a Mac, Xcode, an iPhone and your own provider account. There is no shared API key. Calendar-only evaluation can run without an AI key or relay after building the Test app.
+
+### Start with a free OpenRouter model
+
+1. Sign in or create an account at [OpenRouter](https://openrouter.ai/), then open [API Keys](https://openrouter.ai/keys) and create a key for this demo. Copy it into `AI_API_KEY` in your ignored `.env.local` file. Creating a key does not make every model free.
+2. Follow [Clone and configure your own key](#clone-and-configure-your-own-key) below, including the separate random relay token and the iPhone connection plist.
+3. For the free path, use:
+
+   ```dotenv
+   AI_BASE_URL=https://openrouter.ai/api/v1
+   AI_MODEL=dots-studio/dots-3-note-preview:free
+   AI_API_KEY=your-openrouter-key
+   AI_FREE_ONLY=true
+   ```
+
+4. Check the [current model catalog](https://openrouter.ai/models) before running. The example is listed with image input and structured outputs as of October 25, 2026; this is not a successful live-analysis claim. If unavailable, choose another explicit `vendor/model:free` ID supporting **both image input and JSON Schema structured output**, including support at its serving endpoint. A text-only model cannot interpret these photos. This app's free-mode guard intentionally rejects `openrouter/free` and other automatic model routers; select an explicit compatible model.
+5. Run `deno task relay`, then build and run **LetterAssistant-Test** as described in [Run on your iPhone](#run-on-your-iphone). Keep the relay running during analysis.
+
+Free models have [account/model quotas and availability limits](https://openrouter.ai/docs/api_reference/limits). A free endpoint may be busy or unavailable even with a valid key. The app requests zero-price routing in free mode and never silently switches to a paid model. Wait or select another compatible free model if needed. OpenRouter's [quickstart](https://openrouter.ai/docs/quickstart) and [structured-output documentation](https://openrouter.ai/docs/guides/features/structured-outputs) describe provider setup and endpoint requirements.
+
+### Optional: use your preferred model and API
+
+A stronger compatible vision model **may** improve extraction quality and reliability; the API key itself does not improve results. No comparative quality benchmark is claimed. Paid access is optional and may incur charges on your account.
+
+Edit these four settings in `.env.local` and restart the relay:
+
+| Setting | What to enter |
+| --- | --- |
+| `AI_BASE_URL` | Your provider's HTTPS Chat Completions base URL, without `/chat/completions` |
+| `AI_MODEL` | The provider's exact vision model ID |
+| `AI_API_KEY` | A key issued by that provider |
+| `AI_FREE_ONLY` | `true` for explicit OpenRouter `:free` models; `false` for a paid model or another compatible provider |
+
+For a paid OpenRouter model, keep `AI_BASE_URL=https://openrouter.ai/api/v1`, enter its model ID and your OpenRouter key, and set `AI_FREE_ONLY=false`. For another provider, replace the base URL, model and key together. The relay appends `/chat/completions`, uses `Authorization: Bearer ...`, sends inline JPEG images and requires `response_format` with strict `json_schema`. It does not accept a full endpoint URL, HTTP provider URLs, URL credentials/query parameters, arbitrary authentication headers, or a different native API protocol. Those integrations require a transport adapter. OpenRouter-specific routing fields are omitted for other providers.
+
+Switching the provider/model/key requires no Swift changes or app rebuild. Only changing the phone-to-relay URL/token requires updating the local plist and rebuilding. The provider key stays on the Mac. Legacy `OPENROUTER_*` and `OPENAI_*` settings are retained for earlier development setups; judges should use the unified `AI_*` settings above, which take precedence and never borrow a legacy provider key.
+
+### Suggested evaluation journey
+
+1. In the Test app, choose an existing image using the photo import control (or photograph the fixture from another screen). Start with [fictional-electricity.jpg](fixtures/letters/fictional-electricity.jpg), check readability, then tap **Analyze document**.
+2. Compare the explanation with the source: charges **$120.00**, credit **$35.80**, actual amount due **$84.20**, payment deadline **November 20, 2026**. The full reference set is [fixtures/expected.json](fixtures/expected.json).
+3. Review the payment calendar proposal, its date and alert, then add it and inspect the event in iPhone Calendar. This creates a real event in your calendar; remove it afterward if desired.
+4. Try [fictional-paid-bill.jpg](fixtures/letters/fictional-paid-bill.jpg) or [fictional-card-autopay.jpg](fixtures/letters/fictional-card-autopay.jpg): an already paid balance or scheduled debit must not become a request to pay manually. Add a second page to test page order, and switch the app language in iPhone Settings to evaluate English/Chinese output in a new analysis.
+5. If no compatible model is available, use **Demo tools → Test calendar without AI** to evaluate calendar review and saving. This checks the calendar flow only; it does not demonstrate letter interpretation.
+
+If setup fails, check the relay's safe error code: `provider_auth_failed` means check the selected provider key; `provider_rate_limited` means check quotas/wait; `free_model_required` means check the model ID/free-mode setting; `invalid_provider_configuration` means check the base URL/model; `invalid_ai_output` or `incomplete_ai_output` means the response failed this app's contract. `provider_unavailable` can include an unsupported endpoint/model or unavailable provider. For connection failures, check matching relay tokens, Mac/phone Wi-Fi, private IP and the running relay.
+
 ## What it does
 
 Supported everyday documents now include utility bills (electricity/gas/water), telephone/internet bills, membership/subscription fee or renewal notices and other household/service charges. The explanation distinguishes the actual outstanding balance from total charges, credits and payments already received; scheduled automatic debits are not manual-payment requests. Renewal/charge dates are not cancellation deadlines. Only source-stated actions and cutoffs are offered for reviewed calendar creation. Bank checking/savings and credit-card statements are also supported: account balances and transaction totals are not payment instructions; minimum payment and full statement balance are explained separately. Investment/retirement reports and non-health insurance policy documents remain unsupported. This app explains documents and creates reviewed reminders; it does not pay bills or cancel services.
@@ -99,17 +148,6 @@ Replace the simulator-name placeholder with an installed device. The test suites
 Recorded development evidence includes successful backend checks, iOS unit/UI tests and signed phone builds. The all-day time-zone bug has a passing regression test and an installed fix; the learner's real-phone retry is still pending. Conditional enrollment extraction remains a known reliability concern despite successful individual runs. Provider quotas may block real analysis. Photos/results are not persisted, urgency-based reminder recommendations are not implemented, and the demo does not include chat or synchronization.
 
 See [devpost/checklist.md](devpost/checklist.md) for current acceptance work and recorded development evidence. Earlier source changes are available in Git history. The build is not claimed fully accepted merely because it compiles.
-
-## Future commercial direction
-
-- An in-app calendar synchronized with the phone calendar.
-- An account/login system.
-- A chatbox for letter-related questions.
-- Letter classification for organizing and browsing letters by type.
-- Expand language choices beyond the current English and Simplified Chinese explanations. Additional languages and their source-document, interface, explanation and speech coverage will be defined and verified in future versions.
-- Saved letter summaries, extracted information, summaries of the user's questions, and summaries of calendar items added.
-
-These features are outside the hackathon. Their storage, authentication and synchronization design is future work, not a requirement for running this demo.
 
 ## Development tools and third-party integrations
 

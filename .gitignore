@@ -15,3 +15,11 @@
 /captures/
 *.xcuserstate
 *.xcresult
+
+# Local editor/agent setup and presentation build intermediates
+/.idea/
+/.agents/
+/.claude/
+/agent/
+/skills-lock.json
+/.ship-deck-build/
