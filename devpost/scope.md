@@ -62,4 +62,4 @@ These are product expansion opportunities, not claims of validated demand, reven
 
 ## Approval & Handoff
 
-This scope is approved. The PRD, technical specification and build checklist define the current capture/analysis/calendar implementation and acceptance work. The project uses MIT; the repository is currently private and will be made public for submission. Publication is separate from planning and local development.
+This scope is approved. The PRD, technical specification and build checklist define the current capture/analysis/calendar implementation and acceptance work. The project uses MIT; the repository is public as verified through GitHub metadata on 2026-10-26. Publication is separate from planning and local development.

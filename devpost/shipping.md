@@ -36,8 +36,10 @@ Earlier local recordings (superseded by the uploaded final video): demo.mp4 = 16
 Repository: https://github.com/daphneyyy/letter-assistant
 Expected license URL after publication: https://github.com/daphneyyy/letter-assistant/blob/main/LICENSE
 
-- [ ] Obtain explicit approval to make the repository and included history public and to push the reviewed local commits. No remote visibility change or push performed.
-- [ ] Check public access without authentication and GitHub MIT-license detection after publication.
+- [x] GitHub API reports visibility=public and private=false on 2026-10-26; the repository is already public. No visibility change performed by this run.
+- [ ] Obtain explicit authorization to push the three local commits after remote main 479a2b8: 2c7de69, 6db670e and ce58e12. No push performed.
+- [x] GitHub API detects license.spdx_id=MIT.
+- [ ] Independently check signed-out access. GitHub connector confirms public metadata, but unauthenticated web fetch failed and shell DNS was unavailable; signed-out verification is not claimed.
 - [x] Reviewed existing language-summary source fix and regression test saved in separate local commit 2c7de69.
 
 ## Devpost
@@ -52,3 +54,11 @@ Project ID: 1510654; latest saved version: 3. Project fields are saved and showc
 - [ ] Verify submitted_at after submission. Do not infer submission from a saved project draft.
 
 No deployment, second recording, peer review, Discord post or new feature is required by this shipping plan.
+
+## Shipping recheck — 2026-10-26
+
+- User supplied the canonical repository URL again; live GitHub metadata confirms it is now public.
+- Re-ran `deno task check` and `deno task test`: passed, 38 tests, zero failures. Core physical-phone evidence retained without repetition.
+- Live Devpost readback confirms the saved YouTube URL and repository URL; hackathon submitted_at remains null. Current required survey fields were fetched; answer completion is not exposed by get_project and is not assumed.
+- Existing project copy was agent-authored according to the prior shipping record. Under 6-ship, the learner must supply their own public submission text; no new copy authored or rewritten in this run. Personal survey, technology-requirement response and eligibility confirmations remain learner-owned.
+- Untracked outputs/ and fixtures/letters/hospital-bill-form.pdf were not added or published. Existing historical audit evidence is retained; no fresh full-history audit claimed.

@@ -131,7 +131,7 @@ Local unreadability, camera denial, missing key/config, relay unreachable, provi
 
 Follow `checklist.md`: close capture/analysis acceptance, close calendar acceptance, then verify clone/setup and final demo. Retain the confirmed core iPhone hands-on pass and existing automated/setup evidence; keep detailed physical edge cases and final readiness separate. No account-isolation, email callback, cloud-save or two-phone acceptance work is required.
 
-The project uses MIT; the root LICENSE contains the license text. Before GitHub publication, audit tracked content and history for secrets/private data, and try documented setup with operator-owned configuration. The repository is currently private and will be made public for submission. Preserve local credentials and signing while documenting how a new cloner selects their own team.
+The project uses MIT; the root LICENSE contains the license text. Before GitHub publication, audit tracked content and history for secrets/private data, and try documented setup with operator-owned configuration. The repository is public as verified through GitHub metadata on 2026-10-26. Preserve local credentials and signing while documenting how a new cloner selects their own team.
 
 ## Future Commercial Architecture
 

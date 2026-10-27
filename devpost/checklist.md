@@ -19,7 +19,7 @@ The product helps anyone who wants to understand supported letters and identify 
 - Individual live fictional-letter cases cover billing, banking, conditional actions, EOB, no-action/no-deadline cases and selected-language output. These samples do not establish universal accuracy; conditional enrollment extraction remains a reliability concern.
 - A scan of 441 reachable historical blobs found no current local credential matches or common credential/private-key patterns. Private configuration, captures and learner-profile paths were absent from reachable history. This scoped scan does not prove absence of every possible sensitive item; review intended additions before publication.
 - MIT is selected and tracked. The author confirmed no code or materials were copied or adapted from prior projects, tutorials, templates or other repositories, apart from the separately documented standard tools/frameworks and Skill Pack.
-- Repository: [letter-assistant](https://github.com/daphneyyy/letter-assistant). It is currently private; the learner plans to make it public for submission. Public access and GitHub license detection will be checked then.
+- Repository: [letter-assistant](https://github.com/daphneyyy/letter-assistant). GitHub metadata confirms it is public and detects MIT on 2026-10-26; independent signed-out access remains to be checked.
 - The learner explicitly confirmed the core phone journey and demo readiness on 2026-10-26 and requested no repeated completed checks. Final review and static code recap are complete; app-map.html is available. Detailed follow-up boxes below remain unverified limitations, not completed tests or submission blockers for this demonstrated PoC.
 
 ## Acceptance Boundary — 2026-10-26
